@@ -55,8 +55,6 @@ def extract_json_from_text(text: str) -> dict:
         return sections
 
     raise ValueError(f"Impossibile estrarre JSON dalla risposta Claude. Primi 500 caratteri: {text[:500]}")
-
-
 async def generate_free_report_ai(
     lead_data: Dict[str, Any],
     analysis_data: Dict[str, Any],
@@ -69,18 +67,16 @@ async def generate_free_report_ai(
 
     print(f"[AI] Generazione report AI con Claude...")
     print(f"   Modello: {settings.anthropic_model}")
-    print(f"   Max tokens: {settings.anthropic_max_tokens}")
+    print(f"   Max tokens: 8000")
 
     # Carica prompt da file
     prompt_path = os.path.join(os.path.dirname(__file__), "../../../directives/prompts/free-report-prompt.md")
-    # Fallback path per struttura diversa
     if not os.path.exists(prompt_path):
         prompt_path = "c:/Users/stefa/Desktop/digidentity-projects/directives/prompts/free-report-prompt.md"
 
     with open(prompt_path, "r", encoding="utf-8") as f:
         system_prompt = f.read()
 
-    # Prepara input dati per Claude
     input_data = {
         "lead": {
             "nome_azienda": lead_data.get("nome_azienda"),
@@ -123,30 +119,23 @@ IMPORTANTE: Rispondi SOLO con JSON valido, senza testo prima o dopo. Formato esa
 
         message = client.messages.create(
             model=settings.anthropic_model,
-            max_tokens=settings.anthropic_max_tokens,
+            max_tokens=8000,
             system=system_prompt,
             messages=[
                 {"role": "user", "content": user_message}
             ]
         )
 
-        # Estrai contenuto
         content = message.content[0].text
-
-        # Parse JSON con fallback robusti
         sections = extract_json_from_text(content)
 
-        # Verifica che ci siano le sezioni attese
         expected_keys = [f"section_{i}" for i in range(1, 6)]
         for key in expected_keys:
             if key not in sections:
                 sections[key] = f"<div><h2>Sezione non disponibile</h2><p>Questa sezione non è stata generata correttamente.</p></div>"
 
-        # Calcola costo stimato
         input_tokens = message.usage.input_tokens
         output_tokens = message.usage.output_tokens
-
-        # Prezzi Claude Sonnet 4 (Feb 2026)
         cost = (input_tokens / 1_000_000 * 3.0) + (output_tokens / 1_000_000 * 15.0)
 
         print(f"[OK] Report AI generato")
@@ -181,7 +170,6 @@ IMPORTANTE: Rispondi SOLO con JSON valido, senza testo prima o dopo. Formato esa
         print(f"[ERROR] {error_msg}")
         return {"success": False, "error": error_msg}
 
-
 async def generate_premium_report_ai(
     lead_data: Dict[str, Any],
     free_analysis: Dict[str, Any],
@@ -190,12 +178,13 @@ async def generate_premium_report_ai(
 ) -> Dict[str, Any]:
     """
     Genera report premium (40-50 pagine HTML, 11 sezioni) usando Claude API.
+    Usa chiamate multiple per gestire la lunghezza.
     """
     settings = get_settings()
 
     print(f"[AI] Generazione report PREMIUM AI con Claude...")
     print(f"   Modello: {settings.anthropic_model}")
-    print(f"   Target: 40-50 pagine, 11 sezioni")
+    print(f"   Target: 40-50 pagine, 11 sezioni (4 chiamate)")
 
     # Carica prompt premium
     prompt_path = os.path.join(os.path.dirname(__file__), "../../../directives/prompts/premium-report-prompt.md")
@@ -221,86 +210,126 @@ async def generate_premium_report_ai(
         "scores": scores
     }
 
-    user_message = f"""Genera il report di Diagnosi Strategica Digitale PREMIUM (40-50 pagine HTML) per questa azienda.
+    data_json = json.dumps(input_data, ensure_ascii=False, indent=2)
+
+    # Definisci i gruppi di sezioni per ogni chiamata
+    call_groups = [
+        {
+            "sections": ["section_1", "section_2", "section_3"],
+            "instruction": """Genera le SEZIONI 1, 2 e 3 del report premium:
+- section_1: Executive Summary (2 pagine) — "La Tua Attività in Numeri: Dove Sei e Dove Puoi Arrivare"
+- section_2: Analisi Identità Digitale (4 pagine) — "Il Tuo Brand Online: Come Ti Percepisce Chi Ti Cerca"
+- section_3: Audit Sito Web Completo (6 pagine) — "Il Tuo Sito Web: Analisi Pagina per Pagina"
+
+Ogni sezione deve essere LUNGA e DETTAGLIATA. Minimo 1500 parole per sezione. Usa dati concreti, tabelle HTML, confronti con competitor."""
+        },
+        {
+            "sections": ["section_4", "section_5", "section_6"],
+            "instruction": """Genera le SEZIONI 4, 5 e 6 del report premium:
+- section_4: Analisi SEO e Posizionamento (6 pagine) — "Farsi Trovare su Google: La Tua Situazione e la Strategia"
+- section_5: Google My Business Audit (4 pagine) — "La Tua Vetrina su Google: Analisi Completa della Scheda"
+- section_6: Social Media Audit (5 pagine) — "I Tuoi Social: Analisi, Strategia e Calendario"
+
+Ogni sezione deve essere LUNGA e DETTAGLIATA. Minimo 1500 parole per sezione. Usa dati concreti, tabelle HTML, confronti con competitor."""
+        },
+        {
+            "sections": ["section_7", "section_8"],
+            "instruction": """Genera le SEZIONI 7 e 8 del report premium:
+- section_7: Analisi Concorrenza (4 pagine) — "La Mappa Competitiva: Chi Sono i Tuoi Veri Competitor Online" con matrice SWOT
+- section_8: Opportunità AI e Automazioni (4 pagine) — "Intelligenza Artificiale e Automazioni: Il Tuo Vantaggio Competitivo del 2026"
+
+La sezione 8 è il DIFFERENZIANTE di DigIdentity Agency. Deve essere la sezione più innovativa e sorprendente del report.
+Ogni sezione deve essere LUNGA e DETTAGLIATA. Minimo 1500 parole per sezione."""
+        },
+        {
+            "sections": ["section_9", "section_10", "section_11"],
+            "instruction": """Genera le SEZIONI 9, 10 e 11 del report premium:
+- section_9: Piano Strategico 90 Giorni (5 pagine) — "Il Tuo Piano d'Azione: 90 Giorni per Trasformare la Tua Presenza Online" con calendario settimanale dettagliato
+- section_10: Quanto Ti Costa Restare Fermo (3 pagine) — Calcolo concreto dei clienti e revenue persi ogni mese + come misurare i progressi con 5 KPI semplici
+- section_11: Il Prossimo Passo (2 pagine) — Proposta consulenza strategica DigIdentity Agency a 199€ (45 minuti), con firma Stefano Corda
+
+NON suggerire al cliente di fare da solo. Il report deve portare naturalmente alla consulenza con DigIdentity Agency.
+Ogni sezione deve essere DETTAGLIATA. Contatti: info@digidentityagency.it, +39 392 199 0215"""
+        }
+    ]
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    all_sections = {}
+    total_input_tokens = 0
+    total_output_tokens = 0
+
+    for i, group in enumerate(call_groups):
+        section_keys = group["sections"]
+        section_json_keys = ', '.join([f'"{k}": "<div>...contenuto HTML lungo e dettagliato...</div>"' for k in section_keys])
+
+        user_message = f"""Genera le seguenti sezioni del report Diagnosi Strategica Digitale PREMIUM per questa azienda.
 
 DATI INPUT:
-{json.dumps(input_data, ensure_ascii=False, indent=2)}
+{data_json}
 
-ISTRUZIONI:
-- Genera 11 sezioni HTML separate (section_1 ... section_11)
-- Ogni sezione deve essere HTML completo e standalone
-- Usa i colori brand: Rosso #F90100, Nero #000000
-- Tono: professionale ma accessibile, orientato all'azione
-- Focus su STRATEGIA CONCRETA, ROI e PIANO OPERATIVO
-- Includi grafici, tabelle, timeline dove appropriato
-- Sezione 11 (Proposta) deve includere preventivo dettagliato
+{group["instruction"]}
 
-IMPORTANTE: Rispondi SOLO con JSON valido, senza testo prima o dopo. Formato esatto:
-{{
-  "section_1": "<div>...</div>",
-  "section_2": "<div>...</div>",
-  "section_3": "<div>...</div>",
-  "section_4": "<div>...</div>",
-  "section_5": "<div>...</div>",
-  "section_6": "<div>...</div>",
-  "section_7": "<div>...</div>",
-  "section_8": "<div>...</div>",
-  "section_9": "<div>...</div>",
-  "section_10": "<div>...</div>",
-  "section_11": "<div>...</div>"
-}}
+REGOLE:
+- HTML pulito e semantico con classi CSS
+- Colori brand: Rosso #F90100, Nero #000000, Grigio #444444
+- Tono: professionale ma accessibile, come spiegare a un imprenditore non tecnico
+- OGNI affermazione deve essere basata su dati reali forniti
+- Includi tabelle HTML, liste, box evidenziati dove appropriato
+- Ogni sezione deve essere LUNGA e SOSTANZIOSA (minimo 1500 parole ciascuna)
+
+IMPORTANTE: Rispondi SOLO con JSON valido. Formato esatto:
+{{{{{section_json_keys}}}}}
 """
 
-    try:
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        print(f"   [CALL {i+1}/4] Generazione sezioni {', '.join(section_keys)}...")
 
-        message = client.messages.create(
-            model=settings.anthropic_model,
-            max_tokens=8000,
-            system=system_prompt,
-            messages=[
-                {"role": "user", "content": user_message}
-            ]
-        )
+        try:
+            message = client.messages.create(
+                model=settings.anthropic_model,
+                max_tokens=16000,
+                system=system_prompt,
+                messages=[
+                    {"role": "user", "content": user_message}
+                ]
+            )
 
-        content = message.content[0].text
+            content = message.content[0].text
+            parsed = extract_json_from_text(content)
 
-        # Parse JSON con fallback robusti
-        sections = extract_json_from_text(content)
+            for key in section_keys:
+                if key in parsed and parsed[key]:
+                    all_sections[key] = parsed[key]
+                    print(f"      ✅ {key}: {len(parsed[key])} caratteri")
+                else:
+                    all_sections[key] = f"<div><h2>Sezione non disponibile</h2><p>Questa sezione non è stata generata correttamente.</p></div>"
+                    print(f"      ❌ {key}: non generata")
 
-        # Verifica sezioni attese
-        expected_keys = [f"section_{i}" for i in range(1, 12)]
-        for key in expected_keys:
-            if key not in sections:
-                sections[key] = f"<div><h2>Sezione non disponibile</h2><p>Questa sezione non è stata generata correttamente.</p></div>"
+            total_input_tokens += message.usage.input_tokens
+            total_output_tokens += message.usage.output_tokens
+            print(f"      Tokens: {message.usage.input_tokens} in / {message.usage.output_tokens} out")
 
-        input_tokens = message.usage.input_tokens
-        output_tokens = message.usage.output_tokens
-        cost = (input_tokens / 1_000_000 * 3.0) + (output_tokens / 1_000_000 * 15.0)
+        except Exception as e:
+            print(f"      ❌ Errore call {i+1}: {e}")
+            for key in section_keys:
+                all_sections[key] = f"<div><h2>Sezione non disponibile</h2><p>Errore nella generazione: {str(e)}</p></div>"
 
-        print(f"[OK] Report PREMIUM AI generato")
-        print(f"   Input tokens: {input_tokens}")
-        print(f"   Output tokens: {output_tokens}")
-        print(f"   Costo stimato: ${cost:.4f}")
+    # Calcola costo totale
+    cost = (total_input_tokens / 1_000_000 * 3.0) + (total_output_tokens / 1_000_000 * 15.0)
 
-        return {
-            "success": True,
-            "sections": sections,
-            "metadata": {
-                "model": settings.anthropic_model,
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "total_tokens": input_tokens + output_tokens,
-                "cost_usd": round(cost, 4)
-            }
+    print(f"\n[OK] Report PREMIUM AI completato")
+    print(f"   Sezioni generate: {sum(1 for k, v in all_sections.items() if 'non disponibile' not in v)}/11")
+    print(f"   Input tokens totali: {total_input_tokens}")
+    print(f"   Output tokens totali: {total_output_tokens}")
+    print(f"   Costo stimato totale: ${cost:.4f}")
+
+    return {
+        "success": True,
+        "sections": all_sections,
+        "metadata": {
+            "model": settings.anthropic_model,
+            "input_tokens": total_input_tokens,
+            "output_tokens": total_output_tokens,
+            "total_tokens": total_input_tokens + total_output_tokens,
+            "cost_usd": round(cost, 4)
         }
-
-    except anthropic.RateLimitError as e:
-        print(f"❌ Rate limit Claude API: {str(e)}")
-        await asyncio.sleep(10)
-        return await generate_premium_report_ai(lead_data, free_analysis, premium_analysis, scores)
-
-    except Exception as e:
-        error_msg = f"Errore Claude API: {str(e)}"
-        print(f"[ERROR] {error_msg}")
-        return {"success": False, "error": error_msg}
+    }

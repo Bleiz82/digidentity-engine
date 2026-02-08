@@ -144,9 +144,9 @@ def task_premium_report(self, lead_id: str):
             "lead_id": lead_id,
             "report_type": "premium",
             "pdf_path": pdf_path,
-            "ai_model_used": ai_metadata["model"],
-            "ai_tokens_used": ai_metadata["total_tokens"],
-            "ai_cost_estimated": ai_metadata["cost_usd"],
+            "ai_model": ai_metadata["model"],
+            "ai_total_tokens": ai_metadata["total_tokens"],
+            "ai_cost_usd": ai_metadata["cost_usd"],
             "status": "generated"
         }
 

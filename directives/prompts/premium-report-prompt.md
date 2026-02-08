@@ -280,67 +280,85 @@ Contenuto:
 
 - Box "Checkpoint": "Alla fine di ogni mese, fai queste 5 domande per capire se sei sulla strada giusta" (lista di domande di autovalutazione)
 
-### SEZIONE 10: Stima ROI e Budget (3 pagine)
-Titolo: "Numeri Reali: Quanto Investire e Quanto Puoi Guadagnare"
+### SEZIONE 10: Quanto Ti Costa Restare Fermo (3 pagine)
+Titolo: "Numeri Reali: Quanto Stai Perdendo Ogni Mese"
 
 Contenuto:
-- Premessa onesta: "Non possiamo garantire risultati esatti — nessuno può farlo onestamente. Ma possiamo fare stime basate sui dati del tuo settore, della tua zona e della tua situazione attuale."
-- Scenario 1 — "Fai Da Te" (budget minimo):
-  - Investimento: solo tempo + strumenti gratuiti
-  - Cosa puoi fare: GMB, contenuti base, social organici
-  - Risultato atteso a 90 giorni: range realistico
-  - Tempo richiesto: X ore/settimana
-  - Pro e contro di questo approccio
+- Premessa onesta: "Non possiamo garantire risultati esatti — nessuno può farlo onestamente. Ma possiamo fare stime basate sui dati del tuo settore, della tua zona e della tua situazione attuale. Questi numeri servono a darti un'idea concreta di cosa c'è in gioco."
 
-- Scenario 2 — "Ibrido" (budget medio):
-  - Investimento: X euro/mese (tool + ads + supporto parziale)
-  - Cosa puoi fare: tutto lo scenario 1 + ads, tool premium, consulenza periodica
-  - Risultato atteso a 90 giorni: range realistico
-  - Pro e contro
+- "Quanto ti costa NON agire":
+  - Calcolo basato sui dati reali: volume ricerche mensili per le keyword del suo settore nella sua zona
+  - Percentuale di click sui primi 3 risultati (75%)
+  - Tasso di conversione realistico per il settore (es. 5-10% per un ristorante, 3-5% per un professionista)
+  - Valore medio di un cliente nel suo settore
+  - Formula chiara: "Ogni mese, circa [stima] persone a [citta] cercano un [settore] su Google. Tu non compari nei primi risultati, i tuoi concorrenti sì. Anche con una stima conservativa, stai lasciando [calcolo]€ al mese ai tuoi concorrenti. In un anno sono [calcolo]€."
+  - "Non è un costo che vedi in fattura, ma è un costo reale — sono clienti che cercano esattamente quello che offri e finiscono dalla concorrenza."
 
-- Scenario 3 — "Accelerato" (con DigIdentity):
-  - Investimento: range del retainer mensile DigIdentity
-  - Cosa include: gestione completa, strategia, esecuzione, report, ottimizzazione continua
-  - Risultato atteso a 90 giorni: range realistico (basato sui clienti DigIdentity)
-  - Pro e contro
+- "Perché il divario cresce nel tempo":
+  - Spiega l'effetto compound: mentre lui resta fermo, i competitor raccolgono recensioni, salgono su Google, costruiscono community sui social
+  - "Più aspetti, più diventa difficile e costoso recuperare. Oggi colmare il divario potrebbe richiedere 3 mesi. Tra un anno, potrebbe richiederne 9."
 
-- Per ogni scenario: tabella con investimento mensile, risultato atteso, ROI stimato
-- Confronto visivo dei 3 scenari (grafico a barre con classi CSS)
-- Box "Quanto Ti Costa NON Fare Niente": stima dei clienti/revenue persi ogni mese restando nella situazione attuale. Questo è il vero costo — non l'investimento, ma l'inazione.
+- "Perché oggi è il momento giusto":
+  - Nel suo mercato locale la maggior parte dei competitor ha ancora una presenza digitale debole
+  - L'AI e le automazioni hanno reso il digital marketing più veloce e accessibile di prima
+  - "Chi si muove adesso con la strategia giusta prende un vantaggio che sarà difficile da colmare per gli altri."
 
-### SEZIONE 11: Preventivo DigIdentity (2 pagine)
-Titolo: "Come Possiamo Aiutarti: La Nostra Proposta"
+- "Come misurare i progressi":
+  - 5 KPI semplici da controllare una volta al mese:
+    1. Visite al sito — quante persone ti trovano online
+    2. Contatti da Google Maps — quante persone ti chiamano o chiedono indicazioni dopo averti trovato
+    3. Posizione su Google — dove compari per le ricerche che contano
+    4. Recensioni e voto medio — il tuo passaparola digitale
+    5. Nuovi clienti da canale digitale — l'unico numero che conta davvero
+  - "Noi monitoriamo questi numeri costantemente e ti mandiamo un report mensile chiaro e semplice. Se qualcosa non funziona, lo vediamo subito e aggiustiamo la strategia."
+
+- Box "Il Prezzo dell'Inazione": riquadro rosso con il calcolo annuale dei clienti/revenue persi continuando come adesso. Questo deve essere il numero più impattante dell'intero report.
+
+### SEZIONE 11: Il Prossimo Passo (2 pagine)
+Titolo: "Trasformiamo Questa Diagnosi in Risultati"
 
 Contenuto:
-- Introduzione: "Basandoci su tutto quello che abbiamo analizzato, ecco cosa ti proponiamo. Non è un pacchetto standard — è costruito sulle TUE esigenze."
-- Pacchetto consigliato:
-  - Nome del pacchetto (personalizzato, es. "Piano Crescita [nome_azienda]")
-  - Lista servizi inclusi, specifici per le esigenze emerse dall'analisi
-  - Per ogni servizio: breve descrizione di cosa faremo concretamente
-  - Frequenza: cosa facciamo settimanalmente, mensilmente
-  - Include: AI e automazioni come elemento differenziante
-- Pricing:
-  - Setup iniziale (una tantum): range
-  - Retainer mensile: range
-  - Durata minima consigliata: 3-6 mesi
-  - Nota: "Nessun vincolo annuale. Lavoriamo mese per mese perché siamo sicuri dei risultati."
-- Cosa NON include (trasparenza totale)
-- Timeline: cosa succede nelle prime 4 settimane dopo la firma
-- Garanzia: "Se dopo 30 giorni non vedi miglioramenti misurabili, ti rimborsiamo il primo mese."
+- Introduzione: "Hai tra le mani il quadro completo della tua situazione digitale. Sai dove sei, dove dovresti essere, cosa stanno facendo i tuoi concorrenti e quali sono le opportunità concrete per far crescere la tua attività online."
+
+- "Perché non un piano fai-da-te": 
+  - "Nei capitoli precedenti hai visto la complessità reale di ogni intervento. SEO, social, Google Maps, automazioni — ognuno di questi è un mestiere. Tu sei bravissimo a fare il [settore]. È il tuo mestiere e lo fai meglio di chiunque. Il digital marketing è il nostro mestiere, e lo facciamo ogni giorno per attività come la tua."
+  - "Ogni ora che passi a cercare di capire come funziona Instagram o perché il tuo sito non si trova su Google è un'ora tolta al tuo lavoro vero."
+
+- "Cosa rende DigIdentity diversa":
+  - "Non siamo la classica web agency che fa un po' di tutto. Siamo un'agenzia di digital marketing specializzata in attività locali che integra intelligenza artificiale e automazioni in tutto quello che fa."
+  - "Cosa significa concretamente per te? Risultati migliori in tempi più rapidi e a costi più accessibili. L'analisi che hai appena letto ne è la prova: il nostro sistema AI ha analizzato il tuo sito, la tua presenza su Google, i tuoi social e i tuoi concorrenti in pochi minuti con una precisione che manualmente richiederebbe giorni."
+
+- "Il prossimo passo — Consulenza Strategica Personalizzata":
+  - "Questo report ti ha dato il COSA. La consulenza ti dà il COME, calibrato esattamente sul tuo budget e le tue priorità."
+  - Durata: 45 minuti (video call o di persona)
+  - Costo: 199€
+  - Cosa include:
+    - Analisi approfondita del report insieme, punto per punto
+    - Risposte a tutte le tue domande
+    - Piano d'azione con priorità personalizzate
+    - Preventivo dettagliato e trasparente, costruito sulle TUE esigenze e sul TUO budget — non un pacchetto standard
+  - "Se dopo la consulenza decidi di affidarci il lavoro, i 199€ vengono scalati dal primo progetto. Il nostro modo di dirti: se il valore non c'è, non ci guadagniamo nulla."
+
 - CTA finale:
-  - "Prenota una chiamata gratuita di 30 minuti con Stefano per discutere questa proposta"
-  - Link/bottone per prenotare
-  - Telefono: +39 392 199 0215
-  - Email: info@digidentityagency.it
-  - WhatsApp: link diretto
+  - Pulsante rosso #F90100: "Prenota la Tua Consulenza Strategica"
+  - Link per prenotare
+  - Oppure contattaci direttamente:
+    - Telefono: +39 392 199 0215
+    - Email: info@digidentityagency.it  
+    - WhatsApp: link diretto
+
+- Chiusura con urgenza gentile:
+  - "Ogni giorno che passa è un giorno in cui qualcuno a [citta] cerca un [settore] e trova i tuoi concorrenti invece di te. Possiamo cambiare questa storia."
+
 - Firma personale:
-  "Grazie per aver investito nella crescita della tua attività. La diagnosi che hai appena letto non è un documento standard — è stata costruita specificamente per [nome_azienda] con cura e attenzione. Spero che ti sia utile, indipendentemente da quello che deciderai di fare.
+  "Grazie per aver investito nella crescita della tua attività. La diagnosi che hai appena letto non è un documento standard — è stata costruita specificamente per [nome_azienda] analizzando la tua situazione reale con i nostri strumenti di intelligenza artificiale.
   
   Se hai domande, anche piccole, scrivimi. Rispondo personalmente.
   
   Stefano Corda
   Fondatore, DigIdentity Agency
-  Specialista AI & Automazioni per MPMI"
+  Specialista in Digital Marketing, AI & Automazioni per MPMI"
+
 
 ## Regole Importanti (Aggiuntive rispetto al report gratuito)
 

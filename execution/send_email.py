@@ -1,6 +1,7 @@
 """
 DigIdentity Engine — Email Sender
 Invio email con Gmail SMTP (primario) e Resend (fallback).
+Versione 3.0 — Funnel corretto: Free → Premium 99€ → Consulenza 199€ → Contratto
 """
 
 import smtplib
@@ -19,25 +20,14 @@ async def send_email_free_report(
     lead_id: str = ""
 ) -> Dict[str, Any]:
     """
-    Invia email con report gratuito allegato.
-    
-    Args:
-        to_email: Email destinatario
-        to_name: Nome destinatario
-        nome_azienda: Nome azienda
-        pdf_path: Path del PDF da allegare
-        
-    Returns:
-        dict: Success status + metadata
+    Invia email con report gratuito allegato + CTA per upgrade premium.
     """
     settings = get_settings()
-    
+
     print(f"📧 Invio email report gratuito a: {to_email}")
-    
-    # Subject
-    subject = f"🚀 La tua Diagnosi Strategica Digitale è pronta, {to_name}!"
-    
-    # HTML Body
+
+    subject = f"La tua Diagnosi Digitale è pronta, {to_name}!"
+
     html_body = f"""
 <!DOCTYPE html>
 <html lang="it">
@@ -46,141 +36,211 @@ async def send_email_free_report(
     <style>
         body {{
             font-family: 'Inter', Arial, sans-serif;
-            color: #000000;
+            color: #1a1a1a;
             line-height: 1.6;
             max-width: 600px;
             margin: 0 auto;
+            padding: 0;
+            background: #f5f5f5;
         }}
         .header {{
             background: linear-gradient(135deg, #F90100 0%, #000000 100%);
             color: white;
-            padding: 30px;
+            padding: 35px 30px;
             text-align: center;
+        }}
+        .header h1 {{
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+        }}
+        .header p {{
+            margin: 8px 0 0 0;
+            font-size: 15px;
+            opacity: 0.9;
         }}
         .content {{
             padding: 30px;
             background: #ffffff;
         }}
+        .content p {{
+            margin-bottom: 14px;
+            font-size: 15px;
+        }}
+        .content ul {{
+            margin: 10px 0 20px 20px;
+        }}
+        .content li {{
+            margin-bottom: 8px;
+            font-size: 14px;
+        }}
+        .highlight-box {{
+            background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+            border-left: 4px solid #F90100;
+            padding: 18px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }}
+        .cta-section {{
+            background: #fafafa;
+            padding: 25px 30px;
+            text-align: center;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+        }}
+        .cta-section h2 {{
+            color: #F90100;
+            font-size: 20px;
+            margin: 0 0 10px 0;
+        }}
         .cta-button {{
             display: inline-block;
             background: #F90100;
-            color: white;
-            padding: 15px 30px;
+            color: white !important;
+            padding: 16px 40px;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 6px;
             font-weight: 700;
-            margin: 20px 0;
+            font-size: 16px;
+            margin: 15px 0;
+        }}
+        .price-badge {{
+            display: inline-block;
+            background: #000;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }}
+        .premium-list {{
+            text-align: left;
+            max-width: 400px;
+            margin: 15px auto;
+        }}
+        .premium-list li {{
+            margin-bottom: 6px;
+            font-size: 13px;
         }}
         .footer {{
-            background: #f5f5f5;
-            padding: 20px;
+            background: #1a1a1a;
+            color: #999;
+            padding: 25px 30px;
             text-align: center;
             font-size: 12px;
-            color: #666;
         }}
-        h1 {{ margin: 0; font-size: 24px; }}
-        h2 {{ color: #F90100; font-size: 20px; }}
+        .footer a {{
+            color: #F90100;
+            text-decoration: none;
+        }}
+        .footer p {{
+            margin: 5px 0;
+        }}
         strong {{ color: #F90100; }}
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🚀 La tua Diagnosi Strategica Digitale</h1>
-        <p style="margin: 10px 0 0 0; font-size: 16px;">{nome_azienda}</p>
+        <h1>Diagnosi Strategica Digitale</h1>
+        <p>{nome_azienda}</p>
     </div>
-    
+
     <div class="content">
         <p>Ciao <strong>{to_name}</strong>,</p>
-        
-        <p>Abbiamo completato l'analisi della presenza digitale di <strong>{nome_azienda}</strong>!</p>
-        
-        <p>📄 <strong>In allegato trovi il tuo report completo (5 pagine)</strong> con:</p>
-        <ul>
-            <li>✅ Analisi del tuo sito web (performance, SEO, mobile)</li>
-            <li>✅ Posizionamento su Google e Google My Business</li>
-            <li>✅ Presenza social media</li>
-            <li>✅ Confronto con i tuoi competitor locali</li>
-            <li>✅ 5 azioni concrete da fare SUBITO (gratis!)</li>
-        </ul>
-        
-        <h2>🎯 Vuoi andare oltre?</h2>
-        <p>Questa è solo la <strong>diagnosi gratuita</strong>. Se vuoi una <strong>strategia completa su misura</strong> con:</p>
-        <ul>
-            <li>📊 Analisi approfondita (40-50 pagine)</li>
-            <li>🤖 Piano AI & Automazioni personalizzato</li>
-            <li>📅 Calendario editoriale 3 mesi</li>
-            <li>💰 Budget dettagliato e ROI atteso</li>
-            <li>🚀 Proposta di collaborazione dedicata</li>
-        </ul>
-        
-        <p style="text-align: center;">
-            <a href="{settings.app_base_url}/api/payment/upgrade/{lead_id}" class="cta-button">
-                🔥 Sblocca la Diagnosi Premium (99€)
-            </a>
+
+        <p>abbiamo completato l'analisi della presenza digitale di <strong>{nome_azienda}</strong>.</p>
+
+        <div class="highlight-box">
+            <strong>📄 In allegato trovi il tuo report (8-10 pagine)</strong> con la fotografia completa
+            della tua situazione online: sito web, Google, social, concorrenza e le azioni
+            concrete da fare subito.
+        </div>
+
+        <p>Ti consiglio di leggerlo con calma — ci sono informazioni che probabilmente
+        nessuno ti ha mai mostrato sulla tua attività online.</p>
+
+        <p>Una cosa importante: questo report è una <strong>fotografia</strong>. Ti mostra dove sei.
+        Ma per sapere esattamente <strong>dove puoi arrivare</strong> e <strong>come arrivarci</strong>,
+        serve andare più in profondità.</p>
+    </div>
+
+    <div class="cta-section">
+        <h2>Vuoi la strategia completa?</h2>
+        <div class="price-badge">Solo 99€ invece di 500-1.000€</div>
+        <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+            La Diagnosi Premium è un vero piano strategico su misura per {nome_azienda}
         </p>
-        
-        <p>Hai domande? Rispondi a questa email o chiamami direttamente!</p>
-        
+
+        <ul class="premium-list">
+            <li>📊 <strong>40-50 pagine</strong> di analisi approfondita</li>
+            <li>🔍 Audit completo sito, SEO, social, competitor</li>
+            <li>🤖 Opportunità AI & automazioni per il tuo settore</li>
+            <li>📅 Piano operativo 90 giorni, settimana per settimana</li>
+            <li>💰 Budget dettagliato e ROI atteso</li>
+            <li>🤝 Proposta di collaborazione personalizzata</li>
+        </ul>
+
+        <a href="{settings.app_base_url}/api/payment/upgrade/{lead_id}" class="cta-button">
+            Sblocca la Diagnosi Premium — 99€
+        </a>
+
+        <p style="font-size: 12px; color: #999; margin-top: 10px;">
+            Pagamento sicuro con Stripe. Ricevi il report via email entro 30 minuti.
+        </p>
+    </div>
+
+    <div class="content" style="padding-top: 20px;">
+        <p>Hai domande sul report? Rispondi a questa email o chiamami direttamente.</p>
+
         <p>A presto,<br>
         <strong>Stefano Corda</strong><br>
-        Specialista AI & Automazioni per MPMI<br>
-        DigIdentity Agency</p>
+        <span style="color: #666; font-size: 13px;">Fondatore, DigIdentity Agency</span><br>
+        <span style="color: #666; font-size: 13px;">Specialista AI & Automazioni per MPMI</span></p>
     </div>
-    
+
     <div class="footer">
-        <p><strong>DigIdentity Agency</strong><br>
-        Via Dettori 3, 09020 Samatzai (SU), Sardegna</p>
-        <p>📧 info@digidentityagency.it | 📱 +39 392 199 0215<br>
-        🌐 <a href="https://digidentityagency.it">digidentityagency.it</a></p>
-        <p style="font-size: 10px; margin-top: 15px;">
-        Hai ricevuto questa email perché hai richiesto una Diagnosi Strategica Digitale su digidentityagency.it.
+        <p><strong style="color: #F90100;">DigIdentity Agency</strong></p>
+        <p>📧 info@digidentityagency.it | 📱 +39 392 199 0215</p>
+        <p>🌐 <a href="https://digidentityagency.it">digidentityagency.it</a></p>
+        <p style="margin-top: 12px; font-size: 10px; color: #666;">
+            Hai ricevuto questa email perché hai richiesto una Diagnosi Strategica Digitale
+            su digidentityagency.it. Se non sei stato tu, puoi ignorare questo messaggio.
         </p>
     </div>
 </body>
 </html>
 """
-    
+
     try:
-        # Crea messaggio
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart('mixed')
         msg['From'] = f"{settings.sender_name} <{settings.sender_email}>"
         msg['To'] = to_email
         msg['Subject'] = subject
-        
-        # Aggiungi HTML body
+
         msg.attach(MIMEText(html_body, 'html', 'utf-8'))
-        
-        # Aggiungi PDF allegato
+
         with open(pdf_path, 'rb') as f:
             pdf_attachment = MIMEApplication(f.read(), _subtype='pdf')
-            pdf_attachment.add_header('Content-Disposition', 'attachment', filename='Diagnosi_Strategica_Digitale.pdf')
+            pdf_attachment.add_header(
+                'Content-Disposition', 'attachment',
+                filename='Diagnosi_Strategica_Digitale.pdf'
+            )
             msg.attach(pdf_attachment)
-        
-        # Invia con Gmail SMTP
+
         print(f"   Connessione a Gmail SMTP...")
         with smtplib.SMTP(settings.gmail_smtp_host, settings.gmail_smtp_port) as server:
             server.starttls()
             server.login(settings.gmail_smtp_user, settings.gmail_smtp_password)
             server.send_message(msg)
-        
+
         print(f"✅ Email inviata con successo via Gmail SMTP")
-        
-        return {
-            "success": True,
-            "provider": "gmail_smtp",
-            "to": to_email
-        }
-    
+        return {"success": True, "provider": "gmail_smtp", "to": to_email}
+
     except Exception as e:
         error_msg = f"Errore invio email: {str(e)}"
         print(f"❌ {error_msg}")
-        
-        # TODO: Fallback a Resend se Gmail fallisce
-        
-        return {
-            "success": False,
-            "error": error_msg
-        }
+        return {"success": False, "error": error_msg}
 
 
 async def send_email_premium_report(
@@ -190,22 +250,13 @@ async def send_email_premium_report(
     pdf_path: str
 ) -> Dict[str, Any]:
     """
-    Invia email con report premium allegato.
-
-    Args:
-        to_email: Email destinatario
-        to_name: Nome destinatario
-        nome_azienda: Nome azienda
-        pdf_path: Path del PDF premium da allegare
-
-    Returns:
-        dict: Success status + metadata
+    Invia email con report premium allegato + CTA per consulenza 199€.
     """
     settings = get_settings()
 
     print(f"📧 Invio email report PREMIUM a: {to_email}")
 
-    subject = f"⭐ La tua Diagnosi Premium è pronta, {to_name}!"
+    subject = f"Il tuo Piano Strategico Digitale è pronto, {to_name}!"
 
     html_body = f"""
 <!DOCTYPE html>
@@ -215,122 +266,222 @@ async def send_email_premium_report(
     <style>
         body {{
             font-family: 'Inter', Arial, sans-serif;
-            color: #000000;
+            color: #1a1a1a;
             line-height: 1.6;
             max-width: 600px;
             margin: 0 auto;
+            padding: 0;
+            background: #f5f5f5;
         }}
         .header {{
             background: linear-gradient(160deg, #000000 0%, #1a0000 40%, #F90100 100%);
             color: white;
-            padding: 35px;
+            padding: 35px 30px;
             text-align: center;
+        }}
+        .header h1 {{
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+        }}
+        .header p {{
+            margin: 8px 0 0 0;
+            font-size: 15px;
+            opacity: 0.9;
         }}
         .premium-badge {{
             display: inline-block;
             background: rgba(255,255,255,0.15);
             border: 2px solid rgba(255,255,255,0.4);
             color: white;
-            padding: 6px 20px;
+            padding: 5px 18px;
             border-radius: 30px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             letter-spacing: 2px;
             text-transform: uppercase;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }}
         .content {{
             padding: 30px;
             background: #ffffff;
         }}
+        .content p {{
+            margin-bottom: 14px;
+            font-size: 15px;
+        }}
         .highlight-box {{
             background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
             border-left: 4px solid #F90100;
-            padding: 20px;
+            padding: 18px 20px;
             margin: 20px 0;
             border-radius: 0 8px 8px 0;
+        }}
+        .sections-grid {{
+            margin: 20px 0;
+        }}
+        .sections-grid table {{
+            width: 100%;
+            border-collapse: collapse;
+        }}
+        .sections-grid td {{
+            padding: 8px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: top;
+        }}
+        .sections-grid .icon {{
+            width: 30px;
+            text-align: center;
+        }}
+        .cta-section {{
+            background: linear-gradient(135deg, #000 0%, #1a0000 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }}
+        .cta-section h2 {{
+            color: #F90100;
+            font-size: 20px;
+            margin: 0 0 8px 0;
+        }}
+        .cta-section p {{
+            color: rgba(255,255,255,0.85);
+            font-size: 14px;
+            margin: 8px 0;
         }}
         .cta-button {{
             display: inline-block;
             background: #F90100;
-            color: white;
-            padding: 15px 30px;
+            color: white !important;
+            padding: 16px 40px;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 6px;
             font-weight: 700;
+            font-size: 16px;
+            margin: 18px 0 8px 0;
+        }}
+        .price-big {{
+            font-size: 32px;
+            font-weight: 900;
+            color: #F90100;
+            margin: 10px 0;
+        }}
+        .guarantee {{
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            padding: 15px 20px;
             margin: 20px 0;
+            font-size: 13px;
+            color: #166534;
         }}
         .footer {{
-            background: #f5f5f5;
-            padding: 20px;
+            background: #1a1a1a;
+            color: #999;
+            padding: 25px 30px;
             text-align: center;
             font-size: 12px;
-            color: #666;
         }}
-        h1 {{ margin: 0; font-size: 24px; }}
-        h2 {{ color: #F90100; font-size: 20px; }}
+        .footer a {{
+            color: #F90100;
+            text-decoration: none;
+        }}
         strong {{ color: #F90100; }}
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="premium-badge">★ PREMIUM</div>
-        <h1>La tua Diagnosi Strategica Digitale</h1>
-        <p style="margin: 10px 0 0 0; font-size: 16px;">{nome_azienda}</p>
-        <p style="margin: 5px 0 0 0; font-size: 13px; opacity: 0.8;">Report completo — 40-50 pagine di strategia</p>
+        <div class="premium-badge">★ Premium</div>
+        <h1>Diagnosi Strategica Digitale</h1>
+        <p>{nome_azienda}</p>
+        <p style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
+            Report completo — 40-50 pagine di strategia su misura
+        </p>
     </div>
 
     <div class="content">
         <p>Ciao <strong>{to_name}</strong>,</p>
 
-        <p>Grazie per aver scelto la <strong>Diagnosi Premium</strong>! Hai fatto una scelta intelligente:
-        ora hai in mano una <strong>vera roadmap strategica</strong> per far crescere {nome_azienda} online.</p>
+        <p>grazie per aver scelto la <strong>Diagnosi Premium</strong>. Hai fatto una scelta
+        intelligente — ora hai in mano un vero piano strategico per far crescere
+        {nome_azienda} online.</p>
 
         <div class="highlight-box">
-            <strong>📄 In allegato trovi il tuo report completo</strong> con 11 sezioni di analisi approfondita,
-            piano operativo 90 giorni, budget dettagliato e proposta di collaborazione personalizzata.
+            <strong>📄 In allegato trovi il report completo</strong> con 11 sezioni di analisi
+            approfondita, piano operativo 90 giorni, opportunità AI & automazioni,
+            e proposta di collaborazione personalizzata.
         </div>
 
-        <h2>📋 Cosa trovi nel report:</h2>
-        <ul>
-            <li>📊 <strong>Executive Summary</strong> — quadro generale e score digitale</li>
-            <li>🌐 <strong>Analisi Sito Web</strong> — performance, UX, mobile, velocità</li>
-            <li>🔍 <strong>Audit SEO Completo</strong> — keyword, posizionamento, opportunità</li>
-            <li>📍 <strong>Google My Business</strong> — ottimizzazione scheda locale</li>
-            <li>📱 <strong>Social Media Audit</strong> — presenza e strategia</li>
-            <li>⚔️ <strong>Analisi Competitor</strong> — posizionamento vs concorrenza</li>
-            <li>📝 <strong>Architettura Contenuti</strong> — strategia editoriale</li>
-            <li>🤖 <strong>Opportunità AI & Automazioni</strong> — cosa automatizzare</li>
-            <li>📅 <strong>Piano Strategico 90 Giorni</strong> — azioni concrete, settimana per settimana</li>
-            <li>💰 <strong>Budget & ROI</strong> — investimento e ritorno atteso</li>
-            <li>🤝 <strong>Proposta di Collaborazione</strong> — come possiamo aiutarti</li>
-        </ul>
+        <p><strong>Come leggerlo:</strong> prenditi 30-40 minuti di tranquillità.
+        Leggi prima l'Executive Summary per il quadro generale, poi approfondisci
+        le sezioni che ti interessano di più. L'ultima sezione contiene la proposta
+        di collaborazione.</p>
 
-        <h2>🚀 Prossimi passi</h2>
-        <p>Ti consiglio di leggere il report con calma e poi fissare una <strong>call gratuita di 30 minuti</strong>
-        con me per discutere insieme la strategia e rispondere alle tue domande.</p>
+        <div class="sections-grid">
+            <table>
+                <tr><td class="icon">📊</td><td><strong>Sez. 1</strong> — Executive Summary</td></tr>
+                <tr><td class="icon">🌐</td><td><strong>Sez. 2</strong> — Identità Digitale</td></tr>
+                <tr><td class="icon">💻</td><td><strong>Sez. 3</strong> — Audit Sito Web</td></tr>
+                <tr><td class="icon">🔍</td><td><strong>Sez. 4</strong> — SEO & Posizionamento</td></tr>
+                <tr><td class="icon">📍</td><td><strong>Sez. 5</strong> — Google My Business</td></tr>
+                <tr><td class="icon">📱</td><td><strong>Sez. 6</strong> — Social Media</td></tr>
+                <tr><td class="icon">⚔️</td><td><strong>Sez. 7</strong> — Analisi Concorrenza</td></tr>
+                <tr><td class="icon">🤖</td><td><strong>Sez. 8</strong> — AI & Automazioni</td></tr>
+                <tr><td class="icon">📅</td><td><strong>Sez. 9</strong> — Piano 90 Giorni</td></tr>
+                <tr><td class="icon">💰</td><td><strong>Sez. 10</strong> — Costo dell'Inazione</td></tr>
+                <tr><td class="icon">🤝</td><td><strong>Sez. 11</strong> — Proposta Collaborazione</td></tr>
+            </table>
+        </div>
+    </div>
 
-        <p style="text-align: center;">
-            <a href="https://digidentityagency.it/contatti-digidentity/" class="cta-button">
-                📞 Prenota la Call Gratuita
-            </a>
+    <div class="cta-section">
+        <h2>Il Prossimo Passo</h2>
+        <p>Hai il report. Hai i dati. Hai la strategia.<br>
+        Ora serve <strong style="color: white;">parlarne insieme</strong> per trasformare tutto in azione.</p>
+
+        <div class="price-big">199€</div>
+        <p style="font-size: 13px; margin-top: 0;">Consulenza Strategica — 45 minuti con Stefano Corda</p>
+
+        <p style="font-size: 13px; text-align: left; max-width: 380px; margin: 15px auto;">
+            ✅ Revisione del report insieme, priorità per priorità<br>
+            ✅ Roadmap personalizzata per la tua situazione<br>
+            ✅ Preventivo dettagliato per ogni intervento<br>
+            ✅ Risposte a tutte le tue domande<br>
+            ✅ Piano concreto: cosa fare, in che ordine, con che budget
         </p>
 
-        <p>Hai domande? Rispondi a questa email o chiamami direttamente al <strong>+39 392 199 0215</strong>.</p>
+        <a href="https://digidentityagency.it/consulenza-strategica/" class="cta-button">
+            Prenota la Consulenza Strategica
+        </a>
+
+        <p style="font-size: 11px; opacity: 0.6; margin-top: 8px;">
+            Pagamento sicuro. Appuntamento entro 48 ore.
+        </p>
+    </div>
+
+    <div class="content" style="padding-top: 20px;">
+        <div class="guarantee">
+            <strong style="color: #166534;">🛡️ Garanzia soddisfazione:</strong> se dopo la consulenza
+            senti di non aver ricevuto valore, ti restituiamo i 199€. Zero rischi.
+        </div>
+
+        <p>Hai domande sul report? Rispondi a questa email o chiamami direttamente
+        al <strong>+39 392 199 0215</strong>.</p>
 
         <p>A presto,<br>
         <strong>Stefano Corda</strong><br>
-        Specialista AI & Automazioni per MPMI<br>
-        DigIdentity Agency</p>
+        <span style="color: #666; font-size: 13px;">Fondatore, DigIdentity Agency</span><br>
+        <span style="color: #666; font-size: 13px;">Specialista AI & Automazioni per MPMI</span></p>
     </div>
 
     <div class="footer">
-        <p><strong>DigIdentity Agency</strong><br>
-        Specialisti AI & Automazioni per Micro e Piccole Imprese</p>
-        <p>📧 info@digidentityagency.it | 📱 +39 392 199 0215<br>
-        🌐 <a href="https://digidentityagency.it">digidentityagency.it</a></p>
-        <p style="font-size: 10px; margin-top: 15px;">
-        Hai ricevuto questa email perché hai acquistato la Diagnosi Premium su digidentityagency.it.
+        <p><strong style="color: #F90100;">DigIdentity Agency</strong></p>
+        <p>📧 info@digidentityagency.it | 📱 +39 392 199 0215</p>
+        <p>🌐 <a href="https://digidentityagency.it">digidentityagency.it</a></p>
+        <p style="margin-top: 12px; font-size: 10px; color: #666;">
+            Hai ricevuto questa email perché hai acquistato la Diagnosi Premium
+            su digidentityagency.it.
         </p>
     </div>
 </body>
@@ -338,14 +489,13 @@ async def send_email_premium_report(
 """
 
     try:
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart('mixed')
         msg['From'] = f"{settings.sender_name} <{settings.sender_email}>"
         msg['To'] = to_email
         msg['Subject'] = subject
 
         msg.attach(MIMEText(html_body, 'html', 'utf-8'))
 
-        # Allega PDF premium
         with open(pdf_path, 'rb') as f:
             pdf_attachment = MIMEApplication(f.read(), _subtype='pdf')
             pdf_attachment.add_header(
@@ -361,18 +511,9 @@ async def send_email_premium_report(
             server.send_message(msg)
 
         print(f"✅ Email PREMIUM inviata con successo via Gmail SMTP")
-
-        return {
-            "success": True,
-            "provider": "gmail_smtp",
-            "to": to_email
-        }
+        return {"success": True, "provider": "gmail_smtp", "to": to_email}
 
     except Exception as e:
         error_msg = f"Errore invio email premium: {str(e)}"
         print(f"❌ {error_msg}")
-        return {
-            "success": False,
-            "error": error_msg
-        }
-
+        return {"success": False, "error": error_msg}

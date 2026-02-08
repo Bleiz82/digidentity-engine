@@ -114,6 +114,14 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
 
+    # ----- Verifica presenza header stripe-signature -----
+    if not sig_header:
+        logger.error("Webhook ricevuto senza header stripe-signature.")
+        raise HTTPException(
+            status_code=400,
+            detail="Header stripe-signature mancante.",
+        )
+
     # ----- Verifica firma webhook -----
     try:
         event = stripe.Webhook.construct_event(

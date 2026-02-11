@@ -1,16 +1,15 @@
 """
-DigIdentity Engine — Generazione report AI con Claude.
+DigIdentity Engine — Generazione report AI con fallback.
 
-Genera report di diagnosi digitale utilizzando i dati di scraping
-e i prompt specifici in directives/prompts/.
+Ordine di priorità:
+- Report FREE: OpenAI GPT-4o (più economico) → Claude Sonnet (fallback)
+- Report PREMIUM: Claude Sonnet (qualità superiore) → OpenAI GPT-4o (fallback)
 """
 
 import json
 import logging
 from pathlib import Path
 from typing import Any
-
-import anthropic
 
 from backend.app.core.config import settings
 
@@ -27,18 +26,95 @@ def load_prompt(prompt_name: str) -> str:
     return prompt_path.read_text(encoding="utf-8")
 
 
+def _call_openai(system_prompt: str, user_message: str, max_tokens: int = 8000) -> dict:
+    """Chiama OpenAI GPT-4o."""
+    import openai
+    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+    
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ],
+        max_tokens=max_tokens,
+        temperature=0.3,
+    )
+    
+    return {
+        "text": response.choices[0].message.content,
+        "model": response.model,
+        "input_tokens": response.usage.prompt_tokens,
+        "output_tokens": response.usage.completion_tokens,
+    }
+
+
+def _call_claude(system_prompt: str, user_message: str, max_tokens: int = 8000) -> dict:
+    """Chiama Claude Sonnet."""
+    import anthropic
+    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=max_tokens,
+        system=system_prompt,
+        messages=[{"role": "user", "content": user_message}],
+        temperature=0.3,
+    )
+    
+    return {
+        "text": response.content[0].text,
+        "model": response.model,
+        "input_tokens": response.usage.input_tokens,
+        "output_tokens": response.usage.output_tokens,
+    }
+
+
+def _call_ai(system_prompt: str, user_message: str, max_tokens: int = 8000, prefer: str = "openai") -> dict:
+    """
+    Chiama AI con fallback automatico.
+    prefer="openai" → prova OpenAI prima, poi Claude
+    prefer="claude" → prova Claude prima, poi OpenAI
+    """
+    if prefer == "openai":
+        providers = [
+            ("OpenAI", _call_openai, bool(settings.OPENAI_API_KEY)),
+            ("Claude", _call_claude, bool(settings.ANTHROPIC_API_KEY)),
+        ]
+    else:
+        providers = [
+            ("Claude", _call_claude, bool(settings.ANTHROPIC_API_KEY)),
+            ("OpenAI", _call_openai, bool(settings.OPENAI_API_KEY)),
+        ]
+    
+    last_error = None
+    for name, func, available in providers:
+        if not available:
+            logger.info(f"[AI] {name} non configurato, skip")
+            continue
+        try:
+            logger.info(f"[AI] Chiamata {name}...")
+            result = func(system_prompt, user_message, max_tokens)
+            logger.info(f"[AI] {name} OK — {result['output_tokens']} tokens output")
+            return result
+        except Exception as e:
+            logger.warning(f"[AI] {name} fallito: {e}")
+            last_error = e
+    
+    raise Exception(f"Tutti i provider AI hanno fallito. Ultimo errore: {last_error}")
+
+
 def generate_free_report(scraping_data: dict[str, Any]) -> str:
     """
     Genera il report gratuito di diagnosi digitale.
-    Restituisce il report in formato Markdown.
+    Usa OpenAI come prima scelta (più economico per il free).
     """
     company_name = scraping_data.get("company_name", "Azienda")
-    logger.info(f"Generazione report FREE per {company_name}")
+    logger.info(f"[FREE] Generazione report per {company_name}")
 
     system_prompt = load_prompt("free_report_system")
     user_prompt = load_prompt("free_report_user")
 
-    # Inietta i dati di scraping nel prompt utente
     user_message = user_prompt.replace(
         "{{SCRAPING_DATA}}", json.dumps(scraping_data, indent=2, ensure_ascii=False)
     ).replace(
@@ -47,34 +123,24 @@ def generate_free_report(scraping_data: dict[str, Any]) -> str:
         "{{WEBSITE_URL}}", scraping_data.get("website_url", "N/D")
     )
 
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=8000,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_message}],
-        temperature=0.3,
-    )
-
-    report_text = response.content[0].text
+    result = _call_ai(system_prompt, user_message, max_tokens=8000, prefer="openai")
+    
     logger.info(
-        f"Report FREE generato per {company_name}: "
-        f"{len(report_text)} caratteri, "
-        f"input_tokens={response.usage.input_tokens}, "
-        f"output_tokens={response.usage.output_tokens}"
+        f"[FREE] Report generato per {company_name}: "
+        f"{len(result['text'])} car, modello={result['model']}, "
+        f"input={result['input_tokens']}, output={result['output_tokens']}"
     )
-    return report_text
+    return result["text"]
 
 
 def generate_premium_report(scraping_data: dict[str, Any], free_report: str = "") -> str:
     """
-    Genera il report premium completo (40-50 pagine).
-    Include piano strategico, calendario editoriale, preventivo.
-    Restituisce il report in formato Markdown.
+    Genera il report premium (40-50 pagine).
+    Usa Claude come prima scelta (qualità superiore per il premium).
+    Genera in 3 parti per gestire la lunghezza.
     """
     company_name = scraping_data.get("company_name", "Azienda")
-    logger.info(f"Generazione report PREMIUM per {company_name}")
+    logger.info(f"[PREMIUM] Generazione report per {company_name}")
 
     system_prompt = load_prompt("premium_report_system")
     user_prompt = load_prompt("premium_report_user")
@@ -86,62 +152,39 @@ def generate_premium_report(scraping_data: dict[str, Any], free_report: str = ""
     ).replace(
         "{{WEBSITE_URL}}", scraping_data.get("website_url", "N/D")
     ).replace(
-        "{{FREE_REPORT}}", free_report or "Non disponibile"
+        "{{FREE_REPORT}}", free_report
     )
 
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-
-    # Il report premium richiede più token e più sezioni.
-    # Usiamo una strategia multi-call per generare le diverse sezioni.
-    sections = []
-
-    # ── PARTE 1: Analisi e diagnosi (sezioni 1-5) ──
+    # Parte 1: Executive Summary → Analisi SEO/SEM
     part1_prompt = user_message + "\n\n**ISTRUZIONE: Genera le PARTI 1-5 del report (dall'Executive Summary fino all'Analisi SEO/SEM inclusa).**"
-    resp1 = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=16000,
-        system=system_prompt,
-        messages=[{"role": "user", "content": part1_prompt}],
-        temperature=0.25,
-    )
-    sections.append(resp1.content[0].text)
-    logger.info(f"Premium parte 1 generata: {resp1.usage.output_tokens} tokens")
+    result1 = _call_ai(system_prompt, part1_prompt, max_tokens=8000, prefer="claude")
+    logger.info(f"[PREMIUM] Parte 1 completata: {result1['output_tokens']} tokens")
 
-    # ── PARTE 2: Social, Reputazione, Competitor (sezioni 6-9) ──
+    # Parte 2: Social Media → Strategia AI
     part2_prompt = (
-        user_message
-        + f"\n\n**Ecco la PARTE 1 già generata:**\n{sections[0][:3000]}...\n\n"
-        + "**ISTRUZIONE: Genera le PARTI 6-9 del report (Analisi Social Media, Reputazione Online, Analisi Competitiva, Strategia Digitale). Non ripetere le sezioni precedenti.**"
+        f"Hai già generato le parti 1-5:\n\n{result1['text']}\n\n"
+        f"Ora genera le PARTI 6-8 (Social Media, Content Strategy, Strategia AI/Automazioni) "
+        f"basandoti sugli stessi dati:\n\n{user_message}"
     )
-    resp2 = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=16000,
-        system=system_prompt,
-        messages=[{"role": "user", "content": part2_prompt}],
-        temperature=0.25,
-    )
-    sections.append(resp2.content[0].text)
-    logger.info(f"Premium parte 2 generata: {resp2.usage.output_tokens} tokens")
+    result2 = _call_ai(system_prompt, part2_prompt, max_tokens=8000, prefer="claude")
+    logger.info(f"[PREMIUM] Parte 2 completata: {result2['output_tokens']} tokens")
 
-    # ── PARTE 3: Piano operativo, calendario, preventivo (sezioni 10-14) ──
+    # Parte 3: Piano 90gg → Conclusioni
     part3_prompt = (
-        user_message
-        + "\n\n**ISTRUZIONE: Genera le PARTI 10-14 del report (Calendario Editoriale 3 mesi dettagliato, Piano Budget e ROI, Roadmap implementazione, Preventivo dettagliato, Conclusioni). Non ripetere le sezioni precedenti.**"
+        f"Hai già generato le parti 1-8:\n\n{result1['text']}\n\n{result2['text']}\n\n"
+        f"Ora genera le PARTI 9-11 (Piano Operativo 90 giorni, Budget/ROI, Conclusioni con CTA consulenza 199€) "
+        f"basandoti sugli stessi dati:\n\n{user_message}"
     )
-    resp3 = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=16000,
-        system=system_prompt,
-        messages=[{"role": "user", "content": part3_prompt}],
-        temperature=0.25,
-    )
-    sections.append(resp3.content[0].text)
-    logger.info(f"Premium parte 3 generata: {resp3.usage.output_tokens} tokens")
+    result3 = _call_ai(system_prompt, part3_prompt, max_tokens=8000, prefer="claude")
+    logger.info(f"[PREMIUM] Parte 3 completata: {result3['output_tokens']} tokens")
 
-    full_report = "\n\n---\n\n".join(sections)
-
+    full_report = f"{result1['text']}\n\n{result2['text']}\n\n{result3['text']}"
+    
+    total_input = result1['input_tokens'] + result2['input_tokens'] + result3['input_tokens']
+    total_output = result1['output_tokens'] + result2['output_tokens'] + result3['output_tokens']
+    
     logger.info(
-        f"Report PREMIUM completo per {company_name}: "
-        f"{len(full_report)} caratteri"
+        f"[PREMIUM] Report completo per {company_name}: "
+        f"{len(full_report)} car, input_tot={total_input}, output_tot={total_output}"
     )
     return full_report

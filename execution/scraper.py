@@ -47,6 +47,8 @@ def scrape_lead(website_url: str, company_name: str) -> dict[str, Any]:
         "social_media": {},
         "google_business": {},
         "competitors": [],
+        "apify": {},
+        "perplexity": {},
         "errors": [],
     }
 
@@ -77,6 +79,48 @@ def scrape_lead(website_url: str, company_name: str) -> dict[str, Any]:
     except Exception as e:
         logger.warning(f"Errore Google Business per {company_name}: {e}")
         results["errors"].append(f"Google Business: {str(e)}")
+
+
+    # 5. Scraping avanzato via Apify (Google Maps, Instagram, Facebook, TikTok)
+    try:
+        from execution.scrape_apify import run_apify_scraping
+
+        # Estrai link social trovati dallo step 3
+        social_links = {}
+        sm = results.get("social_media", {})
+        if sm.get("instagram"):
+            social_links["instagram"] = sm["instagram"]
+        if sm.get("facebook"):
+            social_links["facebook"] = sm["facebook"]
+        if sm.get("tiktok"):
+            social_links["tiktok"] = sm["tiktok"]
+
+        # Usa la città dal Google Business se disponibile
+        city = ""
+        gb = results.get("google_business", {})
+        if gb.get("address"):
+            city = gb["address"]
+
+        results["apify"] = run_apify_scraping(
+            company_name=company_name,
+            city=city,
+            website=website_url,
+            social_links=social_links,
+        )
+        logger.info(f"Apify scraping completato per {company_name}")
+    except Exception as e:
+        logger.warning(f"Errore Apify per {company_name}: {e}")
+        results["errors"].append(f"Apify: {str(e)}")
+        results["apify"] = {"error": str(e)}
+
+    # 6. Ricerca Perplexity AI (contesto mercato e reputazione online)
+    try:
+        results["perplexity"] = _perplexity_research(company_name, website_url)
+        logger.info(f"Perplexity research completato per {company_name}")
+    except Exception as e:
+        logger.warning(f"Errore Perplexity per {company_name}: {e}")
+        results["errors"].append(f"Perplexity: {str(e)}")
+        results["perplexity"] = {"error": str(e)}
 
     logger.info(
         f"Scraping completato per {company_name}: "
@@ -403,3 +447,61 @@ def _check_google_business(company_name: str) -> dict:
         data["error"] = str(e)
 
     return data
+
+
+def _perplexity_research(company_name: str, website_url: str) -> dict[str, Any]:
+    """
+    Usa Perplexity AI per ricerca contestuale sull'azienda.
+    Restituisce informazioni su reputazione, mercato, competitor.
+    """
+    if not settings.PERPLEXITY_API_KEY:
+        return {"error": "PERPLEXITY_API_KEY non configurata", "found": False}
+
+    try:
+        import requests as req
+
+        prompt = (
+            f"Analizza la presenza digitale e la reputazione dell'azienda '{company_name}' "
+            f"(sito: {website_url}). Cerca informazioni su:\n"
+            f"1. Reputazione online e recensioni\n"
+            f"2. Posizionamento nel mercato locale\n"
+            f"3. Principali competitor diretti\n"
+            f"4. Punti di forza e debolezza della loro presenza digitale\n"
+            f"5. Opportunità di miglioramento\n"
+            f"Rispondi in italiano con dati concreti."
+        )
+
+        resp = req.post(
+            "https://api.perplexity.ai/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.PERPLEXITY_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": settings.PERPLEXITY_MODEL,
+                "messages": [
+                    {"role": "system", "content": "Sei un analista di digital marketing specializzato in PMI italiane. Rispondi con dati concreti e specifici."},
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": 2000,
+                "temperature": 0.3,
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        content = data["choices"][0]["message"]["content"]
+        citations = data.get("citations", [])
+
+        return {
+            "found": True,
+            "analysis": content,
+            "citations": citations,
+            "model": data.get("model", settings.PERPLEXITY_MODEL),
+            "tokens_used": data.get("usage", {}).get("total_tokens", 0),
+        }
+
+    except Exception as e:
+        logger.warning(f"Errore Perplexity per {company_name}: {e}")
+        return {"found": False, "error": str(e)}

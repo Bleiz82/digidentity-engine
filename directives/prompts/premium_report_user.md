@@ -27,6 +27,16 @@ Stesso JSON della diagnosi gratuita PIU' i dati delle analisi premium aggiuntive
 - analysis_social_deep: content analysis ultimi 30 post, hashtag, competitor social comparison, tone of voice attuale
 - analysis_ai_opportunities: chatbot presenti, automazioni rilevate, opportunità AI per settore, stima ROI implementazione
 
+### Dati Apify (scraping avanzato)
+- apify.google_maps: rating dettagliato, recensioni recenti con testo, foto count, orari, categorie, indirizzo verificato. Usa le recensioni reali per citare feedback positivi o evidenziare problemi segnalati dai clienti. Confronta i dati con la concorrenza.
+- apify.instagram: follower, post recenti, engagement rate calcolato (likes+commenti/follower), frequenza pubblicazione, bio, account business. L'engagement rate è il dato chiave: sotto 1% scarso, 1-3% nella media, sopra 3% ottimo. Analizza il tipo di contenuti e suggerisci una strategia.
+- apify.facebook: post recenti con likes/commenti/condivisioni, frequenza pubblicazione, engagement medio. Valuta la coerenza del brand e la qualità dei contenuti.
+- apify.linkedin: profilo aziendale, numero dipendenti, descrizione, specialità, post recenti. Fondamentale per il posizionamento B2B e la credibilità aziendale. Analizza completezza del profilo e attività.
+
+### Analisi Perplexity AI
+- perplexity.analysis: analisi contestuale dell'azienda — reputazione online, posizionamento nel mercato locale, competitor identificati, punti di forza/debolezza. Usa queste informazioni per arricchire l'analisi con contesto di mercato reale. Se Perplexity contraddice i dati di scraping, dai priorità ai dati reali.
+- perplexity.citations: fonti utilizzate da Perplexity
+
 ## Metodo di Generazione
 Questo report viene generato A SEZIONI per gestire i limiti di token. Ogni sezione viene richiesta separatamente con il contesto completo dei dati. Ogni sezione deve essere autonoma ma coerente con le altre. Il tono, lo stile e i riferimenti ai dati devono essere consistenti dall'inizio alla fine.
 

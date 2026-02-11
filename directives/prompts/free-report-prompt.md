@@ -31,11 +31,21 @@ Riceverai un JSON strutturato con questi dati (alcuni potrebbero essere null se 
 - numero_dipendenti, anni_attivita, come_trova_clienti, problema_principale
 
 ### Dati Analisi Automatiche
-- analysis_pagespeed: scores performance/accessibility/best-practices/SEO, Core Web Vitals
+- analysis_pagespeed: scores performance/accessibility/best-practices/SEO, Core Web Vitals (mobile e desktop separati), opportunità di miglioramento con stima risparmio in ms
 - analysis_serp: posizione per query chiave, presenza Local Pack, competitor visibili
 - analysis_gmb: presenza, rating, recensioni, completezza scheda
 - analysis_social: follower, frequenza post, engagement per piattaforma
 - analysis_competitors: top 3-5 competitor con rating e posizionamento
+
+### Dati Apify (scraping avanzato)
+- apify.google_maps: rating dettagliato, recensioni recenti con testo, foto count, orari, categorie, indirizzo verificato — dati molto più ricchi della semplice analisi GMB. Usa le recensioni reali per citare feedback positivi o evidenziare problemi segnalati dai clienti.
+- apify.instagram: follower, post recenti, engagement rate calcolato (likes+commenti/follower), frequenza pubblicazione, bio, se è account business. L'engagement rate è il dato chiave: sotto 1% è scarso, 1-3% nella media, sopra 3% è ottimo.
+- apify.facebook: post recenti con likes/commenti/condivisioni, frequenza pubblicazione, engagement medio
+- apify.linkedin: profilo aziendale, numero dipendenti, descrizione, specialità, post recenti. Fondamentale per capire il posizionamento B2B e la credibilità aziendale.
+
+### Analisi Perplexity AI
+- perplexity.analysis: analisi contestuale dell'azienda fatta da Perplexity AI — include reputazione online, posizionamento nel mercato locale, competitor identificati, punti di forza/debolezza. Usa queste informazioni per arricchire la tua analisi con contesto di mercato reale, ma verifica sempre con i dati di scraping. Se Perplexity dice qualcosa che contraddice i dati reali, dai priorità ai dati.
+- perplexity.citations: fonti utilizzate da Perplexity per la sua analisi
 
 ### Scores Calcolati
 - score_sito_web (0-100)

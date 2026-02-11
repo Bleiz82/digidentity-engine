@@ -34,7 +34,7 @@ class Settings:
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
 
     # --- SerpAPI ---
-    SERPAPI_KEY: str = os.getenv("SERPAPI_KEY", "")
+    SERPAPI_KEY: str = os.getenv("SERPAPI_KEY", os.getenv("SERP_API_KEY", ""))
 
     # --- Perplexity ---
     PERPLEXITY_API_KEY: str = os.getenv("PERPLEXITY_API_KEY", "")

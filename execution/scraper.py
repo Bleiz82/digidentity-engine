@@ -47,6 +47,7 @@ def scrape_lead(website_url: str, company_name: str) -> dict[str, Any]:
         "social_media": {},
         "google_business": {},
         "competitors": [],
+        "pagespeed": {},
         "apify": {},
         "perplexity": {},
         "errors": [],
@@ -58,6 +59,15 @@ def scrape_lead(website_url: str, company_name: str) -> dict[str, Any]:
     except Exception as e:
         logger.warning(f"Errore scraping sito {website_url}: {e}")
         results["errors"].append(f"Sito web: {str(e)}")
+
+    # 1b. PageSpeed Insights (Core Web Vitals, punteggi, suggerimenti)
+    try:
+        results["pagespeed"] = _analyze_pagespeed(website_url)
+        logger.info(f"PageSpeed completato per {website_url}")
+    except Exception as e:
+        logger.warning(f"Errore PageSpeed per {website_url}: {e}")
+        results["errors"].append(f"PageSpeed: {str(e)}")
+        results["pagespeed"] = {"error": str(e)}
 
     # 2. Analisi SEO via SerpAPI
     try:
@@ -92,8 +102,8 @@ def scrape_lead(website_url: str, company_name: str) -> dict[str, Any]:
             social_links["instagram"] = sm["instagram"]
         if sm.get("facebook"):
             social_links["facebook"] = sm["facebook"]
-        if sm.get("tiktok"):
-            social_links["tiktok"] = sm["tiktok"]
+        if sm.get("linkedin"):
+            social_links["linkedin"] = sm["linkedin"]
 
         # Usa la città dal Google Business se disponibile
         city = ""
@@ -505,3 +515,90 @@ def _perplexity_research(company_name: str, website_url: str) -> dict[str, Any]:
     except Exception as e:
         logger.warning(f"Errore Perplexity per {company_name}: {e}")
         return {"found": False, "error": str(e)}
+
+
+
+def _analyze_pagespeed(website_url: str) -> dict[str, Any]:
+    """
+    Analisi PageSpeed Insights via API Google (gratuita).
+    Restituisce Core Web Vitals, punteggi mobile e desktop, suggerimenti.
+    """
+    API_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
+    results = {
+        "mobile": {},
+        "desktop": {},
+        "errors": [],
+    }
+
+    for strategy in ["mobile", "desktop"]:
+        try:
+            resp = requests.get(
+                API_URL,
+                params={
+                    "url": website_url,
+                    "strategy": strategy,
+                    "locale": "it",
+                    "category": ["performance", "seo", "best-practices", "accessibility"],
+                },
+                timeout=60,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            # Lighthouse scores
+            categories = data.get("lighthouseResult", {}).get("categories", {})
+            scores = {}
+            for cat_key, cat_data in categories.items():
+                scores[cat_key] = round((cat_data.get("score", 0) or 0) * 100)
+
+            # Core Web Vitals
+            field_data = data.get("loadingExperience", {}).get("metrics", {})
+            cwv = {}
+            metric_map = {
+                "LARGEST_CONTENTFUL_PAINT_MS": "lcp_ms",
+                "FIRST_INPUT_DELAY_MS": "fid_ms",
+                "CUMULATIVE_LAYOUT_SHIFT_SCORE": "cls",
+                "FIRST_CONTENTFUL_PAINT_MS": "fcp_ms",
+                "INTERACTION_TO_NEXT_PAINT": "inp_ms",
+                "EXPERIMENTAL_TIME_TO_FIRST_BYTE": "ttfb_ms",
+            }
+            for api_name, local_name in metric_map.items():
+                metric = field_data.get(api_name, {})
+                if metric:
+                    cwv[local_name] = metric.get("percentile", metric.get("distributions", [{}]))
+
+            # Audit principali (opportunità di miglioramento)
+            audits = data.get("lighthouseResult", {}).get("audits", {})
+            opportunities = []
+            for audit_key, audit_data in audits.items():
+                if audit_data.get("score") is not None and audit_data["score"] < 0.9:
+                    savings = audit_data.get("details", {}).get("overallSavingsMs", 0)
+                    if savings > 0 or audit_data["score"] < 0.5:
+                        opportunities.append({
+                            "id": audit_key,
+                            "title": audit_data.get("title", ""),
+                            "description": audit_data.get("description", "")[:200],
+                            "score": round(audit_data["score"] * 100),
+                            "savings_ms": savings,
+                        })
+
+            opportunities.sort(key=lambda x: x.get("savings_ms", 0), reverse=True)
+
+            results[strategy] = {
+                "scores": scores,
+                "core_web_vitals": cwv,
+                "opportunities": opportunities[:10],
+                "overall_category": data.get("loadingExperience", {}).get("overall_category", ""),
+            }
+
+            logger.info(
+                f"PageSpeed {strategy}: performance={scores.get('performance', '?')}, "
+                f"seo={scores.get('seo', '?')}, accessibility={scores.get('accessibility', '?')}"
+            )
+
+        except Exception as e:
+            logger.warning(f"Errore PageSpeed {strategy} per {website_url}: {e}")
+            results["errors"].append(f"PageSpeed {strategy}: {str(e)}")
+            results[strategy] = {"error": str(e)}
+
+    return results

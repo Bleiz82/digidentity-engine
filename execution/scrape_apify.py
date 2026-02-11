@@ -325,66 +325,76 @@ def scrape_facebook(page_url: str = "", company_name: str = "") -> dict[str, Any
     }
 
 
-def scrape_tiktok(username: str = "", company_name: str = "") -> dict[str, Any]:
+def scrape_linkedin(company_url: str = "", company_name: str = "") -> dict[str, Any]:
     """
-    Scraping TikTok via Apify.
-    Actor: clockworks/tiktok-scraper (OtzYfK1ndEGdwWFKQ)
+    Scraping LinkedIn Company Page via Apify.
+    Actor: anchor/linkedin-company-scraper (heCRoeHip2BHXGCLU)
+    
+    Restituisce: descrizione azienda, settore, dipendenti, specialità, post recenti.
     """
-    if not username and not company_name:
-        return {"source": "tiktok", "found": False, "error": "Nessun username o nome"}
+    if not company_url and not company_name:
+        return {"source": "linkedin", "found": False, "error": "Nessun URL o nome azienda"}
 
-    if username:
-        username = username.strip().lstrip("@").split("/")[-1]
-        logger.info(f"[APIFY] TikTok scraping: @{username}")
+    if company_url:
+        # Normalizza URL LinkedIn
+        url = company_url.strip().rstrip("/")
+        if "linkedin.com" not in url:
+            url = f"https://www.linkedin.com/company/{url}"
+        logger.info(f"[APIFY] LinkedIn scraping: {url}")
         run_input = {
-            "profiles": [username],
-            "resultsPerPage": 10,
-            "shouldDownloadVideos": False,
+            "startUrls": [{"url": url}],
+            "maxItems": 1,
         }
     else:
-        logger.info(f"[APIFY] TikTok search: '{company_name}'")
+        logger.info(f"[APIFY] LinkedIn search: '{company_name}'")
         run_input = {
-            "searchQueries": [company_name],
-            "resultsPerPage": 5,
-            "shouldDownloadVideos": False,
+            "search": company_name,
+            "maxItems": 3,
         }
 
-    results = _run_actor("OtzYfK1ndEGdwWFKQ", run_input)
+    results = _run_actor("heCRoeHip2BHXGCLU", run_input)
 
     if not results:
-        return {"source": "tiktok", "found": False, "error": "Profilo non trovato"}
+        return {"source": "linkedin", "found": False, "error": "Profilo aziendale non trovato"}
 
-    # Analizza
-    profile_data = results[0] if results else {}
-    videos = []
-    total_views = 0
-    total_likes = 0
+    company = results[0]
 
-    for item in results[:10]:
-        views = item.get("playCount", 0) or 0
-        likes = item.get("diggCount", 0) or 0
-        total_views += views
-        total_likes += likes
-        videos.append({
-            "description": (item.get("text") or "")[:150],
-            "views": views,
+    # Estrai post recenti se disponibili
+    recent_posts = []
+    for post in company.get("posts", company.get("updates", []))[:10]:
+        text = post.get("text", post.get("commentary", ""))
+        likes = post.get("likesCount", post.get("numLikes", 0)) or 0
+        comments = post.get("commentsCount", post.get("numComments", 0)) or 0
+        recent_posts.append({
+            "text": (text or "")[:200],
             "likes": likes,
-            "comments": item.get("commentCount", 0),
-            "shares": item.get("shareCount", 0),
-            "date": item.get("createTimeISO", ""),
+            "comments": comments,
+            "date": post.get("postedDate", post.get("date", "")),
         })
 
+    total_likes = sum(p["likes"] for p in recent_posts)
+    total_comments = sum(p["comments"] for p in recent_posts)
+    num_posts = max(len(recent_posts), 1)
+
     return {
-        "source": "tiktok",
+        "source": "linkedin",
         "found": True,
-        "username": profile_data.get("authorMeta", {}).get("name", ""),
-        "followers": profile_data.get("authorMeta", {}).get("fans", 0),
-        "following": profile_data.get("authorMeta", {}).get("following", 0),
-        "total_likes": profile_data.get("authorMeta", {}).get("heart", 0),
-        "videos_count": profile_data.get("authorMeta", {}).get("video", 0),
-        "avg_views": round(total_views / max(len(videos), 1)),
-        "avg_likes": round(total_likes / max(len(videos), 1)),
-        "recent_videos": videos,
+        "name": company.get("name", company.get("companyName", "")),
+        "description": company.get("description", company.get("tagline", "")),
+        "industry": company.get("industry", ""),
+        "company_size": company.get("staffCount", company.get("employeeCount", "")),
+        "company_type": company.get("type", company.get("companyType", "")),
+        "headquarters": company.get("headquarter", company.get("locations", "")),
+        "website": company.get("website", company.get("companyUrl", "")),
+        "specialities": company.get("specialities", []),
+        "followers": company.get("followerCount", company.get("followersCount", 0)),
+        "founded": company.get("foundedOn", company.get("founded", "")),
+        "logo_url": company.get("logo", company.get("logoUrl", "")),
+        "linkedin_url": company.get("url", company.get("linkedinUrl", "")),
+        "posts_count": len(recent_posts),
+        "avg_likes_per_post": round(total_likes / num_posts),
+        "avg_comments_per_post": round(total_comments / num_posts),
+        "recent_posts": recent_posts,
     }
 
 
@@ -421,7 +431,7 @@ def run_apify_scraping(
         "google_maps": {},
         "instagram": {},
         "facebook": {},
-        "tiktok": {},
+        "linkedin": {},
         "errors": [],
     }
 
@@ -459,17 +469,16 @@ def run_apify_scraping(
             result["errors"].append(f"Facebook: {str(e)}")
             result["facebook"] = {"source": "facebook", "found": False, "error": str(e)}
 
-    # 4. TikTok — se ha il link
-    tk_link = social_links.get("tiktok", "")
-    if tk_link:
-        try:
-            result["tiktok"] = scrape_tiktok(username=tk_link, company_name=company_name)
-        except Exception as e:
-            logger.error(f"[APIFY] Errore TikTok: {e}")
-            result["errors"].append(f"TikTok: {str(e)}")
-            result["tiktok"] = {"source": "tiktok", "found": False, "error": str(e)}
+    # 4. LinkedIn — sempre (fondamentale per analisi aziendale)
+    li_link = social_links.get("linkedin", "")
+    try:
+        result["linkedin"] = scrape_linkedin(company_url=li_link, company_name=company_name)
+    except Exception as e:
+        logger.error(f"[APIFY] Errore LinkedIn: {e}")
+        result["errors"].append(f"LinkedIn: {str(e)}")
+        result["linkedin"] = {"source": "linkedin", "found": False, "error": str(e)}
 
-    found_count = sum(1 for k in ["google_maps", "instagram", "facebook", "tiktok"] if result[k].get("found"))
+    found_count = sum(1 for k in ["google_maps", "instagram", "facebook", "linkedin"] if result[k].get("found"))
     logger.info(f"[APIFY] === Scraping completato: {found_count}/4 fonti trovate ===")
 
     return result

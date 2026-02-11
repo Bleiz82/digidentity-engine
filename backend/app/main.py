@@ -1,53 +1,105 @@
 """
-DigIdentity Engine — FastAPI Application
-Entry point dell'applicazione backend.
+DigIdentity Engine — Applicazione FastAPI principale.
+
+Avvio:
+    uvicorn backend.app.main:app --host 0.0.0.0 --port 8080 --reload
 """
+
+import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import get_settings
-from app.api import health, lead_workflow, payment
+from fastapi.responses import JSONResponse
 
-# Carica settings
-settings = get_settings()
+from backend.app.core.config import settings
+from backend.app.api.leads import router as leads_router
+from backend.app.api.lead_workflow import router as workflow_router
+from backend.app.api.payment import router as payment_router
 
-# Crea app FastAPI
+# Logging
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL),
+    format="%(asctime)s | %(name)-30s | %(levelname)-8s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifecycle hooks: startup e shutdown."""
+    logger.info("=" * 60)
+    logger.info("DigIdentity Engine — Avvio in corso...")
+    logger.info(f"  Ambiente: {settings.APP_ENV}")
+    logger.info(f"  Base URL: {settings.APP_BASE_URL}")
+    logger.info(f"  Supabase: {'configurato' if settings.SUPABASE_URL else 'NON configurato'}")
+    logger.info(f"  Stripe: {'configurato' if settings.STRIPE_SECRET_KEY else 'NON configurato'}")
+    logger.info(f"  Anthropic: {'configurato' if settings.ANTHROPIC_API_KEY else 'NON configurato'}")
+    logger.info(f"  SerpAPI: {'configurato' if settings.SERPAPI_KEY else 'NON configurato'}")
+    logger.info(f"  SMTP: {'configurato' if settings.SMTP_USER else 'NON configurato'}")
+    logger.info(f"  Redis: {settings.REDIS_URL}")
+    logger.info("=" * 60)
+    yield
+    logger.info("DigIdentity Engine — Shutdown")
+
+
 app = FastAPI(
-    title="DigIdentity Engine API",
-    description="Backend per la Diagnosi Strategica Digitale automatizzata",
+    title="DigIdentity Engine",
+    description=(
+        "Sistema automatico di lead generation e diagnosi digitale per PMI italiane. "
+        "API per gestione lead, scraping, generazione report AI, pagamenti Stripe."
+    ),
     version="1.0.0",
-    docs_url="/docs" if settings.debug else None,  # Swagger UI solo in debug
-    redoc_url="/redoc" if settings.debug else None,
+    lifespan=lifespan,
 )
 
-# CORS middleware
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://digidentityagency.it",
-        "https://www.digidentityagency.it",
-        "http://localhost:3000",  # Frontend Next.js in dev
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        settings.APP_BASE_URL,
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(health.router, tags=["Health"])
-app.include_router(lead_workflow.router, prefix="/api", tags=["Lead Workflow"])
-app.include_router(payment.router, tags=["Payment"])
+# Router
+app.include_router(leads_router)
+app.include_router(workflow_router)
+app.include_router(payment_router)
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Eseguito all'avvio dell'applicazione."""
-    print("[START] DigIdentity Engine avviato!")
-    print(f"[INFO] Environment: {'DEBUG' if settings.debug else 'PRODUCTION'}")
-    print(f"[URL] Base URL: {settings.app_base_url}")
+@app.get("/")
+async def root():
+    """Health check e informazioni di base."""
+    return {
+        "service": "DigIdentity Engine",
+        "version": "1.0.0",
+        "status": "running",
+        "environment": settings.APP_ENV,
+        "docs": "/docs",
+    }
 
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Eseguito allo shutdown dell'applicazione."""
-    print("[STOP] DigIdentity Engine arrestato.")
+@app.get("/health")
+async def health_check():
+    """Health check dettagliato per monitoring."""
+    checks = {
+        "api": "ok",
+        "supabase": "configured" if settings.SUPABASE_URL else "missing",
+        "stripe": "configured" if settings.STRIPE_SECRET_KEY else "missing",
+        "anthropic": "configured" if settings.ANTHROPIC_API_KEY else "missing",
+        "smtp": "configured" if settings.SMTP_USER else "missing",
+        "redis": settings.REDIS_URL,
+    }
+    all_ok = all(v != "missing" for k, v in checks.items() if k != "redis")
+    return JSONResponse(
+        status_code=200 if all_ok else 503,
+        content={"status": "healthy" if all_ok else "degraded", "checks": checks},
+    )

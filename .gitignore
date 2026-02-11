@@ -93,3 +93,23 @@ celerybeat.pid
 
 # Redis
 dump.rdb
+
+# Backup
+*_BACKUP_*/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Docker
+*.log
+
+# Reports generati
+reports/
+*.pdf

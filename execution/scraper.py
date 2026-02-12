@@ -56,6 +56,8 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         "social_media": {},
         "google_business": {},
         "competitors": [],
+        "citations": [],
+        "indexed_pages": {"total": 0, "pages": []},
         "pagespeed": {},
         "apify": {},
         "perplexity": {},
@@ -78,13 +80,22 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         results["errors"].append(f"PageSpeed: {str(e)}")
         results["pagespeed"] = {"error": str(e)}
 
-    # 2. Analisi SEO via SerpAPI
+    # 2. Analisi SEO avanzata via SerpAPI (6 query)
     try:
-        results["seo"] = _analyze_seo(website_url, company_name, city, sector)
-        # Salva i competitor identificati dalla query SEO
-        if "competitors" in results["seo"] and results["seo"]["competitors"]:
-            results["competitors"] = results["seo"]["competitors"]
-            logger.info(f"Identificati {len(results['competitors'])} competitor per {company_name}")
+        seo_data = _analyze_seo(website_url, company_name, city, sector)
+        results["seo"] = seo_data.get("seo", {})
+        results["google_business"] = seo_data.get("google_business", {})
+        results["competitors"] = seo_data.get("competitors", [])
+        results["citations"] = seo_data.get("citations", [])
+        results["indexed_pages"] = seo_data.get("indexed_pages", {"total": 0, "pages": []})
+        
+        # Aggiorna città e settore se estratti da SerpAPI
+        if not results["city"] and seo_data.get("extracted_city"):
+            results["city"] = seo_data["extracted_city"]
+        if not results["sector"] and seo_data.get("extracted_sector"):
+            results["sector"] = seo_data["extracted_sector"]
+            
+        logger.info(f"Analisi SerpAPI completata per {company_name}: {len(results['competitors'])} competitor, {len(results['citations'])} citazioni")
     except Exception as e:
         logger.warning(f"Errore analisi SEO per {company_name}: {e}")
         results["errors"].append(f"SEO: {str(e)}")
@@ -96,12 +107,13 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         logger.warning(f"Errore ricerca social per {company_name}: {e}")
         results["errors"].append(f"Social: {str(e)}")
 
-    # 4. Google Business Profile
-    try:
-        results["google_business"] = _check_google_business(company_name)
-    except Exception as e:
-        logger.warning(f"Errore Google Business per {company_name}: {e}")
-        results["errors"].append(f"Google Business: {str(e)}")
+    # 4. Google Business Profile (Backup/Refine se Apify fallisce)
+    # Nota: I dati principali sono già stati presi da _analyze_seo (Query 1)
+    if not results["google_business"] or not results["google_business"].get("found"):
+        try:
+            results["google_business"] = _check_google_business(company_name)
+        except Exception as e:
+            logger.warning(f"Errore Google Business backup per {company_name}: {e}")
 
 
     # 5. Scraping avanzato via Apify (Facebook, Instagram, LinkedIn)
@@ -336,103 +348,281 @@ def _scrape_website(url: str) -> dict:
 
 
 def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: str = "") -> dict:
-    """Analisi SEO via SerpAPI: posizionamento su Google."""
-    data = {
-        "search_queries": [],
-        "organic_results": [],
-        "total_results_for_brand": 0,
-        "knowledge_graph": None,
-        "local_results": [],
+    """
+    Analisi SEO avanzata via SerpAPI utilizzando 6 query dinamiche.
+    Estrae dati GMB, competitor, citazioni e indicizzazione.
+    """
+    results = {
+        "google_business": {"found": False, "source": "not_found"},
         "competitors": [],
+        "citations": [],
+        "indexed_pages": {"total": 0, "pages": []},
+        "seo": {
+            "search_queries": [],
+            "organic_position": {
+                "brand_query": None,
+                "sector_local_query": None,
+                "sector_regional_query": None
+            }
+        },
+        "extracted_city": None,
+        "extracted_sector": None
     }
 
-    if not settings.SERPAPI_KEY:
-        data["error"] = "SerpAPI key non configurata"
-        return data
+    api_key = settings.SERPAPI_KEY
+    if not api_key:
+        logger.error("SERPAPI_KEY non trovata nelle impostazioni")
+        return results
 
-    # Query di ricerca
     domain = urlparse(website_url).netloc.replace("www.", "")
-    queries = [
-        company_name,
-        f"{company_name} recensioni",
-        f"site:{domain}",
-    ]
-
-    competitive_query = None
-    if city and sector:
-        # Pulisci il settore (prendi solo la prima parte prima del trattino)
-        sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()
-        competitive_query = f"{sector_clean} {city}"
-        queries.append(competitive_query)
-
-    for query in queries:
-        try:
-            resp = requests.get(
-                "https://serpapi.com/search.json",
-                params={
-                    "q": query,
-                    "hl": "it",
-                    "gl": "it",
-                    "api_key": settings.SERPAPI_KEY,
-                    "num": 10,
-                },
-                timeout=REQUEST_TIMEOUT,
-            )
-            result = resp.json()
-
-            query_data = {
-                "query": query,
-                "total_results": result.get("search_information", {}).get("total_results", 0),
-                "organic_results": [],
+    
+    # 1. QUERY 1: Brand (Knowledge Graph + Local Pack + Organic)
+    try:
+        q1 = company_name
+        loc = f"{city}, Italy" if city else "Italy"
+        params = {
+            "q": q1,
+            "hl": "it", "gl": "it", "location": loc,
+            "api_key": api_key, "num": 10
+        }
+        resp = requests.get("https://serpapi.com/search.json", params=params, timeout=30)
+        data = resp.json()
+        
+        # Estrai Knowledge Graph
+        kg = data.get("knowledge_graph", {})
+        if kg:
+            results["google_business"] = {
+                "found": True,
+                "source": "knowledge_graph",
+                "title": kg.get("title"),
+                "rating": kg.get("rating"),
+                "reviews_count": kg.get("reviews"),
+                "address": kg.get("address"),
+                "phone": kg.get("phone"),
+                "hours": kg.get("hours"),
+                "website": kg.get("website"),
+                "place_id": kg.get("place_id"),
+                "category": kg.get("type"),
+                "thumbnail": kg.get("thumbnail")
             }
+            # Se city era vuota, prova a estrarla dall'indirizzo
+            if not city and results["google_business"]["address"]:
+                addr = results["google_business"]["address"]
+                # Cerca pattern città dopo il CAP
+                m = re.search(r'\d{5}\s+([A-Za-z\s]+)(?:\s+\()?', addr)
+                if m:
+                    results["extracted_city"] = m.group(1).strip()
+                    city = results["extracted_city"]
+            
+            # Se sector era vuoto, usa la categoria
+            if not sector and results["google_business"]["category"]:
+                results["extracted_sector"] = results["google_business"]["category"]
+                sector = results["extracted_sector"]
 
-            for item in result.get("organic_results", [])[:5]:
-                item_link = item.get("link", "")
-                item_domain = urlparse(item_link).netloc.replace("www.", "")
-                query_data["organic_results"].append({
-                    "position": item.get("position"),
-                    "title": item.get("title"),
-                    "link": item_link,
-                    "snippet": item.get("snippet"),
-                    "domain": item_domain,
-                })
+        # Se non c'è KG, prova il Local Pack
+        if not results["google_business"]["found"] and "local_results" in data:
+            for place in data.get("local_results", {}).get("places", []):
+                # Match approssimativo sul nome o website
+                if company_name.lower() in place.get("title", "").lower() or domain in place.get("links", {}).get("website", ""):
+                    results["google_business"] = {
+                        "found": True,
+                        "source": "local_pack",
+                        "title": place.get("title"),
+                        "rating": place.get("rating"),
+                        "reviews_count": place.get("reviews"),
+                        "address": place.get("address"),
+                        "phone": place.get("phone"),
+                        "place_id": place.get("place_id"),
+                        "website": place.get("links", {}).get("website")
+                    }
+                    break
 
-            # Se è la query competitiva, estrai i competitor
-            if query == competitive_query:
-                for item in query_data["organic_results"]:
-                    if item["domain"] != domain:
-                        data["competitors"].append({
-                            "name": item["title"],
-                            "link": item["link"],
-                            "domain": item["domain"],
-                            "snippet": item["snippet"],
-                            "position": item["position"]
-                        })
+        # Organic Position Brand
+        brand_pos = None
+        for i, res in enumerate(data.get("organic_results", []), 1):
+            if domain in res.get("link", ""):
+                brand_pos = i
+                break
+        
+        results["seo"]["organic_position"]["brand_query"] = {
+            "query": q1,
+            "position": brand_pos,
+            "total_results": data.get("search_information", {}).get("total_results", 0)
+        }
+        results["seo"]["search_queries"].append({"query": q1, "results": len(data.get("organic_results", []))})
+        
+        logger.info(f"[SERPAPI] Brand Query: {q1} — Found: {results['google_business']['found']} ({results['google_business']['source']}), Pos: {brand_pos}")
 
-            # Knowledge Graph
-            if "knowledge_graph" in result and not data["knowledge_graph"]:
-                data["knowledge_graph"] = {
-                    "title": result["knowledge_graph"].get("title"),
-                    "type": result["knowledge_graph"].get("type"),
-                    "description": result["knowledge_graph"].get("description"),
-                }
+    except Exception as e:
+        logger.error(f"Errore Query 1 SerpAPI: {e}")
 
-            # Local results
-            for local in result.get("local_results", {}).get("places", [])[:3]:
-                data["local_results"].append({
-                    "title": local.get("title"),
-                    "rating": local.get("rating"),
-                    "reviews": local.get("reviews"),
-                    "address": local.get("address"),
-                })
+    # 2. QUERY 2: Brand + Recensioni (Citazioni/Reputazione)
+    try:
+        q2 = f"{company_name} recensioni"
+        params = {"q": q2, "hl": "it", "gl": "it", "api_key": api_key}
+        data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
+        
+        for res in data.get("organic_results", []):
+            link = res.get("link", "")
+            title = res.get("title", "")
+            snippet = res.get("snippet", "")
+            # Se il brand o il dominio sono nel risultato, lo salviamo come citazione
+            if company_name.lower() in title.lower() or domain in link:
+                _add_citation(results["citations"], res)
+                
+        logger.info(f"[SERPAPI] Reputazione Query: {q2} — Citazioni trovate: {len(results['citations'])}")
+    except Exception as e:
+        logger.error(f"Errore Query 2 SerpAPI: {e}")
 
-            data["search_queries"].append(query_data)
-            time.sleep(1)  # Rate limiting
+    # 3. QUERY 3: Settore + Città (Competitor Locali)
+    if city and sector:
+        try:
+            sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()
+            q3 = f"{sector_clean} {city}"
+            params = {"q": q3, "hl": "it", "gl": "it", "location": f"{city}, Italy", "api_key": api_key}
+            data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
+            
+            # Local Competitors
+            for place in data.get("local_results", {}).get("places", []):
+                # Escludi l'azienda stessa
+                if company_name.lower() not in place.get("title", "").lower() and domain not in place.get("links", {}).get("website", ""):
+                    _add_competitor(results["competitors"], place, "local_pack")
 
+            # Organic Competitors (escludi portali)
+            for res in data.get("organic_results", []):
+                if not _is_portal(res.get("link", "")) and domain not in res.get("link", ""):
+                    _add_competitor(results["competitors"], res, "organic")
+
+            # Organic Position Sector Local
+            local_sec_pos = None
+            for i, res in enumerate(data.get("organic_results", []), 1):
+                if domain in res.get("link", ""):
+                    local_sec_pos = i
+                    break
+            results["seo"]["organic_position"]["sector_local_query"] = {
+                "query": q3, "position": local_sec_pos,
+                "total_results": data.get("search_information", {}).get("total_results", 0)
+            }
+            logger.info(f"[SERPAPI] Local Sector Query: {q3} — Competitors: {len(results['competitors'])}, Pos: {local_sec_pos}")
         except Exception as e:
-            logger.warning(f"Errore SerpAPI per query '{query}': {e}")
+            logger.error(f"Errore Query 3 SerpAPI: {e}")
 
-    return data
+    # 4. QUERY 4: Settore + Capoluogo (Competitor Regionali)
+    if sector:
+        capoluogo = "Cagliari" # Default per la Sardegna se non noto
+        # TODO: Implementare mappatura città-capoluogo più precisa se necessario
+        if city and city.lower() != capoluogo.lower():
+            try:
+                sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()
+                q4 = f"{sector_clean} {capoluogo}"
+                params = {"q": q4, "hl": "it", "gl": "it", "location": f"{capoluogo}, Italy", "api_key": api_key}
+                data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
+                
+                # Aggiungi competitor senza duplicati
+                for place in data.get("local_results", {}).get("places", []):
+                    if company_name.lower() not in place.get("title", "").lower() and domain not in place.get("links", {}).get("website", ""):
+                        _add_competitor(results["competitors"], place, "local_pack")
+                
+                for res in data.get("organic_results", []):
+                    if not _is_portal(res.get("link", "")) and domain not in res.get("link", ""):
+                        _add_competitor(results["competitors"], res, "organic")
+                
+                logger.info(f"[SERPAPI] Regional Sector Query: {q4} — Competitors totali: {len(results['competitors'])}")
+            except Exception as e:
+                logger.error(f"Errore Query 4 SerpAPI: {e}")
+
+    # 5. QUERY 5: Pagine Indicizzate (site:)
+    try:
+        q5 = f"site:{domain}"
+        params = {"q": q5, "hl": "it", "gl": "it", "api_key": api_key}
+        data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
+        
+        results["indexed_pages"] = {
+            "total": data.get("search_information", {}).get("total_results", 0),
+            "pages": [{"title": r.get("title"), "link": r.get("link")} for r in data.get("organic_results", [])[:10]]
+        }
+        logger.info(f"[SERPAPI] Indexed Pages: {results['indexed_pages']['total']}")
+    except Exception as e:
+        logger.error(f"Errore Query 5 SerpAPI: {e}")
+
+    # 6. QUERY 6: Citazioni / Presenza Online
+    try:
+        q6 = f'"{company_name}" OR "{domain}" -site:{domain}'
+        params = {"q": q6, "hl": "it", "gl": "it", "api_key": api_key}
+        data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
+        
+        for res in data.get("organic_results", []):
+            _add_citation(results["citations"], res)
+            
+        logger.info(f"[SERPAPI] Citations Query: {q6} — Totali: {len(results['citations'])}")
+    except Exception as e:
+        logger.error(f"Errore Query 6 SerpAPI: {e}")
+
+    return results
+
+
+def _is_portal(url: str) -> bool:
+    """Verifica se l'URL appartiene a un portale o directory."""
+    portals = [
+        "paginebianche.it", "paginegialle.it", "edilnet.it", "virgilio.it",
+        "yelp.com", "tripadvisor.com", "infobel.com", "cylex-italia.it",
+        "prontopro.it", "instapro.it", "houzz.it", "misterimprese.it",
+        "paginegialle.it", "cybo.com", "guidaedilizia.it", "edilmap.it"
+    ]
+    domain = urlparse(url).netloc.lower()
+    return any(p in domain for p in portals)
+
+
+def _add_competitor(comp_list: list, item: dict, source: str):
+    """Aggiunge un competitor alla lista se non già presente (max 5)."""
+    if len(comp_list) >= 5:
+        return
+
+    name = item.get("title") or item.get("name")
+    if not name: return
+    
+    # Evita duplicati pesanti
+    if any(c["name"].lower() == name.lower() for c in comp_list):
+        return
+        
+    comp_list.append({
+        "name": name,
+        "website": item.get("links", {}).get("website") or item.get("link"),
+        "rating": item.get("rating"),
+        "reviews_count": item.get("reviews"),
+        "address": item.get("address"),
+        "phone": item.get("phone"),
+        "source": source,
+        "position": item.get("position"),
+        "place_id": item.get("place_id")
+    })
+
+
+def _add_citation(cit_list: list, item: dict):
+    """Aggiunge una citazione classificandola per tipo."""
+    link = item.get("link", "")
+    domain = urlparse(link).netloc.lower().replace("www.", "")
+    
+    # Classificazione tipo
+    cit_type = "other"
+    if any(s in domain for s in ["facebook.com", "instagram.com", "linkedin.com", "tiktok.com", "youtube.com"]):
+        cit_type = "social"
+    elif "digidentitycard.com" in domain:
+        cit_type = "digidentity_card"
+    elif any(d in domain for d in ["paginegialle.it", "paginebianche.it", "edilnet.it", "virgilio.it", "yelp.com", "tripadvisor.com", "infobel.com"]):
+        cit_type = "directory"
+        
+    # Evita duplicati esatti di link
+    if any(c["link"] == link for c in cit_list):
+        return
+        
+    cit_list.append({
+        "title": item.get("title"),
+        "link": link,
+        "source_domain": domain,
+        "type": cit_type,
+        "snippet": item.get("snippet")
+    })
 
 
 def _find_social_media(website_url: str, company_name: str, social_links_db: dict = None) -> dict:

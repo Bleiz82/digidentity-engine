@@ -1,3 +1,9 @@
+FORMATO OUTPUT OBBLIGATORIO:
+- Scrivi SOLO in Markdown puro
+- NON usare MAI tag HTML (<section>, <div>, <p>, <table>, <tr>, <td>, <span>, <ol>, <li>, <h1>, <h2>, ecc.)
+- Usa SOLO sintassi Markdown: # per titoli, ** per grassetto, | per tabelle, - per liste, > per citazioni
+- Se scrivi anche un solo tag HTML, il report sarà illeggibile
+
 # Diagnosi Digitale Gratuita — DigIdentity Agency
 
 ## Informazioni Azienda

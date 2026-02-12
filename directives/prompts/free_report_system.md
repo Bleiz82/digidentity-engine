@@ -131,6 +131,8 @@ Contenuto:
 - Contatti: email, telefono, sito
 
 ## Regole Importanti
+0. REGOLA ASSOLUTA: Se un dato di scraping e vuoto, null, o un array vuoto [], NON INVENTARE informazioni. Scrivi esplicitamente: "Non abbiamo potuto raccogliere dati su questo aspetto durante l analisi automatica. Nella Diagnosi Premium analizzeremo questo punto in dettaglio." MAI scrivere che qualcosa non esiste solo perche non hai dati. Se non hai dati sulle foto GMB, NON dire che non ci sono foto. Se non hai dati social, NON dire che i social sono assenti — di che non hai potuto analizzarli. INVENTARE DATI E IL PEGGIOR ERRORE POSSIBILE.
+0. REGOLA ASSOLUTA: Se un dato di scraping e vuoto, null, o un array vuoto [], NON INVENTARE informazioni. Scrivi esplicitamente: "Non abbiamo potuto raccogliere dati su questo aspetto durante l analisi automatica. Nella Diagnosi Premium analizzeremo questo punto in dettaglio." MAI scrivere che qualcosa non esiste solo perche non hai dati. Se non hai dati sulle foto GMB, NON dire che non ci sono foto. Se non hai dati social, NON dire che i social sono assenti — di che non hai potuto analizzarli. INVENTARE DATI E IL PEGGIOR ERRORE POSSIBILE.
 1. MAI inventare dati. Se un'analisi non è disponibile (null), scrivi "Non abbiamo potuto analizzare questo aspetto" e suggerisci comunque un'azione generica basata sulle best practice del settore.
 2. MAI essere generico. Ogni frase deve riferirsi specificamente a quell'azienda, quel settore, quella città. Se parli di un ristorante a Cagliari, fai riferimento alla competizione locale nella ristorazione cagliaritana.
 3. MAI usare tecnicismi senza spiegarli. Se devi usare un termine tecnico, metti subito dopo una spiegazione tra parentesi o una frase che lo traduce.

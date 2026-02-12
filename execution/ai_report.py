@@ -26,7 +26,7 @@ def load_prompt(prompt_name: str) -> str:
     return prompt_path.read_text(encoding="utf-8")
 
 
-def _call_openai(system_prompt: str, user_message: str, max_tokens: int = 8000) -> dict:
+def _call_openai(system_prompt: str, user_message: str, max_tokens: int = 16000) -> dict:
     """Chiama OpenAI GPT-4o."""
     import openai
     client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -49,7 +49,7 @@ def _call_openai(system_prompt: str, user_message: str, max_tokens: int = 8000) 
     }
 
 
-def _call_claude(system_prompt: str, user_message: str, max_tokens: int = 8000) -> dict:
+def _call_claude(system_prompt: str, user_message: str, max_tokens: int = 16000) -> dict:
     """Chiama Claude Sonnet."""
     import anthropic
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
@@ -70,7 +70,7 @@ def _call_claude(system_prompt: str, user_message: str, max_tokens: int = 8000) 
     }
 
 
-def _call_ai(system_prompt: str, user_message: str, max_tokens: int = 8000, prefer: str = "openai") -> dict:
+def _call_ai(system_prompt: str, user_message: str, max_tokens: int = 16000, prefer: str = "openai") -> dict:
     """
     Chiama AI con fallback automatico.
     prefer="openai" → prova OpenAI prima, poi Claude
@@ -123,7 +123,7 @@ def generate_free_report(scraping_data: dict[str, Any]) -> str:
         "{{WEBSITE_URL}}", scraping_data.get("website_url", "N/D")
     )
 
-    result = _call_ai(system_prompt, user_message, max_tokens=8000, prefer="openai")
+    result = _call_ai(system_prompt, user_message, max_tokens=16000, prefer="openai")
     
     logger.info(
         f"[FREE] Report generato per {company_name}: "
@@ -157,7 +157,7 @@ def generate_premium_report(scraping_data: dict[str, Any], free_report: str = ""
 
     # Parte 1: Executive Summary → Analisi SEO/SEM
     part1_prompt = user_message + "\n\n**ISTRUZIONE: Genera le PARTI 1-5 del report (dall'Executive Summary fino all'Analisi SEO/SEM inclusa).**"
-    result1 = _call_ai(system_prompt, part1_prompt, max_tokens=8000, prefer="claude")
+    result1 = _call_ai(system_prompt, part1_prompt, max_tokens=16000, prefer="claude")
     logger.info(f"[PREMIUM] Parte 1 completata: {result1['output_tokens']} tokens")
 
     # Parte 2: Social Media → Strategia AI
@@ -166,7 +166,7 @@ def generate_premium_report(scraping_data: dict[str, Any], free_report: str = ""
         f"Ora genera le PARTI 6-8 (Social Media, Content Strategy, Strategia AI/Automazioni) "
         f"basandoti sugli stessi dati:\n\n{user_message}"
     )
-    result2 = _call_ai(system_prompt, part2_prompt, max_tokens=8000, prefer="claude")
+    result2 = _call_ai(system_prompt, part2_prompt, max_tokens=16000, prefer="claude")
     logger.info(f"[PREMIUM] Parte 2 completata: {result2['output_tokens']} tokens")
 
     # Parte 3: Piano 90gg → Conclusioni
@@ -175,7 +175,7 @@ def generate_premium_report(scraping_data: dict[str, Any], free_report: str = ""
         f"Ora genera le PARTI 9-11 (Piano Operativo 90 giorni, Budget/ROI, Conclusioni con CTA consulenza 199€) "
         f"basandoti sugli stessi dati:\n\n{user_message}"
     )
-    result3 = _call_ai(system_prompt, part3_prompt, max_tokens=8000, prefer="claude")
+    result3 = _call_ai(system_prompt, part3_prompt, max_tokens=16000, prefer="claude")
     logger.info(f"[PREMIUM] Parte 3 completata: {result3['output_tokens']} tokens")
 
     full_report = f"{result1['text']}\n\n{result2['text']}\n\n{result3['text']}"

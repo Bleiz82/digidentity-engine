@@ -23,7 +23,7 @@ APIFY_API_KEY = os.getenv("APIFY_API_KEY", "")
 APIFY_BASE_URL = "https://api.apify.com/v2"
 
 # Timeout per attesa risultati Actor (secondi)
-ACTOR_TIMEOUT = 180
+ACTOR_TIMEOUT = 120
 POLL_INTERVAL = 5
 
 
@@ -32,7 +32,7 @@ def _run_actor(actor_id: str, run_input: dict, timeout: int = ACTOR_TIMEOUT) -> 
     Lancia un Actor Apify e attende i risultati.
     
     Args:
-        actor_id: ID dell'actor (es. "nwua9Gu5YrADL7ZDj", timeout=300)
+        actor_id: ID dell'actor (es. "nwua9Gu5YrADL7ZDj")
         run_input: Input JSON per l'actor
         timeout: Timeout massimo in secondi
     
@@ -139,7 +139,7 @@ def scrape_google_maps(company_name: str, city: str, sector: str = "") -> dict[s
         "scrapeReviewerName": False,
     }
 
-    results = _run_actor("nwua9Gu5YrADL7ZDj", run_input, timeout=300)
+    results = _run_actor("nwua9Gu5YrADL7ZDj", run_input)
 
     if not results:
         return {"source": "google_maps", "found": False, "error": "Nessun risultato"}
@@ -207,7 +207,7 @@ def scrape_instagram(username: str = "", company_name: str = "", website: str = 
             "searchType": "user",
         }
 
-    results = _run_actor("shu8hvrXbJbY3Eb9W", run_input)
+    results = _run_actor("dSCLg0C3YEZ83HzYX", run_input)
 
     if not results:
         return {"source": "instagram", "found": False, "error": "Profilo non trovato"}
@@ -282,7 +282,7 @@ def scrape_facebook(page_url: str = "", company_name: str = "") -> dict[str, Any
             "resultsLimit": 15,
         }
 
-    results = _run_actor("4Hv5RhChiaDk6iwad", run_input)
+    results = _run_actor("KoJrdxJCTtpon81KY", run_input)
 
     if not results:
         return {"source": "facebook", "found": False, "error": "Pagina non trovata"}
@@ -352,7 +352,7 @@ def scrape_linkedin(company_url: str = "", company_name: str = "") -> dict[str, 
             "maxItems": 3,
         }
 
-    results = _run_actor("Vb6LZkh4EqRlR0Ka9", run_input)
+    results = _run_actor("heCRoeHip2BHXGCLU", run_input)
 
     if not results:
         return {"source": "linkedin", "found": False, "error": "Profilo aziendale non trovato"}
@@ -437,7 +437,7 @@ def run_apify_scraping(
 
     # 1. Google Maps — SEMPRE
     try:
-        result["google_maps"] = {"source": "google_maps", "found": False, "note": "Coperto da SerpAPI"}
+        result["google_maps"] = scrape_google_maps(company_name, city, sector)
     except Exception as e:
         logger.error(f"[APIFY] Errore Google Maps: {e}")
         result["errors"].append(f"Google Maps: {str(e)}")
@@ -455,19 +455,19 @@ def run_apify_scraping(
     else:
         # Prova a cercare per nome azienda
         try:
-            clean_name = company_name.split(" S.")[0].split(" s.")[0].split(" SRL")[0].split(" srl")[0].strip()
-            result["instagram"] = scrape_instagram(company_name=clean_name)
+            result["instagram"] = scrape_instagram(company_name=company_name)
         except Exception as e:
             result["instagram"] = {"source": "instagram", "found": False, "error": str(e)}
 
-    # 3. Facebook — se ha il link o cerca per nome
+    # 3. Facebook — se ha il link
     fb_link = social_links.get("facebook", "")
-    try:
-        result["facebook"] = scrape_facebook(page_url=fb_link, company_name=company_name)
-    except Exception as e:
-        logger.error(f"[APIFY] Errore Facebook: {e}")
-        result["errors"].append(f"Facebook: {str(e)}")
-        result["facebook"] = {"source": "facebook", "found": False, "error": str(e)}
+    if fb_link:
+        try:
+            result["facebook"] = scrape_facebook(page_url=fb_link, company_name=company_name)
+        except Exception as e:
+            logger.error(f"[APIFY] Errore Facebook: {e}")
+            result["errors"].append(f"Facebook: {str(e)}")
+            result["facebook"] = {"source": "facebook", "found": False, "error": str(e)}
 
     # 4. LinkedIn — sempre (fondamentale per analisi aziendale)
     li_link = social_links.get("linkedin", "")

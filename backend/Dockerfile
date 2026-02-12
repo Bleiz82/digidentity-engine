@@ -9,7 +9,7 @@ WORKDIR /app
 
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir apify-client requests beautifulsoup4
+    pip install --no-cache-dir apify-client requests beautifulsoup4 markdown
 
 COPY backend/ /app/backend/
 COPY execution/ /app/execution/

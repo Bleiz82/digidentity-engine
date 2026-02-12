@@ -38,7 +38,7 @@ def _call_openai(system_prompt: str, user_message: str, max_tokens: int = 16000)
             {"role": "user", "content": user_message},
         ],
         max_tokens=max_tokens,
-        temperature=0.3,
+        temperature=0.7,
     )
     
     return {
@@ -59,7 +59,7 @@ def _call_claude(system_prompt: str, user_message: str, max_tokens: int = 16000)
         max_tokens=max_tokens,
         system=system_prompt,
         messages=[{"role": "user", "content": user_message}],
-        temperature=0.3,
+        temperature=0.7,
     )
     
     return {
@@ -113,15 +113,14 @@ def generate_free_report(scraping_data: dict[str, Any]) -> str:
     logger.info(f"[FREE] Generazione report per {company_name}")
 
     system_prompt = load_prompt("free_report_system")
-    user_prompt = load_prompt("free_report_user")
+    user_prompt_template = load_prompt("free_report_user")
 
-    user_message = user_prompt.replace(
-        "{{SCRAPING_DATA}}", json.dumps(scraping_data, indent=2, ensure_ascii=False)
-    ).replace(
-        "{{COMPANY_NAME}}", company_name
-    ).replace(
-        "{{WEBSITE_URL}}", scraping_data.get("website_url", "N/D")
-    )
+    # Costruiamo il messaggio utente appendendo il JSON (Fix critico)
+    user_message = user_prompt_template + "\n\n---\n\n"
+    user_message += "Ecco i dati di scraping dell'azienda in formato JSON:\n\n"
+    user_message += "```json\n"
+    user_message += json.dumps(scraping_data, indent=2, default=str, ensure_ascii=False)
+    user_message += "\n```"
 
     result = _call_ai(system_prompt, user_message, max_tokens=16000, prefer="openai")
     

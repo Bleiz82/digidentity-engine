@@ -80,7 +80,11 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
 
     # 2. Analisi SEO via SerpAPI
     try:
-        results["seo"] = _analyze_seo(website_url, company_name)
+        results["seo"] = _analyze_seo(website_url, company_name, city, sector)
+        # Salva i competitor identificati dalla query SEO
+        if "competitors" in results["seo"] and results["seo"]["competitors"]:
+            results["competitors"] = results["seo"]["competitors"]
+            logger.info(f"Identificati {len(results['competitors'])} competitor per {company_name}")
     except Exception as e:
         logger.warning(f"Errore analisi SEO per {company_name}: {e}")
         results["errors"].append(f"SEO: {str(e)}")
@@ -331,7 +335,7 @@ def _scrape_website(url: str) -> dict:
     return data
 
 
-def _analyze_seo(website_url: str, company_name: str) -> dict:
+def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: str = "") -> dict:
     """Analisi SEO via SerpAPI: posizionamento su Google."""
     data = {
         "search_queries": [],
@@ -339,6 +343,7 @@ def _analyze_seo(website_url: str, company_name: str) -> dict:
         "total_results_for_brand": 0,
         "knowledge_graph": None,
         "local_results": [],
+        "competitors": [],
     }
 
     if not settings.SERPAPI_KEY:
@@ -352,6 +357,13 @@ def _analyze_seo(website_url: str, company_name: str) -> dict:
         f"{company_name} recensioni",
         f"site:{domain}",
     ]
+
+    competitive_query = None
+    if city and sector:
+        # Pulisci il settore (prendi solo la prima parte prima del trattino)
+        sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()
+        competitive_query = f"{sector_clean} {city}"
+        queries.append(competitive_query)
 
     for query in queries:
         try:
@@ -375,13 +387,27 @@ def _analyze_seo(website_url: str, company_name: str) -> dict:
             }
 
             for item in result.get("organic_results", [])[:5]:
+                item_link = item.get("link", "")
+                item_domain = urlparse(item_link).netloc.replace("www.", "")
                 query_data["organic_results"].append({
                     "position": item.get("position"),
                     "title": item.get("title"),
-                    "link": item.get("link"),
+                    "link": item_link,
                     "snippet": item.get("snippet"),
-                    "domain": urlparse(item.get("link", "")).netloc,
+                    "domain": item_domain,
                 })
+
+            # Se è la query competitiva, estrai i competitor
+            if query == competitive_query:
+                for item in query_data["organic_results"]:
+                    if item["domain"] != domain:
+                        data["competitors"].append({
+                            "name": item["title"],
+                            "link": item["link"],
+                            "domain": item["domain"],
+                            "snippet": item["snippet"],
+                            "position": item["position"]
+                        })
 
             # Knowledge Graph
             if "knowledge_graph" in result and not data["knowledge_graph"]:

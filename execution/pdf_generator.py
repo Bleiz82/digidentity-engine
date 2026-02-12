@@ -77,8 +77,14 @@ def _calculate_gb_score(scraping_data: dict) -> int:
     if not gb.get("found"):
         return 0
     rating = gb.get("rating")
-    if rating:
+    if rating and rating != "null":
         return min(int(float(rating) * 20), 100)
+    
+    # Se found=true ma nessun dato utile (rating, phone, hours tutti null)
+    has_data = any([gb.get("rating"), gb.get("phone"), gb.get("hours"), gb.get("address")])
+    if not has_data:
+        return 10  # esiste tecnicamente ma è vuota
+        
     return 30  # esiste ma senza rating
 
 
@@ -86,10 +92,11 @@ def _extract_scores(scraping_data: dict) -> dict:
     """Estrae i 4 punteggi principali dai dati di scraping."""
     ps = scraping_data.get("pagespeed", {})
     desktop = ps.get("desktop", {})
+    scores = desktop.get("scores", desktop)  # fallback a desktop se "scores" non esiste
     
     return {
-        "sito": desktop.get("performance", 0) or 0,
-        "seo": desktop.get("seo", 0) or 0,
+        "sito": scores.get("performance", 0) or 0,
+        "seo": scores.get("seo", 0) or 0,
         "social": _calculate_social_score(scraping_data),
         "google_business": _calculate_gb_score(scraping_data),
     }

@@ -136,6 +136,26 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
             social_links=social_links,
         )
         logger.info(f"Apify scraping completato per {company_name}")
+
+        # Fix 4: Passa dati Google Maps a google_business per GPT-4o
+        apify_gm = results["apify"].get("google_maps", {})
+        if apify_gm.get("found"):
+            # Sovrascrivi/Estrai dati reali da Apify (più ricchi di SerpAPI)
+            results["google_business"] = {
+                "source": "apify_google_maps",
+                "name": apify_gm.get("name"),
+                "rating": apify_gm.get("rating"),
+                "reviews_count": apify_gm.get("total_reviews"),
+                "address": apify_gm.get("address"),
+                "phone": apify_gm.get("phone"),
+                "website": apify_gm.get("website"),
+                "hours": apify_gm.get("opening_hours"),
+                "category": apify_gm.get("category"),
+                "photos": apify_gm.get("photos", []),
+                "reviews": apify_gm.get("reviews", []), # Testi recensioni REALI
+            }
+            logger.info(f"Dati Google Business arricchiti con Apify per {company_name}")
+
     except Exception as e:
         logger.warning(f"Errore Apify per {company_name}: {e}")
         results["errors"].append(f"Apify: {str(e)}")

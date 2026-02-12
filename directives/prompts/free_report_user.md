@@ -45,12 +45,12 @@ Analizza rating, numero recensioni e foto. La scheda GMB è l'insegna luminosa s
 
 # ⚔️ I TUOI CONCORRENTI
 
-REGOLA COMPETITOR:
-- Includi nella tabella SOLO aziende reali che fanno lo stesso mestiere (imprese edili, idraulici, ecc.).
-- ESCLUDI portali generici: PagineBianche, Edilnet, Virgilio, Paginegialle, Yelp, TripAdvisor, Infobel, Cylex.
-- Se un risultato è un portale o una directory, saltalo.
-- La colonna "Sito Web" deve contenere l'URL reale completo (es. https://www.progettoposa.it), MAI la parola "Link". se non c'è, scrivi "Sito non trovato".
-- Per ogni competitor mostra: nome, sito web, posizione Google, numero recensioni con rating (es. "12 recensioni, 4.8★"), punto di forza. Se mancano recensioni, scrivi "Nessuna recensione trovata".
+REGOLA COMPETITOR ASSOLUTA:
+- Nella tabella, la colonna "Sito Web" deve contenere SEMPRE l'URL completo (es. https://www.edilmiro.it). Se l'URL è nel JSON campo "link", usalo. MAI scrivere la parola "Link". Se non c'è, scrivi "Sito non trovato".
+- La colonna "Recensioni" deve riportare il numero esatto e il rating se disponibili (es. "12 recensioni, 4.8★"). Se il JSON non contiene questo dato, scrivi "Nessuna recensione pubblica".
+- ESCLUDI portali e directory: PagineBianche, Edilnet, Virgilio, Paginegialle, Yelp, TripAdvisor, Infobel, Cylex, Edilmap, MisterImprese. Includi SOLO aziende reali che fanno lo stesso mestiere.
+- Se l'azienda analizzata appare PRIMA dei competitor nei risultati organici, scrivilo chiaramente come punto di forza.
+- Dopo la tabella, dedica un paragrafo a CIASCUN competitor singolarmente (non un paragrafo generico per tutti).
 
 | Nome Competitor | Sito Web | Posizione | Recensioni | Punto di forza |
 |-----------------|----------|-----------|------------|----------------|
@@ -70,12 +70,22 @@ Per ogni punto: Cosa fa -> Tempo risparmiato -> Costo (basso/zero) -> Risultato 
 
 # ✅ 5 AZIONI CHE PUOI FARE QUESTA SETTIMANA
 
-Dagli una "lista della spesa" pratica. Per ogni azione:
-1. **Cosa fare**: Istruzioni passo-passo semplici.
-2. **Tempo necessario**: es. "Solo 20 minuti mercoledì mattina".
-3. **Costo**: Sottolinea se è gratis o economico.
-4. **Risultato**: cosa cambia (es. "+5 chiamate al mese").
-5. **Strumento**: consiglia siti o app semplici (Canva, Business Suite, ecc.).
+Dagli una "lista della spesa" pratica. Scrivi ogni azione usando un titolo H3 e un paragrafo unico e dettagliato. NON usare liste numerate o elenchi puntati all'interno delle azioni.
+
+### 1. Titolo dell'azione
+Descrizione completa in un unico paragrafo che include cosa fare passo-passo (es. "Scarica l'app di Google Business, vai nella sezione foto..."), quanto tempo serve (es. "Solo 30 minuti"), quanto costa (es. "0€ - gratis"), che risultato aspettarti (es. "+10% visibilità") e quale strumento usare (es. "Canva").
+
+### 2. Titolo dell'azione
+Descrizione completa in un unico paragrafo dettagliato...
+
+### 3. Titolo dell'azione
+Descrizione completa in un unico paragrafo dettagliato...
+
+### 4. Titolo dell'azione
+Descrizione completa in un unico paragrafo dettagliato...
+
+### 5. Titolo dell'azione
+Descrizione completa in un unico paragrafo dettagliato...
 
 # 🚀 IL TUO PROSSIMO PASSO
 
@@ -90,9 +100,17 @@ DigIdentity Agency è la prima agenzia in Sardegna specializzata nel portare l'A
 
 Contatti: info@digidentityagency.it | www.digidentityagency.it | WhatsApp: +39 392 1990215
 
-REGOLE ASSOLUTE DI SCRITTURA:
-1. USA SOLO i dati nel JSON. Non inventare nulla.
-2. Se un dato non c'è, dì: "In questa prima analisi automatica questo dato non è emerso, ma lo approfondiremo nel report premium."
-3. Lunghezza minima: 15.000 caratteri. Espandi le analogie e i consigli pratici.
-4. NIENTE parole complicate: usa parole semplici e dirette.
-5. Non riassumere mai. Sii proliSso nel dare valore.
+ISTRUZIONE FINALE SULLA LUNGHEZZA — LEGGILA ATTENTAMENTE:
+
+Conta i caratteri che hai scritto finora. Se sei sotto i 15.000, DEVI continuare.
+
+Per ogni sezione:
+- LA TUA FOTOGRAFIA DIGITALE: minimo 2.500 caratteri. Spiega OGNI punteggio con 2 paragrafi: uno con l'analogia, uno con l'impatto sul business.
+- COME TI TROVANO I CLIENTI: minimo 4.000 caratteri. Per il sito: spiega mobile vs desktop, perché il mobile conta di più, cosa succede quando un cliente aspetta 3 secondi, quanti clienti perdi. Per i social: analizza OGNI piattaforma con almeno 2 paragrafi. Per Google Business: spiega cosa sono le ricerche "vicino a me" e perché senza recensioni perdi.
+- I TUOI CONCORRENTI: minimo 2.500 caratteri. Dopo la tabella, analizza OGNI competitor singolarmente con un paragrafo dedicato. Poi scrivi un paragrafo su dove l'azienda è più forte e uno su dove è più debole.
+- AI & AUTOMAZIONI: minimo 2.500 caratteri. Per OGNI automazione scrivi un paragrafo completo con esempio specifico per il settore dell'azienda, costo mensile, ore risparmiate al mese, e come implementarla.
+- 5 AZIONI: minimo 2.000 caratteri. Ogni azione in un paragrafo unico da 6-8 frasi estremamente dettagliato.
+- IL TUO PROSSIMO PASSO: minimo 1.000 caratteri.
+- CHI SIAMO: minimo 500 caratteri.
+
+Se il totale è sotto i 15.000 caratteri, TORNA INDIETRO e aggiungi dettagli a ogni sezione. Non riassumere mai. Espandi sempre.

@@ -394,6 +394,37 @@ def _get_report_css() -> str:
         box-shadow: 0 4px 15px rgba(249, 1, 0, 0.3);
     }
     
+    ol {
+        counter-reset: item;
+        list-style: none;
+        padding-left: 0;
+    }
+    ol > li {
+        counter-increment: item;
+        margin-bottom: 20px;
+        padding: 15px 20px;
+        background: #F9F9F9;
+        border-radius: 8px;
+        border-left: 4px solid #F90100;
+    }
+    ol > li::before {
+        content: counter(item);
+        background: #F90100;
+        color: white;
+        font-weight: 700;
+        font-size: 16px;
+        padding: 4px 10px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    ul {
+        padding-left: 20px;
+    }
+    ul li {
+        margin-bottom: 8px;
+        line-height: 1.6;
+    }
+
     .footer {
         position: fixed;
         bottom: -10mm;
@@ -484,17 +515,17 @@ def _generate_dashboard(scores: dict) -> str:
     '''
 
 def _replace_emoji_with_badges(html: str) -> str:
-    """Sostituisce le emoji nei titoli con badge colorati per WeasyPrint."""
-    replacements = [
-        (r'📊', '<span class="title-badge badge-red">ANALISI</span>'),
-        (r'🔍', '<span class="title-badge badge-red">RICERCA</span>'),
-        (r'⚔️', '<span class="title-badge badge-red">VS</span>'),
-        (r'🤖', '<span class="title-badge badge-blue">AI</span>'),
-        (r'✅', '<span class="title-badge badge-green">AZIONI</span>'),
-        (r'🚀', '<span class="title-badge badge-red">NEXT</span>'),
-        (r'📞', '<span class="title-badge badge-grey">CONTATTI</span>'),
-    ]
-    for emoji, badge in replacements:
+    """Sostituisce le emoji nei titoli con badge circolari numerati."""
+    replacements = {
+        '📊': '<span style="display:inline-block;background:#F90100;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">1</span>',
+        '🔍': '<span style="display:inline-block;background:#F90100;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">2</span>',
+        '⚔️': '<span style="display:inline-block;background:#F90100;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">3</span>',
+        '🤖': '<span style="display:inline-block;background:#2980B9;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">4</span>',
+        '✅': '<span style="display:inline-block;background:#27AE60;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">5</span>',
+        '🚀': '<span style="display:inline-block;background:#F90100;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">6</span>',
+        '📞': '<span style="display:inline-block;background:#666;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">7</span>',
+    }
+    for emoji, badge in replacements.items():
         html = html.replace(emoji, badge)
     return html
 

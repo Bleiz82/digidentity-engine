@@ -32,7 +32,7 @@ HEADERS = {
 }
 
 
-def scrape_lead(website_url: str, company_name: str, social_links_db: dict = None) -> dict[str, Any]:
+def scrape_lead(website_url: str, company_name: str, social_links_db: dict = None, city: str = "", sector: str = "") -> dict[str, Any]:
     """
     Esegue lo scraping completo di un'azienda.
     Restituisce un dizionario strutturato con tutti i dati raccolti.
@@ -41,11 +41,15 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         website_url: URL del sito aziendale
         company_name: Nome dell'azienda
         social_links_db: Dict di social links dal database {platform: url}
+        city: Città dell'azienda (se nota)
+        sector: Settore dell'azienda (se noto)
     """
-    logger.info(f"Inizio scraping per {company_name} — {website_url}")
+    logger.info(f"Inizio scraping per {company_name} — {website_url} ({city or 'città non fornita'})")
     results = {
         "company_name": company_name,
         "website_url": website_url,
+        "city": city,
+        "sector": sector,
         "scrape_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         "website": {},
         "seo": {},
@@ -123,17 +127,25 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
                 elif isinstance(item, str):
                     social_links[platform] = item
 
-        # Usa la città dal Google Business se disponibile
-        city = ""
-        gb = results.get("google_business", {})
-        if gb.get("address"):
-            city = gb["address"]
+        # Tenta di determinare la città se manca
+        active_city = city
+        if not active_city:
+            gb = results.get("google_business", {})
+            if gb.get("address"):
+                # Estrai l'ultima parte dell'indirizzo (spesso la città)
+                addr_parts = gb["address"].split(",")
+                if len(addr_parts) >= 2:
+                    # In Italia solitamente "Via ..., CAP Città (PROV)"
+                    active_city = addr_parts[-2].strip().split(" ")[-1]
+                else:
+                    active_city = gb["address"]
 
         results["apify"] = run_apify_scraping(
             company_name=company_name,
-            city=city,
+            city=active_city,
             website=website_url,
             social_links=social_links,
+            sector=sector,
         )
         logger.info(f"Apify scraping completato per {company_name}")
 

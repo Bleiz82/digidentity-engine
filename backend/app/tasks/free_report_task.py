@@ -60,6 +60,11 @@ def task_free_report(self, lead_id: str):
 
     logger.info(f"[FREE] Lead: {company_name} — {website_url} — {email}")
 
+    # Estrazione città e settore (Fix 1)
+    city = lead.get("citta") or lead.get("city", "")
+    sector = lead.get("settore_attivita") or lead.get("sector", "")
+    logger.info(f"[FREE] Città: {city}, Settore: {sector}")
+
     # Parsa piattaforme_social dal lead
     social_links_db = {}
     piattaforme_social_str = lead.get("piattaforme_social", "")
@@ -76,7 +81,7 @@ def task_free_report(self, lead_id: str):
     # ── 2. Scraping ──
     try:
         db.table("leads").update({"status": "scraping"}).eq("id", lead_id).execute()
-        scraping_data = scrape_lead(website_url, company_name, social_links_db)
+        scraping_data = scrape_lead(website_url, company_name, social_links_db, city, sector)
 
         # Salva dati scraping su Supabase
         db.table("leads").update({

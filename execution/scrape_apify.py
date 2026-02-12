@@ -113,19 +113,45 @@ def _run_actor(actor_id: str, run_input: dict, timeout: int = ACTOR_TIMEOUT) -> 
         return []
 
 
-def scrape_google_maps(company_name: str, city: str, sector: str = "") -> dict[str, Any]:
+def scrape_google_maps(company_name: str, city: str = "", sector: str = "") -> dict[str, Any]:
     """
     Scraping Google Maps via Apify per dati local business.
     Actor: compass/crawler-google-places (nwua9Gu5YrADL7ZDj)
     """
-    search_queries = [f"{company_name} {city}", company_name]
-    if sector:
-        search_queries.insert(0, f"{company_name} {sector} {city}")
+    # Pulizia nome azienda (rimozione suffissi legali per ricerca migliore)
+    clean_name = company_name
+    suffixes = [
+        r"\bS\.?r\.?l\.?s?\.?\b", r"\bS\.?p\.?A\.?\b", r"\bS\.?N\.?C\.?\b", 
+        r"\bS\.?a\.?s\.?\.?\b", r"\bS\.?S\.?\.?\b", r"\bS\.?R\.?L\.?\b",
+        r"\bDitta Individuale\b", r"\bdi\b .*", r"\bEredi\b .*"
+    ]
+    for suffix in suffixes:
+        clean_name = re.sub(suffix, "", clean_name, flags=re.IGNORECASE).strip()
+    
+    # Costruisci query multiple per massimizzare le probabilità
+    search_queries = []
+    if clean_name and city:
+        search_queries.append(f"{clean_name} {city}")
+    
+    if clean_name:
+        search_queries.append(clean_name)
+    
+    if sector and city:
+        search_queries.append(f"{sector} {city}")
+        
+    if company_name != clean_name:
+        search_queries.append(company_name)
 
-    logger.info(f"[APIFY] Google Maps scraping con query: {search_queries}")
+    # Rimuovi duplicati mantenendo l'ordine
+    unique_queries = []
+    for q in search_queries:
+        if q and q not in unique_queries:
+            unique_queries.append(q)
+
+    logger.info(f"[APIFY] Google Maps scraping con query multiple: {unique_queries}")
 
     run_input = {
-        "searchStringsArray": search_queries,
+        "searchStringsArray": unique_queries,
         "maxCrawledPlacesPerSearch": 1,
         "language": "it",
         "countryCode": "it",
@@ -137,6 +163,7 @@ def scrape_google_maps(company_name: str, city: str, sector: str = "") -> dict[s
         "scrapeReviewerName": True,
     }
 
+    # Timeout alzato a 300s come richiesto
     results = _run_actor("nwua9Gu5YrADL7ZDj", run_input, timeout=300)
 
     if not results:
@@ -407,34 +434,23 @@ def scrape_linkedin(company_url: str = "", company_name: str = "") -> dict[str, 
 
 def run_apify_scraping(
     company_name: str,
-    city: str,
-    sector: str = "",
+    city: str = "",
     website: str = "",
     social_links: dict = None,
+    sector: str = "",
 ) -> dict[str, Any]:
     """
     Funzione principale: esegue scraping Apify completo per una PMI.
-    
-    Chiama Google Maps sempre, poi i social solo se ha i link.
-    
-    Args:
-        company_name: Nome dell'azienda
-        city: Città
-        sector: Settore di attività
-        website: URL del sito web
-        social_links: Dict con chiavi "instagram", "facebook", "tiktok" (URL o username)
-    
-    Returns:
-        Dict con tutti i dati raccolti da Apify
     """
     if social_links is None:
         social_links = {}
 
-    logger.info(f"[APIFY] === Inizio scraping completo per {company_name} ({city}) ===")
+    logger.info(f"[APIFY] === Inizio scraping completo per {company_name} ({city}) — Settore: {sector} ===")
 
     result = {
         "company_name": company_name,
         "city": city,
+        "sector": sector,
         "google_maps": {},
         "instagram": {},
         "facebook": {},

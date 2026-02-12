@@ -60,10 +60,23 @@ def task_free_report(self, lead_id: str):
 
     logger.info(f"[FREE] Lead: {company_name} — {website_url} — {email}")
 
+    # Parsa piattaforme_social dal lead
+    social_links_db = {}
+    piattaforme_social_str = lead.get("piattaforme_social", "")
+    if piattaforme_social_str:
+        try:
+            pairs = piattaforme_social_str.split(",")
+            for pair in pairs:
+                if ":" in pair:
+                    platform, value = pair.split(":", 1)
+                    social_links_db[platform.strip()] = value.strip()
+        except Exception as e:
+            logger.warning(f"Errore parsing piattaforme_social: {e}")
+
     # ── 2. Scraping ──
     try:
         db.table("leads").update({"status": "scraping"}).eq("id", lead_id).execute()
-        scraping_data = scrape_lead(website_url, company_name)
+        scraping_data = scrape_lead(website_url, company_name, social_links_db)
 
         # Salva dati scraping su Supabase
         db.table("leads").update({

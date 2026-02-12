@@ -43,6 +43,9 @@ class Settings:
     # --- Apify ---
     APIFY_API_KEY: str = os.getenv("APIFY_API_KEY", "")
 
+    # --- Google APIs ---
+    GOOGLE_PAGESPEED_API_KEY: str = os.getenv("GOOGLE_PAGESPEED_API_KEY", "")
+
     # --- OpenAI ---
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 

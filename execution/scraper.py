@@ -32,10 +32,15 @@ HEADERS = {
 }
 
 
-def scrape_lead(website_url: str, company_name: str) -> dict[str, Any]:
+def scrape_lead(website_url: str, company_name: str, social_links_db: dict = None) -> dict[str, Any]:
     """
     Esegue lo scraping completo di un'azienda.
     Restituisce un dizionario strutturato con tutti i dati raccolti.
+    
+    Args:
+        website_url: URL del sito aziendale
+        company_name: Nome dell'azienda
+        social_links_db: Dict di social links dal database {platform: url}
     """
     logger.info(f"Inizio scraping per {company_name} — {website_url}")
     results = {
@@ -78,7 +83,7 @@ def scrape_lead(website_url: str, company_name: str) -> dict[str, Any]:
 
     # 3. Ricerca social media
     try:
-        results["social_media"] = _find_social_media(website_url, company_name)
+        results["social_media"] = _find_social_media(website_url, company_name, social_links_db)
     except Exception as e:
         logger.warning(f"Errore ricerca social per {company_name}: {e}")
         results["errors"].append(f"Social: {str(e)}")
@@ -359,7 +364,7 @@ def _analyze_seo(website_url: str, company_name: str) -> dict:
     return data
 
 
-def _find_social_media(website_url: str, company_name: str) -> dict:
+def _find_social_media(website_url: str, company_name: str, social_links_db: dict = None) -> dict:
     """Cerca i profili social dell'azienda."""
     data = {
         "facebook": None,
@@ -370,7 +375,14 @@ def _find_social_media(website_url: str, company_name: str) -> dict:
         "tiktok": None,
     }
 
-    # Prima cerca nel sito web
+    # Se sono presenti link social dal DB, usali con priorità
+    if social_links_db:
+        for platform, url in social_links_db.items():
+            platform_lower = platform.lower()
+            if platform_lower in data and url:
+                data[platform_lower] = {"url": url, "found_on_website": False, "found_in_db": True}
+
+    # Poi cerca nel sito web (sovrascrive solo se non trovato nel DB)
     try:
         resp = requests.get(website_url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
         html = resp.text.lower()
@@ -386,7 +398,7 @@ def _find_social_media(website_url: str, company_name: str) -> dict:
 
         for platform, pattern in social_patterns.items():
             match = re.search(pattern, html)
-            if match:
+            if match and data[platform] is None:  # Solo se non trovato nel DB
                 url = match.group(0)
                 if not url.startswith("http"):
                     url = f"https://{url}"

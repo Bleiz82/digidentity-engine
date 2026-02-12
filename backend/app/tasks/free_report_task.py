@@ -111,27 +111,6 @@ def task_free_report(self, lead_id: str):
         }).eq("id", lead_id).execute()
         raise self.retry(exc=e)
 
-    # ── 4. Generazione PDF ──
-    try:
-        pdf_dir = Path(tempfile.gettempdir()) / "digidentity" / "reports"
-        pdf_dir.mkdir(parents=True, exist_ok=True)
-        pdf_path = str(pdf_dir / f"free_{lead_id}.pdf")
-
-        markdown_to_pdf(
-            markdown_text=report_markdown,
-            output_path=pdf_path,
-            report_type="free",
-            company_name=company_name,
-        )
-        logger.info(f"[FREE] PDF generato: {pdf_path}")
-    except Exception as e:
-        logger.error(f"[FREE] Errore PDF per {company_name}: {e}")
-        db.table("leads").update({
-            "status": "error",
-            "error_message": f"Errore PDF: {str(e)}",
-        }).eq("id", lead_id).execute()
-        raise self.retry(exc=e)
-
     # ── 5. Crea Stripe Checkout URL per il premium ──
     checkout_url = f"{settings.APP_BASE_URL}/api/payment/create-checkout"
     try:
@@ -177,6 +156,38 @@ def task_free_report(self, lead_id: str):
         logger.warning(f"[FREE] Errore creazione Stripe session: {e} — uso URL fallback")
         # Fallback: usa l'endpoint API che creerà la session on-demand
         checkout_url = f"{settings.APP_BASE_URL}/api/payment/create-checkout?lead_id={lead_id}"
+
+    # Sostituisci il placeholder nel markdown con un bottone reale per il PDF
+    checkout_button_md = f"""
+<div style="text-align: center; margin: 40px 0; page-break-inside: avoid;">
+    <a href="{checkout_url}" style="background-color: #F90100; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-family: 'Poppins', sans-serif; display: inline-block;">
+        OTTIENI IL REPORT PREMIUM A 99€
+    </a>
+    <p style="font-size: 10px; color: #666; margin-top: 10px;">Pagamento sicuro con Stripe. Consegna immediata.</p>
+</div>
+"""
+    report_markdown_with_cta = report_markdown.replace("{{CHECKOUT_PLACEHOLDER}}", checkout_button_md)
+
+    # ── 4. Generazione PDF ──
+    try:
+        pdf_dir = Path(tempfile.gettempdir()) / "digidentity" / "reports"
+        pdf_dir.mkdir(parents=True, exist_ok=True)
+        pdf_path = str(pdf_dir / f"free_{lead_id}.pdf")
+
+        markdown_to_pdf(
+            markdown_text=report_markdown_with_cta,
+            output_path=pdf_path,
+            report_type="free",
+            company_name=company_name,
+        )
+        logger.info(f"[FREE] PDF generato: {pdf_path}")
+    except Exception as e:
+        logger.error(f"[FREE] Errore PDF per {company_name}: {e}")
+        db.table("leads").update({
+            "status": "error",
+            "error_message": f"Errore PDF: {str(e)}",
+        }).eq("id", lead_id).execute()
+        raise self.retry(exc=e)
 
     # ── 6. Invio email ──
     try:

@@ -15,265 +15,196 @@ import markdown
 logger = logging.getLogger(__name__)
 
 
-# CSS professionale per i report
+# CSS professionale e premium per i report DigIdentity
 REPORT_CSS = """
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@700;800;900&display=swap');
 
 @page {
     size: A4;
-    margin: 25mm 20mm 25mm 20mm;
-
-    @top-right {
-        content: "DigIdentity Engine";
+    margin: 20mm;
+    @bottom-right {
+        content: "DigIdentity Agency — Pagina " counter(page);
         font-family: 'Inter', sans-serif;
         font-size: 8pt;
-        color: #94a3b8;
-    }
-
-    @bottom-center {
-        content: counter(page) " / " counter(pages);
-        font-family: 'Inter', sans-serif;
-        font-size: 8pt;
-        color: #94a3b8;
+        color: #999;
     }
 }
 
 @page :first {
-    margin-top: 0;
-    @top-right { content: none; }
-    @bottom-center { content: none; }
+    margin: 0;
+    @bottom-right { content: none; }
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-size: 10.5pt;
-    line-height: 1.7;
-    color: #1e293b;
-    max-width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #333;
+    margin: 0;
+    padding: 0;
 }
 
-/* Cover Page */
+/* Cover Page Premium */
 .cover-page {
-    page-break-after: always;
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 40%, #F90100 100%);
+    color: white;
+    height: 297mm;
+    width: 210mm;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
     text-align: center;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-    color: white;
-    margin: -25mm -20mm;
-    padding: 40mm 30mm;
+    page-break-after: always;
+}
+
+.cover-page .logo-container {
+    margin-bottom: 30mm;
+}
+
+.cover-page img.logo {
+    width: 250px;
 }
 
 .cover-page h1 {
-    font-size: 28pt;
-    font-weight: 700;
-    margin-bottom: 8mm;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: 38pt;
+    margin: 0;
+    line-height: 1.1;
     color: white;
     border: none;
+    text-transform: uppercase;
 }
 
 .cover-page .subtitle {
-    font-size: 14pt;
-    color: #94a3b8;
-    margin-bottom: 15mm;
-}
-
-.cover-page .company-name {
-    font-size: 20pt;
-    font-weight: 600;
-    color: #818cf8;
-    margin-bottom: 5mm;
-}
-
-.cover-page .date {
-    font-size: 11pt;
-    color: #64748b;
-    margin-top: 20mm;
-}
-
-.cover-page .badge {
-    display: inline-block;
-    background: rgba(99, 102, 241, 0.2);
-    border: 1px solid rgba(99, 102, 241, 0.4);
-    color: #a5b4fc;
-    padding: 4mm 8mm;
-    border-radius: 20px;
-    font-size: 10pt;
-    font-weight: 500;
-    margin-top: 5mm;
-}
-
-/* Headings */
-h1 {
-    font-size: 22pt;
+    font-family: 'Poppins', sans-serif;
     font-weight: 700;
-    color: #0f172a;
-    margin-top: 20mm;
-    margin-bottom: 6mm;
-    padding-bottom: 3mm;
-    border-bottom: 2px solid #6366f1;
-    page-break-after: avoid;
+    font-size: 18pt;
+    color: #F90100;
+    margin: 5mm 0 20mm 0;
+}
+
+.cover-page .client-name {
+    font-size: 22pt;
+    font-weight: 600;
+    margin-bottom: 10mm;
+}
+
+.cover-page .badge-premium {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #F90100;
+    padding: 3mm 8mm;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 10pt;
+    letter-spacing: 2px;
+}
+
+/* Content Styles */
+.content-wrapper {
+    padding: 20mm;
+}
+
+h1 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: 24pt;
+    color: #000;
+    margin-top: 15mm;
+    margin-bottom: 8mm;
+    border-bottom: 4px solid #F90100;
+    padding-bottom: 5px;
+    page-break-before: always;
 }
 
 h2 {
-    font-size: 16pt;
-    font-weight: 600;
-    color: #1e293b;
-    margin-top: 12mm;
-    margin-bottom: 4mm;
-    page-break-after: avoid;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 18pt;
+    color: #000;
+    margin-top: 10mm;
+    margin-bottom: 5mm;
 }
 
 h3 {
-    font-size: 13pt;
-    font-weight: 600;
-    color: #334155;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 14pt;
+    color: #F90100;
     margin-top: 8mm;
-    margin-bottom: 3mm;
-    page-break-after: avoid;
 }
 
-h4 {
-    font-size: 11pt;
-    font-weight: 600;
-    color: #475569;
-    margin-top: 5mm;
-    margin-bottom: 2mm;
-}
-
-/* Paragraphs */
-p {
+p, li {
     margin-bottom: 4mm;
     text-align: justify;
-    orphans: 3;
-    widows: 3;
 }
 
-/* Lists */
-ul, ol {
-    margin-left: 6mm;
-    margin-bottom: 4mm;
-}
-
-li {
-    margin-bottom: 2mm;
+strong {
+    font-weight: 700;
+    color: #000;
 }
 
 /* Tables */
 table {
     width: 100%;
     border-collapse: collapse;
-    margin: 5mm 0;
-    font-size: 9.5pt;
+    margin: 8mm 0;
     page-break-inside: avoid;
 }
 
 th {
-    background: #1e293b;
+    background-color: #F90100;
     color: white;
-    padding: 3mm 4mm;
+    padding: 4mm;
     text-align: left;
-    font-weight: 600;
-    font-size: 9pt;
-}
-
-td {
-    padding: 2.5mm 4mm;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-tr:nth-child(even) {
-    background: #f8fafc;
-}
-
-/* Score boxes */
-.score-box {
-    display: inline-block;
-    padding: 2mm 4mm;
-    border-radius: 4px;
-    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
     font-size: 10pt;
 }
 
-.score-high { background: #dcfce7; color: #166534; }
-.score-medium { background: #fef3c7; color: #92400e; }
-.score-low { background: #fecaca; color: #991b1b; }
-
-/* Blockquotes (used for callouts) */
-blockquote {
-    background: #eff6ff;
-    border-left: 4px solid #6366f1;
-    padding: 4mm 5mm;
-    margin: 4mm 0;
-    font-style: normal;
-    color: #1e40af;
-    page-break-inside: avoid;
+td {
+    padding: 3mm 4mm;
+    border-bottom: 1px solid #eee;
+    font-size: 10pt;
 }
 
-/* Code blocks (for technical details) */
-code {
-    background: #f1f5f9;
-    padding: 1mm 2mm;
-    border-radius: 3px;
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* Score Badges */
+.score-badge {
+    display: inline-block;
+    padding: 1mm 3mm;
+    border-radius: 4px;
+    font-weight: 700;
     font-size: 9pt;
-    font-family: 'JetBrains Mono', monospace;
+    color: white;
 }
+.score-high { background-color: #10B981; }
+.score-medium { background-color: #F59E0B; }
+.score-low { background-color: #EF4444; }
 
-pre {
-    background: #1e293b;
-    color: #e2e8f0;
-    padding: 4mm;
-    border-radius: 6px;
-    overflow-x: auto;
-    font-size: 8.5pt;
+/* Callout Boxes */
+.tip-box {
+    background-color: #fff9e6;
+    border-left: 5px solid #F59E0B;
+    padding: 5mm;
+    margin: 5mm 0;
     page-break-inside: avoid;
 }
 
-pre code {
-    background: none;
-    padding: 0;
-    color: inherit;
-}
-
-/* Horizontal rule */
-hr {
-    border: none;
-    border-top: 1px solid #e2e8f0;
-    margin: 8mm 0;
-}
-
-/* Strong/Bold for emphasis */
-strong {
-    font-weight: 600;
-    color: #0f172a;
-}
-
-/* Links */
-a {
-    color: #6366f1;
-    text-decoration: none;
-}
-
-/* CTA Box (for free report) */
-.cta-box {
-    background: linear-gradient(135deg, #eff6ff, #e0e7ff);
-    border: 2px solid #6366f1;
-    border-radius: 8px;
-    padding: 6mm;
-    margin: 8mm 0;
-    text-align: center;
+.ai-box {
+    background-color: #fdf2f2;
+    border-left: 5px solid #F90100;
+    padding: 5mm;
+    margin: 5mm 0;
     page-break-inside: avoid;
 }
 
-.cta-box h3 {
-    color: #4338ca;
-    margin-top: 0;
-}
+/* Page Breaks */
+.page-break { page-break-after: always; }
 """
-
 
 def markdown_to_pdf(
     markdown_text: str,
@@ -282,72 +213,72 @@ def markdown_to_pdf(
     company_name: str = "",
 ) -> str:
     """
-    Converte un report Markdown in PDF professionale.
-
-    Args:
-        markdown_text: Il testo del report in formato Markdown
-        output_path: Percorso dove salvare il PDF
-        report_type: "free" o "premium"
-        company_name: Nome dell'azienda per la cover page
-
-    Returns:
-        Il percorso del file PDF generato
+    Converte un report Markdown in PDF professionale DigIdentity.
     """
     import datetime
-
-    logger.info(f"Generazione PDF {report_type} per {company_name}: {output_path}")
+    
+    logger.info(f"🎨 Generazione PDF {report_type} per {company_name}: {output_path}")
 
     # Converti Markdown → HTML
-    md_extensions = [
-        "tables",
-        "fenced_code",
-        "codehilite",
-        "toc",
-        "nl2br",
-        "sane_lists",
-    ]
+    md_extensions = ["tables", "fenced_code", "nl2br", "sane_lists"]
     html_body = markdown.markdown(markdown_text, extensions=md_extensions)
 
-    # Badge per tipo report
-    badge = "DIAGNOSI GRATUITA" if report_type == "free" else "REPORT PREMIUM"
-    subtitle = (
-        "Diagnosi della Presenza Digitale"
-        if report_type == "free"
-        else "Piano Strategico Digitale Completo"
-    )
-
+    # Titoli basati sul tipo
+    report_title = "DIAGNOSI DIGITALE" if report_type == "free" else "PIANO STRATEGICO AI"
+    report_badge = "VERSIONE GRATUITA" if report_type == "free" else "REPORT PREMIUM"
+    
+    logo_url = "https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png"
     today = datetime.date.today().strftime("%d/%m/%Y")
 
-    # HTML completo con cover page
+    # Gestione Score Badges nel testo HTML (sostituzione dinamica se presente)
+    # Esempio: cercate Punteggio: 85/100 e trasformate in badge
+    def repl_score(match):
+        score = int(match.group(1))
+        cls = "score-high" if score >= 70 else "score-medium" if score >= 40 else "score-low"
+        return f'<span class="score-badge {cls}">{score}/100</span>'
+    
+    html_body = re.sub(r'Punteggio:\s*(\d+)/100', repl_score, html_body)
+
+    # HTML completo
     full_html = f"""
     <!DOCTYPE html>
     <html lang="it">
     <head>
         <meta charset="UTF-8">
-        <title>DigIdentity — {subtitle} — {company_name}</title>
+        <style>{REPORT_CSS}</style>
     </head>
     <body>
         <div class="cover-page">
-            <h1>DigIdentity Engine</h1>
-            <p class="subtitle">{subtitle}</p>
-            <p class="company-name">{company_name}</p>
-            <span class="badge">{badge}</span>
-            <p class="date">Generato il {today}</p>
+            <div class="logo-container">
+                <img src="{logo_url}" class="logo" alt="DigIdentity Agency">
+            </div>
+            <h1>{report_title}</h1>
+            <div class="subtitle">Strategia AI & Automazioni</div>
+            <div class="client-name">{company_name}</div>
+            <div class="badge-premium">{report_badge}</div>
+            <div style="margin-top: 40mm; font-size: 10pt; opacity: 0.7;">
+                Samatzai (SU) | Generato il {today}
+            </div>
         </div>
 
-        {html_body}
+        <div class="content-wrapper">
+            {html_body}
+        </div>
     </body>
     </html>
     """
 
-    # Genera PDF con WeasyPrint
+    # Genera PDF
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-
-    html_doc = HTML(string=full_html)
-    css = CSS(string=REPORT_CSS)
-    html_doc.write_pdf(output_path, stylesheets=[css])
-
-    file_size = Path(output_path).stat().st_size
-    logger.info(f"PDF generato: {output_path} ({file_size / 1024:.1f} KB)")
+    
+    try:
+        html_doc = HTML(string=full_html)
+        css_obj = CSS(string=REPORT_CSS)
+        html_doc.write_pdf(output_path, stylesheets=[css_obj])
+        
+        logger.info(f"✅ PDF generato con successo: {output_path}")
+    except Exception as e:
+        logger.error(f"❌ Errore critico durante write_pdf: {e}")
+        raise
 
     return output_path

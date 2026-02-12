@@ -96,19 +96,32 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         results["errors"].append(f"Google Business: {str(e)}")
 
 
-    # 5. Scraping avanzato via Apify (Google Maps, Instagram, Facebook, TikTok)
+    # 5. Scraping avanzato via Apify (Facebook, Instagram, LinkedIn)
     try:
         from execution.scrape_apify import run_apify_scraping
 
-        # Estrai link social trovati dallo step 3
+        # Costruisci social_links dando priorità ai dati dal DB
         social_links = {}
+        
+        # 1. Carica profilazione dal DB (priorità)
+        if social_links_db:
+            for platform, data in social_links_db.items():
+                # Se data è stringa (URL/Username)
+                if isinstance(data, str):
+                    social_links[platform.lower()] = data
+                # Se data è dict (come ritornato da _find_social_media)
+                elif isinstance(data, dict) and data.get("url"):
+                    social_links[platform.lower()] = data["url"]
+
+        # 2. Integra con link trovati nel sito solo se mancano
         sm = results.get("social_media", {})
-        if sm.get("instagram"):
-            social_links["instagram"] = sm["instagram"]
-        if sm.get("facebook"):
-            social_links["facebook"] = sm["facebook"]
-        if sm.get("linkedin"):
-            social_links["linkedin"] = sm["linkedin"]
+        for platform in ["instagram", "facebook", "linkedin"]:
+            if platform not in social_links and sm.get(platform):
+                item = sm[platform]
+                if isinstance(item, dict) and item.get("url"):
+                    social_links[platform] = item["url"]
+                elif isinstance(item, str):
+                    social_links[platform] = item
 
         # Usa la città dal Google Business se disponibile
         city = ""
@@ -543,74 +556,97 @@ def _analyze_pagespeed(website_url: str) -> dict[str, Any]:
     }
 
     for strategy in ["mobile", "desktop"]:
-        try:
-            resp = requests.get(
-                API_URL,
-                params={
+        max_retries = 3
+        retry_delay = 2
+        
+        for attempt in range(max_retries):
+            try:
+                params = {
                     "url": website_url,
                     "strategy": strategy,
                     "locale": "it",
                     "category": ["performance", "seo", "best-practices", "accessibility"],
-                },
-                timeout=60,
-            )
-            resp.raise_for_status()
-            data = resp.json()
+                }
+                
+                # Aggiungi API Key se presente
+                if settings.GOOGLE_PAGESPEED_API_KEY:
+                    params["key"] = settings.GOOGLE_PAGESPEED_API_KEY
 
-            # Lighthouse scores
-            categories = data.get("lighthouseResult", {}).get("categories", {})
-            scores = {}
-            for cat_key, cat_data in categories.items():
-                scores[cat_key] = round((cat_data.get("score", 0) or 0) * 100)
+                resp = requests.get(API_URL, params=params, timeout=60)
+                
+                # Gestione Rate Limit (429) con backoff esponenziale
+                if resp.status_code == 429:
+                    if attempt < max_retries - 1:
+                        wait_time = retry_delay * (2 ** attempt)
+                        logger.warning(f"⚠️ PageSpeed 429 (Rate Limit). Retry {attempt+1}/{max_retries} in {wait_time}s...")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        resp.raise_for_status() # Lancia errore se superati i tentativi
+                
+                resp.raise_for_status()
+                data = resp.json()
 
-            # Core Web Vitals
-            field_data = data.get("loadingExperience", {}).get("metrics", {})
-            cwv = {}
-            metric_map = {
-                "LARGEST_CONTENTFUL_PAINT_MS": "lcp_ms",
-                "FIRST_INPUT_DELAY_MS": "fid_ms",
-                "CUMULATIVE_LAYOUT_SHIFT_SCORE": "cls",
-                "FIRST_CONTENTFUL_PAINT_MS": "fcp_ms",
-                "INTERACTION_TO_NEXT_PAINT": "inp_ms",
-                "EXPERIMENTAL_TIME_TO_FIRST_BYTE": "ttfb_ms",
-            }
-            for api_name, local_name in metric_map.items():
-                metric = field_data.get(api_name, {})
-                if metric:
-                    cwv[local_name] = metric.get("percentile", metric.get("distributions", [{}]))
+                # Lighthouse scores
+                categories = data.get("lighthouseResult", {}).get("categories", {})
+                scores = {}
+                for cat_key, cat_data in categories.items():
+                    scores[cat_key] = round((cat_data.get("score", 0) or 0) * 100)
 
-            # Audit principali (opportunità di miglioramento)
-            audits = data.get("lighthouseResult", {}).get("audits", {})
-            opportunities = []
-            for audit_key, audit_data in audits.items():
-                if audit_data.get("score") is not None and audit_data["score"] < 0.9:
-                    savings = audit_data.get("details", {}).get("overallSavingsMs", 0)
-                    if savings > 0 or audit_data["score"] < 0.5:
-                        opportunities.append({
-                            "id": audit_key,
-                            "title": audit_data.get("title", ""),
-                            "description": audit_data.get("description", "")[:200],
-                            "score": round(audit_data["score"] * 100),
-                            "savings_ms": savings,
-                        })
+                # Core Web Vitals
+                field_data = data.get("loadingExperience", {}).get("metrics", {})
+                cwv = {}
+                metric_map = {
+                    "LARGEST_CONTENTFUL_PAINT_MS": "lcp_ms",
+                    "FIRST_INPUT_DELAY_MS": "fid_ms",
+                    "CUMULATIVE_LAYOUT_SHIFT_SCORE": "cls",
+                    "FIRST_CONTENTFUL_PAINT_MS": "fcp_ms",
+                    "INTERACTION_TO_NEXT_PAINT": "inp_ms",
+                    "EXPERIMENTAL_TIME_TO_FIRST_BYTE": "ttfb_ms",
+                }
+                for api_name, local_name in metric_map.items():
+                    metric = field_data.get(api_name, {})
+                    if metric:
+                        cwv[local_name] = metric.get("percentile", metric.get("distributions", [{}]))
 
-            opportunities.sort(key=lambda x: x.get("savings_ms", 0), reverse=True)
+                # Audit principali (opportunità di miglioramento)
+                audits = data.get("lighthouseResult", {}).get("audits", {})
+                opportunities = []
+                for audit_key, audit_data in audits.items():
+                    if audit_data.get("score") is not None and audit_data["score"] < 0.9:
+                        savings = audit_data.get("details", {}).get("overallSavingsMs", 0)
+                        if savings > 0 or audit_data["score"] < 0.5:
+                            opportunities.append({
+                                "id": audit_key,
+                                "title": audit_data.get("title", ""),
+                                "description": audit_data.get("description", "")[:200],
+                                "score": round(audit_data["score"] * 100),
+                                "savings_ms": savings,
+                            })
 
-            results[strategy] = {
-                "scores": scores,
-                "core_web_vitals": cwv,
-                "opportunities": opportunities[:10],
-                "overall_category": data.get("loadingExperience", {}).get("overall_category", ""),
-            }
+                opportunities.sort(key=lambda x: x.get("savings_ms", 0), reverse=True)
 
-            logger.info(
-                f"PageSpeed {strategy}: performance={scores.get('performance', '?')}, "
-                f"seo={scores.get('seo', '?')}, accessibility={scores.get('accessibility', '?')}"
-            )
+                results[strategy] = {
+                    "scores": scores,
+                    "core_web_vitals": cwv,
+                    "opportunities": opportunities[:10],
+                    "overall_category": data.get("loadingExperience", {}).get("overall_category", ""),
+                }
 
-        except Exception as e:
-            logger.warning(f"Errore PageSpeed {strategy} per {website_url}: {e}")
-            results["errors"].append(f"PageSpeed {strategy}: {str(e)}")
-            results[strategy] = {"error": str(e)}
+                logger.info(
+                    f"✅ PageSpeed {strategy}: performance={scores.get('performance', '?')}, "
+                    f"seo={scores.get('seo', '?')}"
+                )
+                break # Esci dal ciclo retry se successo
+
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait_time = retry_delay * (2 ** attempt)
+                    logger.warning(f"🔄 Errore PageSpeed {strategy} (Tentativo {attempt+1}): {e}. Riprovo in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    logger.error(f"❌ PageSpeed {strategy} fallito dopo {max_retries} tentativi: {e}")
+                    results["errors"].append(f"PageSpeed {strategy}: {str(e)}")
+                    results[strategy] = {"error": str(e)}
 
     return results

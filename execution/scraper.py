@@ -599,12 +599,29 @@ def _add_competitor(comp_list: list, item: dict, source: str):
     if any(c["name"].lower() == name.lower() for c in comp_list):
         return
         
+    # Pulisci website
+    raw_website = item.get("links", {}).get("website") or item.get("link")
+    if raw_website and any(x in raw_website.lower() for x in ["aggiungi sito", "add website", "aggiungisito"]):
+        raw_website = None
+    
+    # Arrotondi rating
+    raw_rating = item.get("rating")
+    if raw_rating is not None:
+        raw_rating = round(float(raw_rating), 1)
+    
+    # Pulisci indirizzo (rimuovi emoji e caratteri strani)
+    import re as _re
+    raw_address = item.get("address")
+    if raw_address:
+        raw_address = _re.sub(r'[^\w\s,./°'-]', '', raw_address).strip()
+        raw_address = _re.sub(r'\s+', ' ', raw_address)
+    
     comp_list.append({
         "name": name,
-        "website": item.get("links", {}).get("website") or item.get("link"),
-        "rating": item.get("rating"),
+        "website": raw_website,
+        "rating": raw_rating,
         "reviews_count": item.get("reviews"),
-        "address": item.get("address"),
+        "address": raw_address,
         "phone": item.get("phone"),
         "source": source,
         "position": item.get("position"),

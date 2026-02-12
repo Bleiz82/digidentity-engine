@@ -13,6 +13,7 @@ Costi stimati: ~$0.30-0.50 per diagnosi completa.
 import os
 import logging
 import time
+import re
 from typing import Any, Optional
 
 import requests

@@ -1,26 +1,174 @@
 """
-DigIdentity Engine — Generazione PDF dai report Markdown.
-
-Converte i report Markdown in PDF professionali con branding DigIdentity.
+DigIdentity Engine — Generazione PDF Premium.
+Genera PDF professionali con cover page, score badges, barre di progresso e contenuto formattato.
 """
 
 import logging
 import re
 from pathlib import Path
 
-from weasyprint import HTML, CSS
+from weasyprint import HTML
 import markdown
 
 logger = logging.getLogger(__name__)
 
-# CSS Premium per WeasyPrint
+
+def _get_score_color(score: int) -> str:
+    """Ritorna la classe colore basata sul punteggio."""
+    if score >= 70:
+        return "high"
+    elif score >= 40:
+        return "medium"
+    return "low"
+
+
+def _get_color_hex(score: int) -> str:
+    """Ritorna il colore hex basato sul punteggio."""
+    if score >= 70:
+        return "#22c55e"
+    elif score >= 40:
+        return "#f59e0b"
+    return "#ef4444"
+
+
+def _calculate_social_score(scraping_data: dict) -> int:
+    """Calcola un punteggio social basato sui dati disponibili."""
+    score = 0
+    apify = scraping_data.get("apify", {})
+    
+    ig = apify.get("instagram", {})
+    if ig.get("found"):
+        score += 20  # presente
+        followers = ig.get("followers", 0) or 0
+        if followers > 500:
+            score += 15
+        elif followers > 100:
+            score += 10
+        elif followers > 0:
+            score += 5
+        engagement = ig.get("engagement_rate", 0) or 0
+        if engagement > 3:
+            score += 15
+        elif engagement > 1:
+            score += 10
+    
+    fb = apify.get("facebook", {})
+    if fb.get("found"):
+        score += 20
+        fb_followers = fb.get("followers", 0) or 0
+        if fb_followers > 500:
+            score += 15
+        elif fb_followers > 100:
+            score += 10
+        elif fb_followers > 0:
+            score += 5
+        fb_engagement = fb.get("avg_engagement_per_post", 0) or 0
+        if fb_engagement > 10:
+            score += 15
+        elif fb_engagement > 1:
+            score += 10
+    
+    return min(score, 100)
+
+
+def _calculate_gb_score(scraping_data: dict) -> int:
+    """Calcola punteggio Google Business."""
+    gb = scraping_data.get("google_business", {})
+    if not gb.get("found"):
+        return 0
+    rating = gb.get("rating")
+    if rating:
+        return min(int(float(rating) * 20), 100)
+    return 30  # esiste ma senza rating
+
+
+def _extract_scores(scraping_data: dict) -> dict:
+    """Estrae i 4 punteggi principali dai dati di scraping."""
+    ps = scraping_data.get("pagespeed", {})
+    desktop = ps.get("desktop", {})
+    
+    return {
+        "sito": desktop.get("performance", 0) or 0,
+        "seo": desktop.get("seo", 0) or 0,
+        "social": _calculate_social_score(scraping_data),
+        "google_business": _calculate_gb_score(scraping_data),
+    }
+
+
+def _generate_cover(company_name: str, date_str: str, location: str) -> str:
+    """Genera la cover page HTML."""
+    return f'''
+    <div class="cover-page">
+        <div class="cover-badge">VERSIONE GRATUITA</div>
+        <div class="cover-content">
+            <div class="cover-subtitle">DIAGNOSI DIGITALE</div>
+            <div class="cover-title">{company_name}</div>
+            <div class="cover-meta">Strategia AI & Automazioni</div>
+            <div class="cover-location">{location} | Generato il {date_str}</div>
+        </div>
+        <div class="cover-footer">
+            <div class="cover-agency">DigIdentity Agency</div>
+            <div class="cover-website">www.digidentityagency.it</div>
+        </div>
+    </div>
+    '''
+
+
+def _generate_scores_section(scores: dict) -> str:
+    """Genera la sezione punteggi con badge circolari e barre."""
+    labels = {
+        "sito": "Sito Web",
+        "seo": "SEO", 
+        "social": "Social",
+        "google_business": "Google Business"
+    }
+    
+    # Badge circolari
+    badges_html = '<div class="scores-row">'
+    for key, label in labels.items():
+        score = scores[key]
+        color_class = _get_score_color(score)
+        color_hex = _get_color_hex(score)
+        badges_html += f'''
+        <div class="score-item">
+            <div class="score-circle {color_class}" style="border-color: {color_hex}; color: {color_hex};">{score}</div>
+            <div class="score-label">{label}</div>
+        </div>'''
+    badges_html += '</div>'
+    
+    # Barre di progresso
+    bars_html = ''
+    for key, label in labels.items():
+        score = scores[key]
+        color_class = _get_score_color(score)
+        bars_html += f'''
+        <div class="progress-section">
+            <div class="progress-info">
+                <span class="progress-label">{label}</span>
+                <span class="progress-value">{score}/100</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill {color_class}" style="width: {score}%"></div>
+            </div>
+        </div>'''
+    
+    return f'''
+    <div class="scores-container">
+        <h2 class="scores-title">I Tuoi Punteggi</h2>
+        {badges_html}
+        {bars_html}
+    </div>
+    '''
+
+
+# CSS completo
 REPORT_CSS = """
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800;900&display=swap');
 
 @page {
     size: A4;
-    margin: 20mm;
-    @bottom-right {
+    margin: 18mm 15mm;
+    @bottom-center {
         content: "DigIdentity Agency — " counter(page);
         font-family: 'Inter', sans-serif;
         font-size: 8pt;
@@ -30,325 +178,355 @@ REPORT_CSS = """
 
 @page :first {
     margin: 0;
-    @bottom-right { content: none; }
+    @bottom-center { content: none; }
 }
+
+* { box-sizing: border-box; }
 
 body {
     font-family: 'Inter', sans-serif;
     font-size: 11pt;
-    line-height: 1.6;
+    line-height: 1.7;
     color: #333;
     margin: 0;
     padding: 0;
 }
 
-/* Cover Page */
+/* ===== COVER PAGE ===== */
 .cover-page {
-    background: linear-gradient(135deg, #000000 0%, #1a1a1a 40%, #F90100 100%);
-    color: white;
-    height: 297mm;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 40%, #F90100 100%);
     width: 210mm;
+    height: 297mm;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    page-break-after: always;
-}
-
-.cover-page h1 {
-    font-family: 'Poppins', sans-serif;
-    font-weight: 900;
-    font-size: 42pt;
-    margin: 0;
-    text-transform: uppercase;
     color: white;
+    page-break-after: always;
+    position: relative;
 }
 
-.cover-page .subtitle {
-    font-size: 18pt;
-    color: #F90100;
-    margin: 10px 0 40px 0;
-    font-weight: 700;
-}
-
-.cover-page .client-name {
-    font-size: 24pt;
-    font-weight: 600;
-}
-
-.cover-page .badge {
-    margin-top: 20px;
-    padding: 5px 20px;
-    border: 2px solid #F90100;
-    border-radius: 30px;
-    font-size: 12pt;
-    font-weight: 700;
+.cover-badge {
+    position: absolute;
+    top: 40px;
+    right: 40px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 10pt;
     letter-spacing: 2px;
+    text-transform: uppercase;
 }
 
-/* Typography */
-h1 {
+.cover-content { padding: 0 40px; }
+
+.cover-subtitle {
     font-family: 'Poppins', sans-serif;
-    font-weight: 900;
-    font-size: 26pt;
-    color: #000;
-    margin-top: 30px;
-    border-bottom: 5px solid #F90100;
-    padding-bottom: 10px;
+    font-size: 14pt;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-bottom: 20px;
 }
 
-h2 {
+.cover-title {
     font-family: 'Poppins', sans-serif;
+    font-size: 32pt;
     font-weight: 800;
-    font-size: 20pt;
-    color: #1a1a1a;
-    margin-top: 25px;
+    line-height: 1.2;
+    margin-bottom: 15px;
 }
 
-h3 {
-    font-family: 'Poppins', sans-serif;
-    font-weight: 700;
-    font-size: 15pt;
-    color: #F90100;
+.cover-meta {
+    font-size: 12pt;
+    opacity: 0.7;
+    margin-bottom: 10px;
 }
 
-/* Score Badges */
-.score-row {
-    display: flex;
-    justify-content: space-around;
-    margin: 30px 0;
+.cover-location {
+    font-size: 10pt;
+    opacity: 0.6;
 }
 
-.score-badge-container {
+.cover-footer {
+    position: absolute;
+    bottom: 40px;
     text-align: center;
 }
 
-.score-circle {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 5px solid #eee;
-    line-height: 80px;
-    font-size: 22px;
-    font-weight: 900;
-    margin-bottom: 5px;
+.cover-agency {
     font-family: 'Poppins', sans-serif;
+    font-size: 12pt;
+    font-weight: 700;
+    letter-spacing: 3px;
 }
 
-.score-circle.high { border-color: #10B981; color: #10B981; }
-.score-circle.medium { border-color: #F59E0B; color: #F59E0B; }
-.score-circle.low { border-color: #EF4444; color: #EF4444; }
+.cover-website {
+    font-size: 9pt;
+    opacity: 0.6;
+    margin-top: 5px;
+}
+
+/* ===== SCORES ===== */
+.scores-container {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 25px 30px;
+    margin: 20px 0 30px;
+}
+
+.scores-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 16pt;
+    font-weight: 700;
+    color: #1a1a2e;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.scores-row {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.score-item { text-align: center; }
+
+.score-circle {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    border: 5px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Poppins', sans-serif;
+    font-size: 24pt;
+    font-weight: 800;
+    margin: 0 auto 8px;
+    background: white;
+}
 
 .score-label {
     font-size: 9pt;
-    font-weight: 700;
+    color: #666;
     text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
 }
 
-/* Progress Bars */
-.progress-section {
-    margin: 20px 0;
-}
+.progress-section { margin: 10px 0; }
 
 .progress-info {
     display: flex;
     justify-content: space-between;
-    font-weight: 700;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
 }
 
-.progress-container {
-    width: 100%;
-    height: 20px;
-    background: #eee;
+.progress-label {
+    font-size: 10pt;
+    font-weight: 600;
+    color: #444;
+}
+
+.progress-value {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #333;
+}
+
+.progress-bar {
+    background: #e5e7eb;
     border-radius: 10px;
+    height: 14px;
     overflow: hidden;
-    position: relative;
 }
 
 .progress-fill {
     height: 100%;
+    border-radius: 10px;
+    transition: width 0.3s;
 }
 
-.progress-fill.high { background: #10B981; }
-.progress-fill.medium { background: #F59E0B; }
-.progress-fill.low { background: #EF4444; }
+.progress-fill.high { background: linear-gradient(90deg, #22c55e, #16a34a); }
+.progress-fill.medium { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.progress-fill.low { background: linear-gradient(90deg, #ef4444, #dc2626); }
 
-/* Boxes */
-.custom-box {
-    padding: 15px;
-    margin: 20px 0;
-    border-radius: 6px;
-    border-left: 5px solid;
+/* ===== CONTENT ===== */
+h1 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 20pt;
+    font-weight: 800;
+    color: #1a1a2e;
+    border-bottom: 3px solid #F90100;
+    padding-bottom: 8px;
+    margin-top: 35px;
+    margin-bottom: 15px;
+    page-break-after: avoid;
 }
 
-.critical-box { background: #fff5f5; border-color: #F90100; color: #c53030; }
-.success-box { background: #f0fff4; border-color: #38a169; color: #276749; }
-.tip-box { background: #fffff0; border-color: #ecc94b; color: #744210; }
+h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 14pt;
+    font-weight: 700;
+    color: #333;
+    margin-top: 25px;
+    margin-bottom: 10px;
+    page-break-after: avoid;
+}
 
-/* Tables */
+h3 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 12pt;
+    font-weight: 600;
+    color: #555;
+    margin-top: 15px;
+}
+
+p {
+    margin: 8px 0;
+    text-align: justify;
+}
+
+strong { color: #1a1a2e; }
+
+blockquote {
+    border-left: 4px solid #F90100;
+    background: #fff5f5;
+    padding: 12px 18px;
+    margin: 15px 0;
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+}
+
+ul, ol {
+    margin: 10px 0;
+    padding-left: 25px;
+}
+
+li { margin: 5px 0; }
+
+/* Tabelle */
 table {
     width: 100%;
     border-collapse: collapse;
-    margin: 20px 0;
+    margin: 15px 0;
+    font-size: 10pt;
 }
 
-th {
+thead th {
     background: #F90100;
     color: white;
-    padding: 12px;
+    padding: 10px 12px;
     text-align: left;
+    font-weight: 600;
 }
 
-td {
-    padding: 10px;
-    border-bottom: 1px solid #eee;
+tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e5e7eb;
 }
 
-tr:nth-child(even) { background: #f9f9f9; }
+tbody tr:nth-child(even) { background: #f9fafb; }
 
-/* Button */
+/* CTA Button */
 .cta-button {
     display: block;
-    width: 300px;
-    margin: 40px auto;
     background: #F90100;
-    color: white;
-    text-align: center;
-    padding: 15px 30px;
-    border-radius: 8px;
-    font-size: 14pt;
-    font-weight: 800;
+    color: white !important;
     text-decoration: none;
-    text-transform: uppercase;
+    text-align: center;
+    padding: 16px 40px;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14pt;
+    font-weight: 700;
+    margin: 25px auto;
+    max-width: 400px;
 }
 
-footer {
-    margin-top: 50px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-    font-size: 9pt;
-    color: #666;
+.cta-subtext {
     text-align: center;
+    font-size: 9pt;
+    color: #999;
+    margin-top: -15px;
+}
+
+/* Footer firma */
+.report-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #e5e7eb;
+    text-align: center;
+    color: #666;
+    font-size: 10pt;
+}
+
+.report-footer strong {
+    display: block;
+    font-size: 12pt;
+    color: #1a1a2e;
+    margin-bottom: 5px;
 }
 """
 
-def markdown_to_pdf(markdown_text: str, output_path: str, company_name: str = "", report_type: str = "free") -> str:
+
+def generate_pdf(markdown_text: str, output_path: str, scraping_data: dict = None, 
+                 company_name: str = "", date_str: str = "", location: str = "") -> str:
     """
-    Converte il report Markdown in PDF con stile premium.
+    Genera un PDF premium dalla diagnosi markdown e dai dati di scraping.
     """
     import datetime
     
-    logger.info(f"🎨 Generando PDF Premium per {company_name}")
-
-    # 1. Parsing Punteggi per Badges
-    scores = {"Sito": 0, "SEO": 0, "Social": 0, "Google Business": 0}
-    for key in scores.keys():
-        match = re.search(fr"{key}:\s*(\d+)/100", markdown_text)
-        if match:
-            scores[key] = int(match.group(1))
-
-    # Generazione HTML Badges
-    badges_html = '<div class="score-row">'
-    for label, val in scores.items():
-        cls = "high" if val >= 70 else "medium" if val >= 40 else "low"
-        badges_html += f'''
-        <div class="score-badge-container">
-            <div class="score-circle {cls}">{val}</div>
-            <div class="score-label">{label}</div>
-        </div>
-        '''
-    badges_html += '</div>'
-
-    # 2. Trasformazione Barre di Progresso
-    def repl_bar(match):
-        label = match.group(1).strip()
-        val = int(match.group(2))
-        cls = "high" if val >= 70 else "medium" if val >= 40 else "low"
-        return f'''
-        <div class="progress-section">
-            <div class="progress-info"><span>{label}</span><span>{val}/100</span></div>
-            <div class="progress-container"><div class="progress-fill {cls}" style="width: {val}%"></div></div>
-        </div>
-        '''
-    markdown_text = re.sub(r"\[BARRA_PUNTEGGIO:\s*(.*?):\s*(\d+)/100\]", repl_bar, markdown_text)
-
-    # 3. Trasformazione Box Colorati (Pattern user request)
-    markdown_text = re.sub(r"^🚨\s*(.*)", r'<div class="custom-box critical-box">🚨 \1</div>', markdown_text, flags=re.MULTILINE)
-    markdown_text = re.sub(r"^✅\s*(.*)", r'<div class="custom-box success-box">✅ \1</div>', markdown_text, flags=re.MULTILINE)
-    markdown_text = re.sub(r"^💡\s*(.*)", r'<div class="custom-box tip-box">💡 \1</div>', markdown_text, flags=re.MULTILINE)
+    if not date_str:
+        date_str = datetime.date.today().strftime("%d/%m/%Y")
     
-    # 3b. Gestione blockquote boxes (Fix turn precedente)
-    def repl_box(match):
-        type_ = match.group(1).lower()
-        content = match.group(2).strip()
-        cls = "critical-box" if type_ == "critical" else "success-box" if type_ == "success" else "tip-box"
-        icon = "🚨" if type_ == "critical" else "✅" if type_ == "success" else "💡"
-        return f'<div class="custom-box {cls}"><strong>{icon} {type_.upper()}:</strong><br/>{content}</div>'
+    # Pulisci eventuali tag HTML dal markdown (protezione)
+    clean_md = re.sub(r'<div[^>]*>.*?</div>', '', markdown_text, flags=re.DOTALL)
+    clean_md = re.sub(r'<[^>]+>', '', clean_md)
     
-    markdown_text = re.sub(r'>\s*\[!(CRITICAL|SUCCESS|SUGGESTION)\]\s*(.*?)(?=\n\n|\n$|\Z)', repl_box, markdown_text, flags=re.DOTALL)
-
-    # 4. Emojis nei titoli (se non già presenti)
-    title_emojis = {
-        "LA TUA FOTOGRAFIA DIGITALE": "📊",
-        "COME TI TROVANO I CLIENTI": "🔍",
-        "TU VS I TUOI CONCORRENTI": "⚔️",
-        "I TUOI CONCORRENTI": "⚔️",
-        "5 AZIONI CHE PUOI FARE": "✅",
-        "IL TUO PROSSIMO PASSO": "🚀"
-    }
-    for title, emoji in title_emojis.items():
-        markdown_text = re.sub(fr"^#\s*{title}", f"# {emoji} {title}", markdown_text, flags=re.MULTILINE)
-        markdown_text = re.sub(fr"^##\s*{title}", f"## {emoji} {title}", markdown_text, flags=re.MULTILINE)
-
-    # 5. CTA Button
-    cta_html = '<a href="#" class="cta-button">OTTIENI IL REPORT PREMIUM A 99€</a>'
-    markdown_text = markdown_text.replace("{{CHECKOUT_PLACEHOLDER}}", cta_html)
-
-    # 6. Conversione Markdown -> HTML
-    html_content = markdown.markdown(markdown_text, extensions=['tables', 'fenced_code', 'nl2br'])
-
-    # 7. Layout Finale
-    today = datetime.date.today().strftime("%d/%m/%Y")
-    logo_url = "https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png"
+    # Converti Markdown → HTML
+    md_extensions = ['tables', 'fenced_code', 'nl2br']
+    content_html = markdown.markdown(clean_md, extensions=md_extensions)
     
-    full_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>{REPORT_CSS}</style>
-    </head>
-    <body class="report-body">
-        <div class="cover-page">
-            <img src="{logo_url}" style="width: 250px; margin-bottom: 50px;">
-            <h1>Diagnosi Digitale</h1>
-            <div class="subtitle">Strategia AI & Automazioni</div>
-            <div class="client-name">{company_name}</div>
-            <div class="badge">VERSIONE GRATUITA</div>
-            <div style="margin-top: 80px; font-size: 10pt; opacity: 0.8;">
-                Generato il {today}<br>Samatzai (SU), Sardegna
-            </div>
-        </div>
-        
-        <div style="padding: 20mm;">
-            {badges_html}
-            {html_content}
-            
-            <footer>
-                <strong>Stefano Corda</strong> — Fondatore, DigIdentity Agency<br>
-                info@digidentityagency.it | www.digidentityagency.it<br>
-                Sede: Via Dettori 3, 09020 Samatzai (SU)
-            </footer>
-        </div>
-    </body>
-    </html>
-    """
-
-    # Generazione PDF
+    # Sostituisci {{CHECKOUT_PLACEHOLDER}} con bottone CTA
+    checkout_button = '''
+    <div class="cta-button">OTTIENI IL REPORT PREMIUM A 99€</div>
+    <p class="cta-subtext">Pagamento sicuro con Stripe. Consegna immediata.</p>
+    '''
+    content_html = content_html.replace('{{CHECKOUT_PLACEHOLDER}}', checkout_button)
+    # Anche versione HTML-escaped
+    content_html = content_html.replace('&#123;&#123;CHECKOUT_PLACEHOLDER&#125;&#125;', checkout_button)
+    
+    # Genera cover page
+    cover_html = _generate_cover(company_name or "Azienda", date_str, location or "Italia")
+    
+    # Genera sezione punteggi
+    scores_html = ""
+    if scraping_data:
+        scores = _extract_scores(scraping_data)
+        scores_html = _generate_scores_section(scores)
+    
+    # Assembla HTML completo
+    full_html = f"""<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <style>{REPORT_CSS}</style>
+</head>
+<body>
+    {cover_html}
+    {scores_html}
+    {content_html}
+</body>
+</html>"""
+    
+    # Genera PDF
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     HTML(string=full_html).write_pdf(output_path)
     
-    logger.info(f"✅ PDF '{output_path}' generato con successo.")
+    logger.info(f"✅ PDF generato con successo: {output_path}")
     return output_path

@@ -671,6 +671,49 @@ def _find_social_media(website_url: str, company_name: str, social_links_db: dic
     return data
 
 
+
+def _enrich_gmb_with_places_api(place_id: str) -> dict:
+    """Arricchisce i dati GMB usando Google Places API (più affidabile di SerpAPI)."""
+    data = {}
+    api_key = getattr(settings, 'GOOGLE_PAGESPEED_API_KEY', None) or os.environ.get('GOOGLE_PAGESPEED_API_KEY')
+    if not api_key or not place_id:
+        return data
+    try:
+        resp = requests.get(
+            "https://maps.googleapis.com/maps/api/place/details/json",
+            params={
+                "place_id": place_id,
+                "fields": "name,rating,user_ratings_total,formatted_address,formatted_phone_number,website,opening_hours,reviews,photos,types,business_status,url",
+                "language": "it",
+                "key": api_key,
+            },
+            timeout=15,
+        )
+        result = resp.json()
+        if result.get("status") == "OK":
+            place = result.get("result", {})
+            data = {
+                "found": True,
+                "name": place.get("name"),
+                "rating": place.get("rating"),
+                "reviews_count": place.get("user_ratings_total"),
+                "address": place.get("formatted_address"),
+                "phone": place.get("formatted_phone_number"),
+                "website": place.get("website"),
+                "business_status": place.get("business_status"),
+                "hours": place.get("opening_hours", {}).get("weekday_text"),
+                "photos_count": len(place.get("photos", [])),
+                "maps_url": place.get("url"),
+                "types": place.get("types"),
+                "source": "google_places_api",
+            }
+            logger.info(f"Google Places API OK: {data.get('name')}, rating={data.get('rating')}, reviews={data.get('reviews_count')}, photos={data.get('photos_count')}")
+        else:
+            logger.warning(f"Google Places API status: {result.get('status')} - {result.get('error_message','')}")
+    except Exception as e:
+        logger.warning(f"Google Places API error: {e}")
+    return data
+
 def _check_google_business(company_name: str) -> dict:
     """Verifica la presenza su Google Business."""
     data = {
@@ -728,6 +771,28 @@ def _check_google_business(company_name: str) -> dict:
     except Exception as e:
         logger.warning(f"Errore Google Business per {company_name}: {e}")
         data["error"] = str(e)
+
+    # Arricchisci con Google Places API se abbiamo un place_id
+    place_id = data.get("place_id") or kg.get("place_id") if 'kg' in dir() else None
+    if not place_id:
+        # Prova a estrarre place_id dal knowledge graph
+        try:
+            resp2 = requests.get(
+                "https://serpapi.com/search.json",
+                params={"q": company_name, "hl": "it", "gl": "it", "api_key": settings.SERPAPI_KEY},
+                timeout=REQUEST_TIMEOUT,
+            )
+            kg2 = resp2.json().get("knowledge_graph", {})
+            place_id = kg2.get("place_id")
+        except Exception:
+            pass
+    if place_id:
+        places_data = _enrich_gmb_with_places_api(place_id)
+        if places_data.get("found"):
+            for k, v in places_data.items():
+                if v is not None:
+                    data[k] = v
+            logger.info(f"GMB arricchito con Places API per {company_name}")
 
     return data
 

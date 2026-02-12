@@ -613,7 +613,7 @@ def _add_competitor(comp_list: list, item: dict, source: str):
     import re as _re
     raw_address = item.get("address")
     if raw_address:
-        raw_address = _re.sub(r'[^\w\s,./°'-]', '', raw_address).strip()
+        raw_address = _re.sub(r"[^\w\s,./°]", "", raw_address).strip()
         raw_address = _re.sub(r'\s+', ' ', raw_address)
     
     comp_list.append({

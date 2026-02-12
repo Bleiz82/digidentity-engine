@@ -117,17 +117,15 @@ def scrape_google_maps(company_name: str, city: str, sector: str = "") -> dict[s
     """
     Scraping Google Maps via Apify per dati local business.
     Actor: compass/crawler-google-places (nwua9Gu5YrADL7ZDj)
-    
-    Restituisce: rating, recensioni, orari, indirizzo, foto, categorie e ultime recensioni testuali.
     """
-    search_query = f"{company_name} {city}"
+    search_queries = [f"{company_name} {city}", company_name]
     if sector:
-        search_query = f"{company_name} {sector} {city}"
+        search_queries.insert(0, f"{company_name} {sector} {city}")
 
-    logger.info(f"[APIFY] Google Maps scraping: '{search_query}'")
+    logger.info(f"[APIFY] Google Maps scraping con query: {search_queries}")
 
     run_input = {
-        "searchStringsArray": [search_query],
+        "searchStringsArray": search_queries,
         "maxCrawledPlacesPerSearch": 1,
         "language": "it",
         "countryCode": "it",
@@ -139,23 +137,22 @@ def scrape_google_maps(company_name: str, city: str, sector: str = "") -> dict[s
         "scrapeReviewerName": True,
     }
 
-    # Timeout alzato a 300s come richiesto
     results = _run_actor("nwua9Gu5YrADL7ZDj", run_input, timeout=300)
 
     if not results:
-        return {"source": "google_maps", "found": False, "error": "Nessun risultato"}
+        return {"source": "google_maps", "found": False, "error": "Attività non trovata"}
 
     # Trova il match migliore (primo risultato)
     place = results[0]
 
-    # Estrai ultime 5 recensioni testuali
+    # Estrai recensioni testuali (Fix 1C)
     reviews_summary = []
     for review in place.get("reviews", [])[:5]:
         reviews_summary.append({
             "text": review.get("text", "") or "",
             "stars": review.get("stars"),
             "publishedAtDate": review.get("publishedAtDate"),
-            "publishAt": review.get("publishAt"),
+            "reviewer_name": review.get("name", "Utente Google"),
         })
 
     # Estrai prime 5 foto URL
@@ -170,189 +167,166 @@ def scrape_google_maps(company_name: str, city: str, sector: str = "") -> dict[s
         "source": "google_maps",
         "found": True,
         "name": place.get("title", ""),
+        "rating": place.get("totalScore"),
+        "reviews_count": place.get("reviewsCount", 0),
         "address": place.get("address", ""),
         "phone": place.get("phone", ""),
         "website": place.get("website", ""),
-        "rating": place.get("totalScore"),
-        "total_reviews": place.get("reviewsCount", 0),
         "category": place.get("categoryName", ""),
-        "categories": place.get("categories", []),
         "opening_hours": place.get("openingHours", []),
         "photos": photos,
         "reviews": reviews_summary,
         "place_id": place.get("placeId", ""),
-        "temporarily_closed": place.get("temporarilyClosed", False),
-        "permanently_closed": place.get("permanentlyClosed", False),
     }
 
 
 def scrape_instagram(username: str = "", company_name: str = "", website: str = "") -> dict[str, Any]:
     """
-    Scraping Instagram via Apify.
+    Scraping Instagram via Apify (Dual-Call: Details + Posts).
     Actor: apify/instagram-scraper (shu8hvrXbJbY3Eb9W)
     """
     if not username and not company_name:
-        return {"source": "instagram", "found": False, "error": "Nessun username o nome azienda"}
+        return {"source": "instagram", "found": False, "error": "Nessun dato fornito"}
 
-    # Fix: Uso di directUrls come richiesto
     if username:
         username = username.strip().lstrip("@").split("/")[-1]
-        url = f"https://www.instagram.com/{username}/"
-        logger.info(f"[APIFY] Instagram scraping: {url}")
-
-        run_input = {
-            "directUrls": [url],
-            "resultsType": "posts",
-            "resultsLimit": 12,
-        }
+        ig_url = f"https://www.instagram.com/{username}/"
     else:
-        # Cerca per nome
-        logger.info(f"[APIFY] Instagram search: '{company_name}'")
-        run_input = {
-            "search": company_name,
-            "resultsLimit": 3,
-            "searchType": "user",
-        }
+        # Qui potremmo implementare una ricerca, ma per ora usiamo il nome azienda se possibile
+        return {"source": "instagram", "found": False, "error": "Username mancante"}
 
-    results = _run_actor("shu8hvrXbJbY3Eb9W", run_input)
+    logger.info(f"[APIFY] Instagram Dual-Call per: {ig_url}")
 
-    if not results:
+    # Chiamata 1: Posts (per engagement)
+    run_input_posts = {
+        "directUrls": [ig_url],
+        "resultsType": "posts",
+        "resultsLimit": 12,
+    }
+    posts_results = _run_actor("shu8hvrXbJbY3Eb9W", run_input_posts)
+
+    # Chiamata 2: Details (per profilo completo)
+    run_input_details = {
+        "directUrls": [ig_url],
+        "resultsType": "details",
+        "resultsLimit": 1,
+    }
+    details_results = _run_actor("shu8hvrXbJbY3Eb9W", run_input_details)
+
+    if not details_results and not posts_results:
         return {"source": "instagram", "found": False, "error": "Profilo non trovato"}
 
-    # Il profilo è nel primo risultato (o nei metadati del post se resultsType=posts)
-    # Spesso con resultsType=posts, i dati del profilo sono duplicati in ogni post under 'owner' 
-    # o l'actor ritorna un oggetto profilo se configurato.
-    # Assumiamo la struttura standard di instagram-scraper
-    profile = results[0]
+    # Merge risultati
+    profile = details_results[0] if details_results else {}
     
-    # Se l'actor ritorna post, i dati profilo sono spesso in 'owner' o 'user'
-    user_data = profile.get("owner") or profile.get("user") or profile
+    # Fallback username dai post se details fallisce
+    if not profile and posts_results:
+        first_post = posts_results[0]
+        profile["username"] = first_post.get("ownerUsername") or username
+        profile["fullName"] = first_post.get("ownerUsername")
+        logger.warning(f"[APIFY] Fallback profiling per {username}")
 
-    # Analisi post recenti per engagement
-    recent_posts = []
+    # Analisi post (dalla Chiamata 1)
+    posts = []
     total_likes = 0
     total_comments = 0
-    posts_analyzed = 0
-
-    # L'actor ritorna una lista di post
-    for post in results[:12]:
-        likes = post.get("likesCount", 0) or 0
-        comments = post.get("commentsCount", 0) or 0
-        total_likes += likes
-        total_comments += comments
-        posts_analyzed += 1
-        recent_posts.append({
-            "likes": likes,
-            "comments": comments,
-            "timestamp": post.get("timestamp"),
-            "caption": (post.get("caption") or "")[:150],
-            "url": post.get("url"),
+    for p in posts_results[:12]:
+        l = p.get("likesCount", 0) or 0
+        c = p.get("commentsCount", 0) or 0
+        total_likes += l
+        total_comments += c
+        posts.append({
+            "likes": l,
+            "comments": c,
+            "caption": (p.get("caption") or "")[:150],
+            "url": p.get("url"),
+            "timestamp": p.get("timestamp"),
         })
 
-    followers = user_data.get("followersCount", 0) or 0
-    avg_likes = total_likes / max(posts_analyzed, 1)
-    avg_comments = total_comments / max(posts_analyzed, 1)
+    followers = profile.get("followersCount", 0) or 0
+    avg_likes = total_likes / max(len(posts), 1)
+    avg_comments = total_comments / max(len(posts), 1)
     engagement_rate = round(((avg_likes + avg_comments) / followers) * 100, 2) if followers > 0 else 0
 
     return {
         "source": "instagram",
         "found": True,
-        "username": user_data.get("username", ""),
-        "full_name": user_data.get("fullName", ""),
-        "biography": user_data.get("biography", ""),
+        "username": profile.get("username", username),
+        "full_name": profile.get("fullName", ""),
+        "biography": profile.get("biography", ""),
         "followers": followers,
-        "following": user_data.get("followsCount", 0),
-        "posts_count": user_data.get("postsCount", 0),
-        "is_verified": user_data.get("verified", False),
-        "is_business": user_data.get("isBusinessAccount", False),
-        "external_url": user_data.get("externalUrl", ""),
-        "profile_pic_url": user_data.get("profilePicUrl", ""),
+        "following": profile.get("followsCount", 0),
+        "posts_count": profile.get("postsCount", 0),
+        "is_verified": profile.get("verified", False),
+        "is_business": profile.get("isBusinessAccount", False),
+        "external_url": profile.get("externalUrl", ""),
+        "profile_pic_url": profile.get("profilePicUrl", ""),
         "engagement_rate": engagement_rate,
-        "avg_likes_per_post": round(avg_likes),
-        "avg_comments_per_post": round(avg_comments),
-        "recent_posts": recent_posts,
+        "avg_likes": round(avg_likes),
+        "avg_comments": round(avg_comments),
+        "recent_posts": posts,
     }
 
 
 def scrape_facebook(page_url: str = "", company_name: str = "") -> dict[str, Any]:
     """
-    Scraping Facebook Page via Apify.
-    Actor: apify/facebook-pages-scraper (4Hv5RhChiaDk6iwad)
+    Scraping Facebook Page + Posts (Dual-Call).
+    Actors: facebook-pages-scraper (4Hv5RhChiaDk6iwad) + facebook-posts-scraper (KoJrdxJCTtpon81KY)
     """
-    if not page_url and not company_name:
-        return {"source": "facebook", "found": False, "error": "Nessun URL o nome"}
+    if not page_url:
+        return {"source": "facebook", "found": False, "error": "URL pagina mancante"}
 
-    search_term = page_url if page_url else company_name
-    logger.info(f"[APIFY] Facebook scraping: '{search_term}'")
+    logger.info(f"[APIFY] Facebook Dual-Call per: {page_url}")
 
-    if page_url:
-        run_input = {
-            "startUrls": [{"url": page_url}],
-            "maxPosts": 10,
-        }
-    else:
-        run_input = {
-            "search": company_name,
-            "maxResults": 1,
-            "maxPosts": 10,
-        }
+    # Chiamata 1: Dati Pagina
+    run_input_page = {"startUrls": [{"url": page_url}]}
+    page_results = _run_actor("4Hv5RhChiaDk6iwad", run_input_page)
 
-    results = _run_actor("4Hv5RhChiaDk6iwad", run_input)
+    # Chiamata 2: Post Recenti
+    run_input_posts = {
+        "startUrls": [{"url": page_url}],
+        "resultsLimit": 10,
+    }
+    posts_results = _run_actor("KoJrdxJCTtpon81KY", run_input_posts)
 
-    if not results:
+    if not page_results:
         return {"source": "facebook", "found": False, "error": "Pagina non trovata"}
 
-    page = results[0]
+    page = page_results[0]
     
-    # Estrai dati PAGINA (Fix 2)
-    likes = page.get("likes") or page.get("likesCount") or 0
-    followers = page.get("followers") or page.get("followersCount") or 0
-    rating = page.get("rating")
-    address = page.get("address")
-    phone = page.get("phone")
-    email = page.get("email")
-    website = page.get("website")
-    categories = page.get("categories", [])
-
-    # Analisi post (se presenti nel risultato dell'actor)
+    # Analisi post (dalla Chiamata 2)
     posts = []
-    total_likes = 0
-    total_comments = 0
-    total_shares = 0
-    
-    # Alcuni actor ritornano i post dentro l'oggetto pagina, altri come oggetti separati
-    raw_posts = page.get("latestPosts", []) or results
-    if raw_posts and isinstance(raw_posts[0], dict) and "text" in raw_posts[0]:
-        for post in raw_posts[:10]:
-            l = post.get("likes", 0) or 0
-            c = post.get("comments", 0) or 0
-            s = post.get("shares", 0) or 0
-            total_likes += l
-            total_comments += c
-            total_shares += s
-            posts.append({
-                "text": (post.get("text") or "")[:150],
-                "likes": l,
-                "comments": c,
-                "shares": s,
-                "date": post.get("time"),
-            })
+    total_eng = 0
+    for p in posts_results[:10]:
+        # reactionsCount o likes + comments + shares
+        likes = p.get("likes", 0) or 0
+        comments = p.get("comments", 0) or 0
+        shares = p.get("shares", 0) or 0
+        eng = likes + comments + shares
+        total_eng += eng
+        posts.append({
+            "text": (p.get("text") or "")[:150],
+            "likes": likes,
+            "comments": comments,
+            "shares": shares,
+            "date": p.get("time"),
+        })
 
     num_posts = max(len(posts), 1)
-    avg_engagement = round((total_likes + total_comments + total_shares) / num_posts, 2)
+    avg_engagement = round(total_eng / num_posts, 2)
 
     return {
         "source": "facebook",
         "found": True,
         "name": page.get("name") or page.get("pageName", ""),
-        "likes": likes,
-        "followers": followers,
-        "rating": rating,
-        "address": address,
-        "phone": phone,
-        "email": email,
-        "website": website,
-        "categories": categories,
+        "likes": page.get("likes") or page.get("likesCount", 0),
+        "followers": page.get("followers") or page.get("followersCount", 0),
+        "rating": page.get("rating"),
+        "address": page.get("address"),
+        "phone": page.get("phone"),
+        "email": page.get("email"),
+        "website": page.get("website"),
+        "categories": page.get("categories", []),
         "avg_engagement_per_post": avg_engagement,
         "recent_posts": posts,
     }

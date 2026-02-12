@@ -7,13 +7,11 @@ FORMATO OUTPUT OBBLIGATORIO:
 # Diagnosi Digitale Gratuita — DigIdentity Agency
 
 ## Informazioni Azienda
-
 - **Nome azienda**: {{COMPANY_NAME}}
 - **Sito web**: {{WEBSITE_URL}}
 
 ## Dati Analisi (Sola Lettura)
-
-Usa ESCLUSIVAMENTE questi dati reali. Se mancano, dì che non hai potuto vederli ma spiega perché servono.
+Usa ESCLUSIVAMENTE questi dati reali. Se mancano o sono nulli, dichiara la mancanza e spiega perché è un problema, ma non inventare mai numeri.
 
 ```json
 {{SCRAPING_DATA}}
@@ -24,60 +22,54 @@ Usa ESCLUSIVAMENTE questi dati reali. Se mancano, dì che non hai potuto vederli
 ## ISTRUZIONI DI SCRITTURA (DA SEGUIRE ALLA LETTERA)
 
 ### 1. IL TONO "NONNA"
-Scrivi come se stessi parlando a tua nonna o a un caro amico imprenditore che non sa nulla di internet.
-- **NO**: "La velocità di caricamento è di 4 secondi, influenzando il bounce rate."
-- **SI**: "Il tuo sito ci mette 4 secondi ad aprirsi. In pratica, è come se un cliente provasse ad entrare nel tuo negozio ma la porta fosse incastrata: dopo un po' si stufa, se ne va e va dal tuo concorrente."
-- **NO**: "Mancano i meta tag per l'indicizzazione SEO."
-- **SI**: "È come se avessi un'insegna bellissima ma montata al contrario, così la gente che passa in strada non legge cosa vendi. Google non capisce di cosa ti occupi e quindi non ti manda clienti."
+Immagina di spiegare il marketing digitale a tua nonna o a un caro amico artigiano che ha passato la vita a lavorare con le mani e non con lo smartphone. 
+- Usa analogie con il mondo fisico (negozi, vetrine, insegne, magazzini, uffici).
+- Spiega ogni termine tecnico attraverso una situazione quotidiana.
+- Ad esempio: "Il sito lento è come una porta blindata dura da aprire: il cliente spinge, vede che non si apre e se ne va dal vicino."
 
-### 2. DIVIETO DI GERGO TECNICO
-È categoricamente vietato usare termini come: "cruciale", "fondamentale", "significativo", "ottimizzazione", "KPI", "backend", "implementazione".
-Sostituiscili con: "importante", "serve a", "mettere a posto", "risultato", "dentro al computer".
+### 2. DIVIETO ASSOLUTO DI HTML
+Non usare NESSUN tag HTML. Solo Markdown puro. Se usi un tag <div> o <table> verrai penalizzato.
 
 ### 3. LUNGHEZZA MONUMENTALE (Minimo 15.000 caratteri)
-Per raggiungere questa lunghezza e dare valore:
-- Espandi ogni concetto con un'analogia dal mondo fisico (negozio, vetrina, insegna, uffici, magazzino).
-- Spiega per ogni problema cosa succede **IN PRATICA** al cliente dell'azienda (es. si arrabbia, non ti trova, pensa che sei chiuso).
-- Dai consigli pratici su cosa fare domani mattina appena apre l'attività.
-- Racconta come l'Intelligenza Artificiale (un assistente che non dorme mai) potrebbe risolvere i suoi problemi.
+Il report deve essere estremamente dettagliato. Se i dati sono pochi, espandi le spiegazioni, aggiungi analogie, descrivi scenari reali, spiega il "perché" di ogni consiglio. Il cliente deve percepire un valore enorme.
 
 ---
 
-## STRUTTURA DEL REPORT
+## STRUTTURA DEL REPORT (TITOLI OBBLIGATORI)
 
-### SEZIONE 1: LA TUA FOTOGRAFIA DIGITALE
-Inizia con: "Ciao {{COMPANY_NAME}}, questa è la tua Diagnosi Digitale."
-Presenta i punteggi (Punteggio: XX/100) per Sito, SEO, Social, Google Business.
-Spiega il Score Totale con una metafora: è un motore che gira bene o è un'auto ferma in garage?
+# LA TUA FOTOGRAFIA DIGITALE
+Inizia analizzando i punteggi generali presenti nel JSON. Spiega cosa significano questi numeri usando la metafora di un'auto o di un negozio. Se il punteggio è 35/100, di' chiaramente che l'auto è ferma in garage con le ruote sgonfie.
 
-### SEZIONE 2: COME TI VEDE IL MONDO (LA VETRINA)
-Analizza il sito web e Google My Business.
-Usa l'analogia della vetrina sporca o dell'insegna spenta.
-Se non ha il sito, spiega perché oggi è come non esistere, ma dillo con gentilezza.
-Se il sito è lento, parla della "porta incastrata".
+# COME TI VEDE IL MONDO
+Qui devi analizzare nel dettaglio i tre pilastri della presenza online usando i dati REALI:
 
-### SEZIONE 3: TU VS I TUOI VICINI DI NEGOZIO (CONCORRENZA)
-Usa i dati di SerpAPI e Competitors.
-Fai i nomi dei concorrenti e spiega perché la loro insegna su Google è più luminosa della sua.
-"Mentre tu sei in seconda pagina (una via buia dove non passa nessuno), il tuo concorrente Rossi è in prima pagina sotto i riflettori."
+## 1. Il tuo Sito Web (La tua Vetrina)
+Analizza i dati di PageSpeed. Parla della velocità come della "facilità di entrare in negozio". Se la performance mobile è bassa, spiega che è come avere la vetrina oscurata per chi passa fuori con lo smartphone.
 
-### SEZIONE 4: COSA PUOI FARE DOMANI MATTINA
-Elenca 5 azioni pratiche e semplici.
-Non usare termini tecnici. Di' "Cambia il titolo" o "Metti delle foto nuove".
-Spiega quanto tempo ci mette e che differenza farà per le sue tasche.
+## 2. I tuoi Social (Il Passaparola)
+Usa i dati di Instagram e Facebook. 
+- Se Instagram ha post ma 0 follower (dati non rilevati), scrivi: "Vediamo che pubblichi contenuti con una media di X like, ma la tua base di follower non è visibile ai nostri strumenti. È come parlare in una stanza dove non sappiamo quanti sono seduti ad ascoltare."
+- Se Facebook ha follower ma engagement zero: "Hai 200 persone nel tuo negozio (i follower) ma nessuna di loro parla o compra niente (engagement zero). È un'occasione sprecata."
 
-### SEZIONE 5: IL TUO FUTURO CON L'AI
-Spiega come un "assistente intelligente" può aiutarlo a non perdere più clienti.
-Introduci la Diagnosi Premium (99€) come il piano completo per rivoluzionare tutto.
+## 3. Google Business Profile (La tua posizione sulle Pagine Gialle)
+Se found=false: "La tua attività non ha ancora una scheda Google My Business — o almeno non ne abbiamo trovata una. Questo significa che quando qualcuno cerca '[settore] [città]' su Google Maps, tu semplicemente non esisti. È come avere l'attività in una via senza uscita e senza insegne."
+
+# TU VS I TUOI CONCORRENTI
+Usa i dati dei competitor presenti nel JSON. Fai i nomi reali dei concorrenti trovati. Spiega perché la loro insegna su Google è più luminosa della tua e perché i clienti finiscono da loro invece che da te.
+
+# 5 COSE CHE PUOI FARE DOMANI MATTINA
+Elenca 5 azioni pratiche, concrete e descritte in modo semplice.
+Per ogni azione indica:
+- **Cosa succede**: l'azione da fare.
+- **Perché è un problema**: il rischio di non farla.
+- **Cosa fare**: i passaggi pratici.
+- **Quanto costa**: tempo o budget stimato.
+
+# IL TUO PROSSIMO PASSO
+Spiega che questa è solo la superficie e che per rivoluzionare davvero l'attività serve un piano strategico d'urto. Presenta la Diagnosi Premium come la soluzione definitiva.
 
 {{CHECKOUT_PLACEHOLDER}}
 
-Chiudi con: "Stefano Corda — Lo Specialista AI delle Piccole Imprese | info@digidentityagency.it"
-
 ---
 
-## NOTE FINALI
-- **Markdown puro**.
-- **Minimo 15.000 caratteri**.
-- **Tono Sardo, amichevole e pratico**.
-- **MAI inventare dati**.
+**REGOLA FINALE**: Se il report scende sotto i 15.000 caratteri, aggiungi più dettagli analitici e più analogie. Ogni sezione deve essere densa di informazioni e consigli pratici.

@@ -145,7 +145,7 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
                 "source": "apify_google_maps",
                 "name": apify_gm.get("name"),
                 "rating": apify_gm.get("rating"),
-                "reviews_count": apify_gm.get("total_reviews"),
+                "reviews_count": apify_gm.get("reviews_count"),
                 "address": apify_gm.get("address"),
                 "phone": apify_gm.get("phone"),
                 "website": apify_gm.get("website"),

@@ -85,6 +85,20 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         seo_data = _analyze_seo(website_url, company_name, city, sector)
         results["seo"] = seo_data.get("seo", {})
         results["google_business"] = seo_data.get("google_business", {})
+        
+        # Arricchisci GMB con Google Places API se abbiamo place_id
+        gb_place_id = results["google_business"].get("place_id")
+        if gb_place_id:
+            try:
+                places_data = _enrich_gmb_with_places_api(gb_place_id)
+                if places_data.get("found"):
+                    for k, v in places_data.items():
+                        if v is not None:
+                            results["google_business"][k] = v
+                    logger.info(f"GMB arricchito con Places API: rating={places_data.get('rating')}, reviews={places_data.get('reviews_count')}, photos={places_data.get('photos_count')}")
+            except Exception as e:
+                logger.warning(f"Places API enrichment failed: {e}")
+        
         results["competitors"] = seo_data.get("competitors", [])
         results["citations"] = seo_data.get("citations", [])
         results["indexed_pages"] = seo_data.get("indexed_pages", {"total": 0, "pages": []})

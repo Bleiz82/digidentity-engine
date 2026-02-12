@@ -34,6 +34,9 @@ class Settings:
     # --- SerpAPI ---
     SERPAPI_KEY: str = os.getenv("SERPAPI_KEY", "")
 
+    # --- Google APIs ---
+    GOOGLE_PAGESPEED_API_KEY: str = os.getenv("GOOGLE_PAGESPEED_API_KEY", "")
+
     # --- SMTP ---
     SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))

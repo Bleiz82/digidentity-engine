@@ -458,13 +458,9 @@ def run_apify_scraping(
         "errors": [],
     }
 
-    # 1. Google Maps — SEMPRE (Fix 3)
-    try:
-        result["google_maps"] = scrape_google_maps(company_name, city, sector)
-    except Exception as e:
-        logger.error(f"[APIFY] Errore Google Maps: {e}")
-        result["errors"].append(f"Google Maps: {str(e)}")
-        result["google_maps"] = {"source": "google_maps", "found": False, "error": str(e)}
+    # 1. Google Maps (DISABILITATO - Timeout eccessivi, usiamo SerpAPI)
+    logger.info("[APIFY] Google Maps scraping disabilitato — dati forniti da SerpAPI")
+    result["google_maps"] = {"found": False, "source": "google_maps", "note": "Disabled - using SerpAPI"}
 
     # 2. Instagram — se ha il link
     ig_link = social_links.get("instagram", "")

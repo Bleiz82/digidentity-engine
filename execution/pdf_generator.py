@@ -134,6 +134,22 @@ def generate_pdf(markdown_text: str, output_path: str, scraping_data: dict = Non
         cover_html = _generate_cover(company_name, date_str, location)
         dashboard_html = _generate_dashboard(scores, scraping_data)
         content_html = _convert_markdown_to_html(markdown_text, scraping_data)
+        # Grafici PageSpeed dopo sezione sito web
+        pagespeed_detail_html = _generate_pagespeed_detail(scraping_data)
+        for marker in ['COSA TROVA CHI', 'LA SEDE DIGITALE', 'SITO WEB:']:
+            pos = content_html.upper().find(marker.upper())
+            if pos > 0:
+                next_h = -1
+                for tag in ['<h1', '<h2']:
+                    p = content_html.find(tag, pos + len(marker))
+                    if p > 0 and (next_h < 0 or p < next_h):
+                        next_h = p
+                if next_h > 0:
+                    content_html = content_html[:next_h] + pagespeed_detail_html + content_html[next_h:]
+                break
+        # Punteggio finale alla fine del report
+        final_score_html = _generate_final_score(scraping_data)
+        content_html = content_html + final_score_html
         
         full_html = f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><style>{css}</style></head>

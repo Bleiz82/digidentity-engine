@@ -738,7 +738,18 @@ def _enrich_gmb_with_places_api(place_id: str) -> dict:
                 "types": place.get("types"),
                 "source": "google_places_api",
             }
-            logger.info(f"Google Places API OK: {data.get('name')}, rating={data.get('rating')}, reviews={data.get('reviews_count')}, photos={data.get('photos_count')}")
+            # Salva recensioni con testo
+            raw_reviews = place.get("reviews", [])
+            if raw_reviews:
+                data["reviews"] = []
+                for rev in raw_reviews[:5]:
+                    data["reviews"].append({
+                        "author": rev.get("author_name"),
+                        "rating": rev.get("rating"),
+                        "text": rev.get("text", ""),
+                        "time": rev.get("relative_time_description"),
+                    })
+            logger.info(f"Google Places API OK: {data.get('name')}, rating={data.get('rating')}, reviews={data.get('reviews_count')}, photos={data.get('photos_count')}, reviews_text={len(raw_reviews)}")
         else:
             logger.warning(f"Google Places API status: {result.get('status')} - {result.get('error_message','')}")
     except Exception as e:

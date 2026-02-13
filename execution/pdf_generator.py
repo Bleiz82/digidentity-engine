@@ -41,6 +41,85 @@ def _add_visual_elements(html_content, scraping_data):
     return html_content
 
 
+
+def _generate_score_gauge(score, label, size=80):
+    try:
+        s = int(float(score))
+    except:
+        s = 0
+    if s < 40:
+        color = "#e74c3c"
+    elif s < 70:
+        color = "#f39c12"
+    else:
+        color = "#27ae60"
+    circumference = 2 * 3.14159 * 35
+    offset = circumference - (s / 100) * circumference
+    return f"""<div style="display:inline-block;text-align:center;margin:8px 12px">
+        <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}">
+            <circle cx="{size//2}" cy="{size//2}" r="35" fill="none" stroke="#e0e0e0" stroke-width="6"/>
+            <circle cx="{size//2}" cy="{size//2}" r="35" fill="none" stroke="{color}" stroke-width="6"
+                stroke-dasharray="{circumference}" stroke-dashoffset="{offset}"
+                transform="rotate(-90 {size//2} {size//2})" stroke-linecap="round"/>
+            <text x="{size//2}" y="{size//2 + 2}" text-anchor="middle" dominant-baseline="middle"
+                font-size="18" font-weight="bold" fill="{color}">{s}</text>
+        </svg>
+        <div style="font-size:10px;color:#555;margin-top:2px;font-weight:600">{label}</div>
+    </div>"""
+
+
+def _generate_pagespeed_detail(scraping_data):
+    ps = scraping_data.get("pagespeed", {})
+    mobile = ps.get("mobile", {}).get("scores", {})
+    desktop = ps.get("desktop", {}).get("scores", {})
+    html = '<div style="background:#f8f9fa;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #e0e0e0">'
+    html += '<div style="font-size:15px;font-weight:700;color:#1a237e;margin-bottom:15px;text-align:center">Punteggi PageSpeed Insights</div>'
+    for device, scores in [("MOBILE", mobile), ("DESKTOP", desktop)]:
+        html += f'<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;text-align:center">{device}</div>'
+        html += '<div style="display:flex;justify-content:center;flex-wrap:wrap">'
+        for key, label in [("performance","Performance"),("accessibility","Accessibilita"),("best-practices","Best Practices"),("seo","SEO")]:
+            val = scores.get(key, 0)
+            html += _generate_score_gauge(val, label, 70)
+        html += '</div></div>'
+    html += '</div>'
+    return html
+
+
+def _generate_final_score(scraping_data):
+    scores = _extract_scores(scraping_data)
+    vals = [v for v in scores.values() if isinstance(v, (int, float)) and v > 0]
+    avg = int(sum(vals) / len(vals)) if vals else 0
+    if avg < 40:
+        color = "#e74c3c"
+        giudizio = "Critica"
+    elif avg < 55:
+        color = "#f39c12"
+        giudizio = "Da migliorare"
+    elif avg < 70:
+        color = "#2196f3"
+        giudizio = "Sufficiente"
+    else:
+        color = "#27ae60"
+        giudizio = "Buona"
+    circumference = 2 * 3.14159 * 55
+    offset = circumference - (avg / 100) * circumference
+    return f"""<div style="text-align:center;margin:30px 0;padding:25px;background:linear-gradient(135deg,#0a0e27,#1a237e,#283593);border-radius:16px">
+        <div style="color:white;font-size:18px;font-weight:700;margin-bottom:15px">PUNTEGGIO FINALE PRESENZA DIGITALE</div>
+        <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="55" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8"/>
+            <circle cx="70" cy="70" r="55" fill="none" stroke="{color}" stroke-width="8"
+                stroke-dasharray="{circumference}" stroke-dashoffset="{offset}"
+                transform="rotate(-90 70 70)" stroke-linecap="round"/>
+            <text x="70" y="65" text-anchor="middle" dominant-baseline="middle"
+                font-size="36" font-weight="bold" fill="white">{avg}</text>
+            <text x="70" y="90" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.8)">/100</text>
+        </svg>
+        <div style="color:{color};font-size:16px;font-weight:700;margin-top:10px">{giudizio}</div>
+        <div style="color:rgba(255,255,255,0.7);font-size:11px;margin-top:8px">Media: Sito Web, SEO, Social Media, Google Business</div>
+    </div>"""
+
+
+
 def generate_pdf(markdown_text: str, output_path: str, scraping_data: dict = None, 
                  company_name: str = "", date_str: str = "", location: str = "",
                  checkout_url: str = "") -> str:
@@ -547,26 +626,29 @@ def _get_report_css() -> str:
     """
 
 
-def _generate_cover(company_name: str, date_str: str, location: str) -> str:
-    from datetime import datetime
-    date_val = date_str if date_str else datetime.now().strftime("%d/%m/%Y")
-    return f'''
-    <div class="cover">
-        <div class="cover-logo">DigIdentity Agency</div>
-        <div class="cover-badge">Versione Gratuita</div>
-        <div class="cover-content">
-            <h1>DIAGNOSI<br>DIGITALE</h1>
-            <div class="cover-line"></div>
-            <div class="company-name">{company_name}</div>
-            <div class="subtitle">Analisi AI della Presenza Digitale</div>
-            <div class="meta">
-                {location}<br>
-                {date_val}<br><br>
-                7 Motori AI &bull; Analisi a 360&deg; &bull; Dati Reali
+def _generate_cover(company_name, date_str, location):
+    logo_url = "https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png"
+    return f"""
+    <div style="page-break-after:always;height:100vh;background:linear-gradient(135deg,#0a0e27 0%,#1a237e 40%,#283593 70%,#1565c0 100%);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:40px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 20% 80%,rgba(25,118,210,0.3) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(66,165,245,0.2) 0%,transparent 50%);pointer-events:none"></div>
+        <div style="position:relative;z-index:1">
+            <img src="{logo_url}" style="width:220px;margin-bottom:30px" alt="DigIdentity Agency">
+            <div style="color:rgba(255,255,255,0.7);font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-bottom:40px">Analisi AI della Presenza Digitale</div>
+            <div style="width:60px;height:2px;background:linear-gradient(90deg,#42a5f5,#1e88e5);margin:0 auto 40px auto;border-radius:2px"></div>
+            <div style="color:white;font-size:14px;letter-spacing:6px;text-transform:uppercase;margin-bottom:15px">DIAGNOSI</div>
+            <div style="color:white;font-size:14px;letter-spacing:6px;text-transform:uppercase;margin-bottom:40px">DIGITALE</div>
+            <div style="color:#42a5f5;font-size:28px;font-weight:800;margin-bottom:15px;line-height:1.3">{company_name}</div>
+            <div style="width:40px;height:2px;background:#42a5f5;margin:0 auto 25px auto;border-radius:2px"></div>
+            <div style="color:rgba(255,255,255,0.6);font-size:11px;margin-bottom:8px">{location} | {date_str}</div>
+            <div style="color:rgba(255,255,255,0.5);font-size:10px">7 Motori AI &bull; Analisi a 360&deg; &bull; Dati Reali</div>
+            <div style="margin-top:40px;display:inline-block;border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:6px 20px">
+                <span style="color:rgba(255,255,255,0.7);font-size:10px;letter-spacing:2px">VERSIONE GRATUITA</span>
             </div>
         </div>
-    </div>
-    '''
+        <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.3);font-size:9px">
+            DigIdentity Agency | info@digidentityagency.it | digidentityagency.it
+        </div>
+    </div>"""
 
 
 def _generate_dashboard(scores: dict, scraping_data: dict = None) -> str:

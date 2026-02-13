@@ -7,6 +7,40 @@ from weasyprint import HTML
 
 logger = logging.getLogger(__name__)
 
+
+def _add_visual_elements(html_content, scraping_data):
+    """Aggiunge barre di progresso e icone visive al report HTML"""
+    import re
+    
+    # Sostituisci i punteggi con barre di progresso visive
+    def score_to_bar(score):
+        try:
+            s = int(float(score))
+        except:
+            return score
+        color = "#e74c3c" if s < 40 else "#f39c12" if s < 70 else "#27ae60"
+        return f'<span style="font-weight:bold;color:{color}">{s}/100</span> <span style="display:inline-block;width:120px;height:12px;background:#e0e0e0;border-radius:6px;vertical-align:middle"><span style="display:inline-block;width:{s}%;height:100%;background:{color};border-radius:6px"></span></span>'
+    
+    # Aggiungi icone alle intestazioni se non hanno emoji
+    icon_map = {
+        "FOTOGRAFIA DIGITALE": "📊",
+        "COME I CLIENTI": "🔍", 
+        "COMPETITOR": "🏆",
+        "SITO WEB": "🌐",
+        "INTELLIGENZA ARTIFICIALE": "🤖",
+        "5 AZIONI": "✅",
+        "CONCLUSIONE": "📈"
+    }
+    
+    # Box informativi colorati per dati chiave
+    html_content = html_content.replace(
+        '<blockquote>',
+        '<blockquote style="border-left:4px solid #1a73e8;background:#e8f0fe;padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0;font-style:normal">'
+    )
+    
+    return html_content
+
+
 def generate_pdf(markdown_text: str, output_path: str, scraping_data: dict = None, 
                  company_name: str = "", date_str: str = "", location: str = "",
                  checkout_url: str = "") -> str:

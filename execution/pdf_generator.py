@@ -47,9 +47,9 @@ def _generate_score_gauge(score, label, size=80):
         s = int(float(score))
     except:
         s = 0
-    if s < 40:
+    if s < 50:
         color = "#e74c3c"
-    elif s < 70:
+    elif s < 90:
         color = "#f39c12"
     else:
         color = "#27ae60"

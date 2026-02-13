@@ -78,22 +78,21 @@ Se ci sono problemi di velocita, spiega che ogni secondo in piu di attesa fa per
 - NESSUN elenco
 
 ### SEZIONE 6: # RELAZIONE FINALE: IL PERCORSO DI CRESCITA DI [NOME AZIENDA]
-(minimo 4.000 caratteri - QUESTA E LA SEZIONE PIU IMPORTANTE)
+(minimo 4.000 caratteri - QUESTA E LA SEZIONE PIU IMPORTANTE DEL REPORT)
 
-Questa NON e una lista di azioni. E una relazione discorsiva, scritta come un consulente che spiega al telefono all imprenditore cosa deve fare e perche.
+ATTENZIONE: Questa sezione DEVE essere scritta INTERAMENTE in paragrafi discorsivi. VIETATO usare elenchi numerati, elenchi puntati, o qualsiasi tipo di lista. Scrivi SOLO in paragrafi come se stessi parlando al telefono con l imprenditore.
 
-Struttura della relazione:
-1. RIEPILOGO DELLA SITUAZIONE (1 paragrafo): riassumi in parole semplicissime cosa e emerso dalla diagnosi. Punti di forza e punti critici.
+PARAGRAFO 1 - RIEPILOGO: Riassumi in parole semplicissime cosa e emerso dalla diagnosi. Cosa funziona e cosa no. Scrivi come se stessi raccontando la situazione a un amico.
 
-2. LE PRIORITA (2-3 paragrafi discorsivi, NON lista): racconta le 3-4 cose piu importanti da fare, spiegando per ognuna COSA fare, PERCHE e COSA CAMBIA nel suo business. Scrivi in modo discorsivo, come consigli di un amico esperto.
+PARAGRAFO 2 - LE COSE PIU IMPORTANTI DA FARE: Spiega in modo discorsivo le 3-4 priorita. NON fare una lista. Racconta: La prima cosa su cui concentrarsi e... perche... e questo porterebbe a... Poi sarebbe fondamentale... perche... Scrivi come consigli di un amico esperto, non come una to-do list.
 
-3. UNO SCENARIO CONCRETO (1-2 paragrafi): racconta come potrebbe essere la situazione di [azienda] tra 6 mesi se implementasse questi cambiamenti. Includi come l AI potrebbe aiutare nel quotidiano (es. un assistente che risponde alle richieste di preventivo la sera, un sistema che ricorda ai clienti soddisfatti di lasciare una recensione). Racconta come l azienda potrebbe superare i problemi emersi e risparmiare tempo e denaro.
+PARAGRAFO 3 - LA STORIA DI UN ATTIVITA SIMILE: Racconta la storia (anche ipotetica ma realistica) di un attivita dello stesso settore e della stessa zona che si trovava in una situazione simile e ha migliorato la propria presenza digitale. Descrivi cosa ha fatto concretamente: ha ottimizzato il sito, ha iniziato a raccogliere recensioni, ha attivato i social con contenuti dei propri lavori. Poi racconta come ha integrato l intelligenza artificiale: un assistente automatico che risponde alle richieste di preventivo anche la sera e nel weekend, un sistema che dopo ogni lavoro completato invia automaticamente al cliente un messaggio per chiedere una recensione, un chatbot sul sito che raccoglie le informazioni sul lavoro richiesto e prenota un sopralluogo. Descrivi i risultati: piu visibilita, piu telefonate, piu lavoro, meno tempo perso al telefono. Questa storia deve far capire all imprenditore che il cambiamento e possibile e alla portata.
 
-4. LA DIAGNOSI PREMIUM (1 paragrafo): spiegare che un analisi di questo tipo in una normale agenzia di marketing costa dai 1.000 ai 2.000 euro. La Diagnosi Premium di DigIdentity Agency offre lo stesso livello di approfondimento (40-50 pagine, strategia su misura, calendario contenuti, piano operativo 90 giorni, analisi AI personalizzata, ricerca parole chiave avanzata) a soli 99 euro, grazie all utilizzo dell intelligenza artificiale che permette di abbattere i costi mantenendo la qualita.
+PARAGRAFO 4 - LA DIAGNOSI PREMIUM: Spiegare che un analisi di questo tipo in una normale agenzia di marketing costa dai 1.000 ai 2.000 euro. La Diagnosi Premium di DigIdentity Agency offre lo stesso livello di approfondimento (40-50 pagine, strategia su misura, calendario contenuti, piano operativo 90 giorni, analisi AI personalizzata, ricerca parole chiave avanzata) a soli 99 euro, grazie all utilizzo dell intelligenza artificiale che permette di abbattere i costi mantenendo la qualita.
 
-5. CHIUSURA: Per richiedere la Diagnosi Premium o per qualsiasi domanda, il team di DigIdentity Agency e disponibile via WhatsApp al 392 1990215.
+PARAGRAFO 5 - CHIUSURA: Per richiedere la Diagnosi Premium o per qualsiasi domanda, il team di DigIdentity Agency e disponibile via WhatsApp al 392 1990215.
 
-6. NON inserire {{CHECKOUT_URL}} nel testo. Il link di pagamento viene aggiunto automaticamente dal sistema.
+NON inserire {{CHECKOUT_URL}} nel testo. Il link di pagamento viene aggiunto automaticamente dal sistema.
 
 ## CHECKLIST
 - Minimo 15.000 caratteri totali

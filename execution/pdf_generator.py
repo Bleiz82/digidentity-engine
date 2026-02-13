@@ -8,7 +8,8 @@ from weasyprint import HTML
 logger = logging.getLogger(__name__)
 
 def generate_pdf(markdown_text: str, output_path: str, scraping_data: dict = None, 
-                 company_name: str = "", date_str: str = "", location: str = "") -> str:
+                 company_name: str = "", date_str: str = "", location: str = "",
+                 checkout_url: str = "") -> str:
     """
     Genera un report PDF professionale con branding DigIdentity.
     Include Cover Page, Dashboard Punteggi e contenuto dinamico.
@@ -26,6 +27,8 @@ def generate_pdf(markdown_text: str, output_path: str, scraping_data: dict = Non
         dashboard_html = _generate_dashboard(scores)
         
         # 3. Conversione Markdown in HTML
+        if checkout_url:
+            scraping_data["checkout_url"] = checkout_url
         content_html = _convert_markdown_to_html(markdown_text, scraping_data)
         
         # 4. Assemblaggio Finale
@@ -531,9 +534,9 @@ def _replace_emoji_with_badges(html: str) -> str:
 
 
 def _convert_markdown_to_html(md_text: str, data: dict) -> str:
-    # 1. Pulisci tag HTML residui (sanificazione)
-    md_text = re.sub(r'<(div|span|section|p|h1|h2|h3|table|tr|td|th)[^>]*>', '', md_text)
-    md_text = re.sub(r'</(div|span|section|p|h1|h2|h3|table|tr|td|th)>', '', md_text)
+    # 1. Pulisci solo tag HTML pericolosi (mantieni tabelle)
+    md_text = re.sub(r'<(div|span|section)[^>]*>', '', md_text)
+    md_text = re.sub(r'</(div|span|section)>', '', md_text)
     
     # 2. Converti in HTML
     html = markdown.markdown(md_text, extensions=['tables', 'fenced_code', 'nl2br'])
@@ -552,7 +555,7 @@ def _convert_markdown_to_html(md_text: str, data: dict) -> str:
         html = re.sub(pattern, f'<div class="info-box {css_class}">\\1</div>', html, flags=re.DOTALL)
     
     # 5. Sostituisci CTA Placeholder
-    checkout_url = data.get("checkout_url", "#")
+    checkout_url = data.get("checkout_url") or data.get("stripe_checkout_url") or "#"
     cta_html = f'''
     <div class="cta-container">
         <a href="{checkout_url}" class="cta-button">Ottieni il Report Premium a 99€</a>

@@ -712,28 +712,56 @@ def _find_social_media(website_url: str, company_name: str, social_links_db: dic
 
 
 def _get_keyword_suggestions(sector: str, city: str) -> list:
-    """Usa SerpAPI Google Autocomplete per ottenere keyword suggestions."""
-    if not settings.SERPAPI_KEY or not sector or not city:
+    """Genera keyword strategiche per settore + città. Zero API calls."""
+    if not sector or not city:
         return []
-    suggestions = []
-    queries = [f"{sector} {city}", f"{sector} vicino a me", f"{sector} migliore {city}", f"{sector} prezzi {city}"]
-    for q in queries:
-        try:
-            resp = requests.get("https://serpapi.com/search.json", params={
-                "engine": "google_autocomplete", "q": q, "hl": "it", "gl": "it",
-                "api_key": settings.SERPAPI_KEY
-            }, timeout=10)
-            data = resp.json()
-            for s in data.get("suggestions", []):
-                val = s.get("value", "")
-                if val and val not in suggestions:
-                    suggestions.append(val)
-        except Exception as e:
-            logger.warning(f"Autocomplete error for '{q}': {e}")
-        if len(suggestions) >= 20:
+    
+    sector_lower = sector.lower()
+    city_lower = city.lower()
+    
+    # Keyword base: settore + città
+    keywords = [
+        f"{sector_lower} {city_lower}",
+        f"{sector_lower} a {city_lower}",
+        f"{sector_lower} {city_lower} prezzi",
+        f"{sector_lower} {city_lower} preventivo",
+        f"{sector_lower} {city_lower} opinioni",
+        f"{sector_lower} {city_lower} migliore",
+        f"{sector_lower} vicino a me",
+        f"preventivo {sector_lower} {city_lower}",
+        f"migliore {sector_lower} {city_lower}",
+    ]
+    
+    # Keyword specifiche per macro-settori comuni
+    sector_keywords = {
+        "edil": ["ristrutturazione casa", "ristrutturazione bagno", "costruzione casa", "preventivo ristrutturazione", "impresa ristrutturazioni"],
+        "ristor": ["ristorante", "trattoria", "dove mangiare", "ristorante economico", "ristorante pesce"],
+        "estet": ["centro estetico", "trattamenti viso", "epilazione laser", "manicure pedicure", "massaggi"],
+        "parruc": ["parrucchiere", "taglio capelli", "colore capelli", "barbiere", "salone bellezza"],
+        "idraul": ["idraulico", "pronto intervento idraulico", "riparazione perdite", "sostituzione caldaia", "bagno nuovo"],
+        "elettr": ["elettricista", "impianto elettrico", "pronto intervento elettricista", "domotica", "fotovoltaico"],
+        "avvoc": ["avvocato", "studio legale", "consulenza legale", "avvocato divorzista", "avvocato penalista"],
+        "dentist": ["dentista", "studio dentistico", "impianti dentali", "sbiancamento denti", "ortodonzia"],
+        "meccan": ["officina meccanica", "meccanico auto", "tagliando auto", "revisione auto", "carrozzeria"],
+    }
+    
+    for key, extra_kw in sector_keywords.items():
+        if key in sector_lower:
+            for kw in extra_kw:
+                keywords.append(f"{kw} {city_lower}")
             break
-    logger.info(f"[SERPAPI] Keyword suggestions: {len(suggestions)} trovate")
-    return suggestions[:20]
+    
+    # Rimuovi duplicati mantenendo ordine
+    seen = set()
+    unique = []
+    for k in keywords:
+        if k not in seen:
+            seen.add(k)
+            unique.append(k)
+    
+    logger.info(f"[KEYWORDS] Generate {len(unique)} keyword per {sector} + {city}")
+    return unique[:20]
+
 
 def _enrich_gmb_with_places_api(place_id: str) -> dict:
     """Arricchisce i dati GMB usando Google Places API (più affidabile di SerpAPI)."""

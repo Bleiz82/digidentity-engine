@@ -103,6 +103,13 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         results["citations"] = seo_data.get("citations", [])
         results["indexed_pages"] = seo_data.get("indexed_pages", {"total": 0, "pages": []})
         
+        # Keyword suggestions
+        try:
+            results["keyword_suggestions"] = _get_keyword_suggestions(sector, city)
+        except Exception as e:
+            logger.warning(f"Keyword suggestions error: {e}")
+            results["keyword_suggestions"] = []
+        
         # Aggiorna città e settore se estratti da SerpAPI
         if not results["city"] and seo_data.get("extracted_city"):
             results["city"] = seo_data["extracted_city"]
@@ -702,6 +709,31 @@ def _find_social_media(website_url: str, company_name: str, social_links_db: dic
     return data
 
 
+
+
+def _get_keyword_suggestions(sector: str, city: str) -> list:
+    """Usa SerpAPI Google Autocomplete per ottenere keyword suggestions."""
+    if not settings.SERPAPI_KEY or not sector or not city:
+        return []
+    suggestions = []
+    queries = [f"{sector} {city}", f"{sector} vicino a me", f"{sector} migliore {city}", f"{sector} prezzi {city}"]
+    for q in queries:
+        try:
+            resp = requests.get("https://serpapi.com/search.json", params={
+                "engine": "google_autocomplete", "q": q, "hl": "it", "gl": "it",
+                "api_key": settings.SERPAPI_KEY
+            }, timeout=10)
+            data = resp.json()
+            for s in data.get("suggestions", []):
+                val = s.get("value", "")
+                if val and val not in suggestions:
+                    suggestions.append(val)
+        except Exception as e:
+            logger.warning(f"Autocomplete error for '{q}': {e}")
+        if len(suggestions) >= 20:
+            break
+    logger.info(f"[SERPAPI] Keyword suggestions: {len(suggestions)} trovate")
+    return suggestions[:20]
 
 def _enrich_gmb_with_places_api(place_id: str) -> dict:
     """Arricchisce i dati GMB usando Google Places API (più affidabile di SerpAPI)."""

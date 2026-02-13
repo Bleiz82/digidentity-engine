@@ -716,7 +716,9 @@ def _get_keyword_suggestions(sector: str, city: str) -> list:
     if not sector or not city:
         return []
     
-    sector_lower = sector.lower()
+    # Pulisci settore: prendi solo la prima parte prima di "-" o "–"
+    sector_clean = sector.split("-")[0].split("–")[0].strip()
+    sector_lower = sector_clean.lower()
     city_lower = city.lower()
     
     # Keyword base: settore + città

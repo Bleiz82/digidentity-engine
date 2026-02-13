@@ -626,29 +626,26 @@ def _get_report_css() -> str:
     """
 
 
-def _generate_cover(company_name, date_str, location):
-    logo_url = "https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png"
-    return f"""
-    <div style="page-break-after:always;height:100vh;background:linear-gradient(135deg,#0a0e27 0%,#1a237e 40%,#283593 70%,#1565c0 100%);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:40px;position:relative;overflow:hidden">
-        <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 20% 80%,rgba(25,118,210,0.3) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(66,165,245,0.2) 0%,transparent 50%);pointer-events:none"></div>
-        <div style="position:relative;z-index:1">
-            <img src="{logo_url}" style="width:220px;margin-bottom:30px" alt="DigIdentity Agency">
-            <div style="color:rgba(255,255,255,0.7);font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-bottom:40px">Analisi AI della Presenza Digitale</div>
-            <div style="width:60px;height:2px;background:linear-gradient(90deg,#42a5f5,#1e88e5);margin:0 auto 40px auto;border-radius:2px"></div>
-            <div style="color:white;font-size:14px;letter-spacing:6px;text-transform:uppercase;margin-bottom:15px">DIAGNOSI</div>
-            <div style="color:white;font-size:14px;letter-spacing:6px;text-transform:uppercase;margin-bottom:40px">DIGITALE</div>
-            <div style="color:#42a5f5;font-size:28px;font-weight:800;margin-bottom:15px;line-height:1.3">{company_name}</div>
-            <div style="width:40px;height:2px;background:#42a5f5;margin:0 auto 25px auto;border-radius:2px"></div>
-            <div style="color:rgba(255,255,255,0.6);font-size:11px;margin-bottom:8px">{location} | {date_str}</div>
-            <div style="color:rgba(255,255,255,0.5);font-size:10px">7 Motori AI &bull; Analisi a 360&deg; &bull; Dati Reali</div>
-            <div style="margin-top:40px;display:inline-block;border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:6px 20px">
-                <span style="color:rgba(255,255,255,0.7);font-size:10px;letter-spacing:2px">VERSIONE GRATUITA</span>
+def _generate_cover(company_name: str, date_str: str, location: str) -> str:
+    from datetime import datetime
+    date_val = date_str if date_str else datetime.now().strftime("%d/%m/%Y")
+    return f'''
+    <div class="cover">
+        <div class="cover-logo">DigIdentity Agency</div>
+        <div class="cover-badge">Versione Gratuita</div>
+        <div class="cover-content">
+            <h1>DIAGNOSI<br>DIGITALE</h1>
+            <div class="cover-line"></div>
+            <div class="company-name">{company_name}</div>
+            <div class="subtitle">Analisi AI della Presenza Digitale</div>
+            <div class="meta">
+                {location}<br>
+                {date_val}<br><br>
+                7 Motori AI &bull; Analisi a 360&deg; &bull; Dati Reali
             </div>
         </div>
-        <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.3);font-size:9px">
-            DigIdentity Agency | info@digidentityagency.it | digidentityagency.it
-        </div>
-    </div>"""
+    </div>
+    '''
 
 
 def _generate_dashboard(scores: dict, scraping_data: dict = None) -> str:

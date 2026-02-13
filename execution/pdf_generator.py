@@ -111,7 +111,7 @@ def _generate_final_score(scraping_data):
         giudizio = "Buona"
     circumference = 2 * 3.14159 * 55
     offset = circumference - (avg / 100) * circumference
-    return f"""<div style="text-align:center;margin:30px 0;padding:25px;background:linear-gradient(135deg,#2c2c2c,#3d3d3d,#4a4a4a);border-radius:16px">
+    return f"""<div style="text-align:center;margin:30px 0;padding:25px;background:linear-gradient(135deg,#8B0000,#A52A2A,#C0392B);border-radius:16px">
         <div style="color:white;font-size:18px;font-weight:700;margin-bottom:15px">PUNTEGGIO FINALE PRESENZA DIGITALE</div>
         <svg width="140" height="140" viewBox="0 0 140 140">
             <circle cx="70" cy="70" r="55" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8"/>
@@ -655,7 +655,7 @@ def _generate_cover(company_name: str, date_str: str, location: str) -> str:
     date_val = date_str if date_str else datetime.now().strftime("%d/%m/%Y")
     return f'''
     <div class="cover">
-        <div class="cover-logo"><img src="https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png" style="width:200px" alt="DigIdentity Agency"></div>
+        <div class="cover-logo"><img src="/app/assets/logo_light.png" style="width:200px" alt="DigIdentity Agency"></div>
         <div class="cover-badge">Versione Gratuita</div>
         <div class="cover-content">
             <h1>DIAGNOSI<br>DIGITALE</h1>

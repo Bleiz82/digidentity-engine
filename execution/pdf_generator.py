@@ -10,162 +10,108 @@ logger = logging.getLogger(__name__)
 def generate_pdf(markdown_text: str, output_path: str, scraping_data: dict = None, 
                  company_name: str = "", date_str: str = "", location: str = "",
                  checkout_url: str = "") -> str:
-    """
-    Genera un report PDF professionale con branding DigIdentity.
-    Include Cover Page, Dashboard Punteggi e contenuto dinamico.
-    """
     try:
         if scraping_data is None:
             scraping_data = {}
-
-        # 1. Estrazione e Calcolo Punteggi
-        scores = _calculate_all_scores(scraping_data)
-        
-        # 2. Generazione CSS e Componenti HTML
-        css = _get_report_css()
-        cover_html = _generate_cover(company_name, date_str, location)
-        dashboard_html = _generate_dashboard(scores)
-        
-        # 3. Conversione Markdown in HTML
         if checkout_url:
             scraping_data["checkout_url"] = checkout_url
+
+        scores = _calculate_all_scores(scraping_data)
+        css = _get_report_css()
+        cover_html = _generate_cover(company_name, date_str, location)
+        dashboard_html = _generate_dashboard(scores, scraping_data)
         content_html = _convert_markdown_to_html(markdown_text, scraping_data)
         
-        # 4. Assemblaggio Finale
-        full_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>{css}</style>
-        </head>
-        <body>
-            {cover_html}
-            {dashboard_html}
-            <div class="report-content">
-                {content_html}
-            </div>
-            <div class="footer">
-                DigIdentity Agency — Stefano Corda | info@digidentityagency.it | digidentityagency.it
-            </div>
-        </body>
-        </html>
-        """
+        full_html = f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><style>{css}</style></head>
+<body>
+{cover_html}
+{dashboard_html}
+<div class="report-content">{content_html}</div>
+</body></html>"""
         
-        # 5. Generazione PDF con WeasyPrint
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         HTML(string=full_html, base_url=".").write_pdf(output_path)
         
         file_size = Path(output_path).stat().st_size / 1024
-        logger.info(f"✅ PDF Generato: {output_path} ({file_size:.1f} KB)")
+        logger.info(f"PDF Generato: {output_path} ({file_size:.1f} KB)")
         return output_path
-
     except Exception as e:
-        logger.error(f"❌ Errore generazione PDF: {str(e)}")
+        logger.error(f"Errore generazione PDF: {str(e)}")
         raise
+
 
 def _calculate_social_score(scraping_data):
     apify = scraping_data.get("apify", {})
     ig = apify.get("instagram", {})
     fb = apify.get("facebook", {})
-    
     ig_followers = ig.get("followers", 0) or 0
     fb_followers = fb.get("followers", 0) or 0
     ig_engagement = ig.get("engagement_rate", 0) or 0
     ig_posts = ig.get("posts_count", 0) or 0
     fb_posts = len(fb.get("recent_posts", [])) if isinstance(fb.get("recent_posts"), list) else 0
-    
-    # Follower score (max 40 punti): 1000+ = 40, scale lineare
     follower_total = ig_followers + fb_followers
     follower_score = min(40, (follower_total / 1000) * 40)
-    
-    # Engagement score (max 30 punti): 5%+ = 30
     engagement_score = min(30, (ig_engagement / 5) * 30)
-    
-    # Attività score (max 30 punti): 20+ post = 30
     total_posts = ig_posts + fb_posts
     activity_score = min(30, (total_posts / 20) * 30)
-    
     return round(follower_score + engagement_score + activity_score)
 
 
 def _calculate_all_scores(data: dict) -> dict:
-    """Estrae e calcola i punteggi per la dashboard."""
-    # SITO
     ps = data.get("pagespeed", {})
-    
-    # Desktop
     ps_d = ps.get("desktop", {})
     ps_d_scores = ps_d.get("scores", ps_d)
     desktop_perf = ps_d_scores.get("performance", 0) or 0
-    if desktop_perf > 0 and desktop_perf < 1: desktop_perf *= 100
-    
-    # Mobile
+    if 0 < desktop_perf < 1: desktop_perf *= 100
     ps_m = ps.get("mobile", {})
     ps_m_scores = ps_m.get("scores", ps_m)
     mobile_perf = ps_m_scores.get("performance", 0) or 0
-    if mobile_perf > 0 and mobile_perf < 1: mobile_perf *= 100
-
-    # Media Sito
+    if 0 < mobile_perf < 1: mobile_perf *= 100
     site_score = round((mobile_perf + desktop_perf) / 2) if (mobile_perf or desktop_perf) else 0
-    
-    # SEO (Desktop)
     seo_score = ps_d_scores.get("seo", 0) or 0
-    if seo_score > 0 and seo_score < 1: seo_score *= 100
-
-    # SOCIAL
+    if 0 < seo_score < 1: seo_score *= 100
     social_score = _calculate_social_score(data)
-
-    # GOOGLE BUSINESS
     gb = data.get("google_business", {})
     gb_score = 0
     if gb.get("found"):
         gb_score = 10
         rating = gb.get("rating")
         reviews = gb.get("reviews_count", 0) or 0
-        if rating and rating != "null":
+        if rating and str(rating) != "null":
             gb_score = 50
             if reviews > 5: gb_score = 80
             if float(rating) > 4 and reviews > 10: gb_score = 100
-    
     return {
         "SITO WEB": int(site_score),
         "SEO": int(seo_score),
         "SOCIAL": int(social_score),
         "GOOGLE BUSINESS": int(gb_score),
         "DETAILS": {
-            "Sito Mobile": int(mobile_perf),
-            "Sito Desktop": int(desktop_perf)
+            "Mobile": int(mobile_perf),
+            "Desktop": int(desktop_perf)
         }
     }
+
 
 def _get_report_css() -> str:
     return """
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@700&family=Noto+Color+Emoji&display=swap');
-
-    @page {
-        size: A4;
-        margin: 20mm;
-        @bottom-right {
-            content: counter(page);
-            font-family: 'Inter', sans-serif;
-            font-size: 10px;
-            color: #666;
-        }
-    }
-
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@600;700;800&display=swap');
+    
+    @page { size: A4; margin: 18mm 20mm 25mm 20mm; }
+    @page :first { margin: 0; }
+    
     body {
-        font-family: 'Poppins', 'Inter', 'Noto Color Emoji', sans-serif;
-        color: #333;
-        line-height: 1.6;
-        margin: 0;
-        padding: 0;
+        font-family: 'Inter', sans-serif;
+        color: #2D2D2D;
+        line-height: 1.7;
+        font-size: 13px;
     }
 
-    /* Copertina */
+    /* === COVER === */
     .cover {
-        height: 250mm;
-        background: linear-gradient(135deg, #1A1A1A 0%, #F90100 100%);
+        height: 297mm;
+        background: linear-gradient(160deg, #0D0D0D 0%, #1A1A1A 40%, #F90100 100%);
         color: white;
         display: flex;
         flex-direction: column;
@@ -175,271 +121,397 @@ def _get_report_css() -> str:
         padding: 40px;
         page-break-after: always;
         position: relative;
+        overflow: hidden;
+    }
+    .cover::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(249,1,0,0.15) 0%, transparent 70%);
     }
     .cover-logo {
         position: absolute;
-        top: 20mm;
-        left: 20mm;
-        font-size: 14px;
-        font-weight: bold;
-    }
-    .cover h1 {
+        top: 25mm;
+        left: 25mm;
         font-family: 'Poppins', sans-serif;
-        font-size: 42px;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 2px;
         text-transform: uppercase;
-        letter-spacing: 3px;
-        margin: 0;
+        opacity: 0.9;
     }
-    .cover h2 {
-        font-size: 28px;
-        margin: 20px 0;
-    }
-    .cover h3 {
-        font-size: 18px;
-        font-style: italic;
-        font-weight: normal;
-        margin-bottom: 40px;
-    }
-    .cover-meta {
-        font-size: 14px;
-        margin-top: 100px;
-    }
-    .badge-free {
-        margin-top: 50px;
-        border: 2px solid white;
-        padding: 8px 24px;
+    .cover-badge {
+        position: absolute;
+        top: 25mm;
+        right: 25mm;
+        border: 2px solid rgba(255,255,255,0.5);
+        padding: 6px 18px;
         border-radius: 20px;
-        font-weight: bold;
+        font-size: 11px;
+        font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 1px;
     }
-
-    /* Dashboard */
-    .dashboard {
-        page-break-after: always;
-        padding-top: 20mm;
-    }
-    .dashboard h1 {
+    .cover-content { position: relative; z-index: 1; }
+    .cover-content h1 {
         font-family: 'Poppins', sans-serif;
-        font-size: 28px;
-        border-bottom: 3px solid #F90100;
-        padding-bottom: 15px;
-        margin-bottom: 40px;
+        font-size: 44px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 4px;
+        margin: 0;
+        border: none;
+        color: white;
     }
-    .badges-container {
-        display: flex;
-        justify-content: space-around;
+    .cover-content .company-name {
+        font-family: 'Poppins', sans-serif;
+        font-size: 30px;
+        font-weight: 700;
+        margin: 25px 0;
+        color: #FF6B6B;
+    }
+    .cover-content .subtitle {
+        font-size: 16px;
+        font-weight: 300;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        opacity: 0.8;
         margin-bottom: 60px;
     }
-    .badge-item {
-        text-align: center;
-    }
-    .circle {
-        width: 110px;
-        height: 110px;
-        border-radius: 50%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        background: white;
-        margin-bottom: 10px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    .circle-score {
-        font-size: 32px;
-        font-weight: bold;
-        font-family: 'Poppins', sans-serif;
-    }
-    .badge-label {
-        font-size: 12px;
-        color: #666;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-    
-    .progress-container {
-        margin: 10px 0;
-    }
-    .progress-row {
-        display: flex;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-    .progress-label {
-        width: 150px;
-        font-weight: bold;
+    .cover-content .meta {
         font-size: 13px;
+        opacity: 0.7;
+        line-height: 2;
     }
-    .progress-bar-bg {
-        flex-grow: 1;
-        height: 14px;
-        background: #E0E0E0;
-        border-radius: 7px;
-        margin: 0 15px;
-        position: relative;
-    }
-    .progress-bar-fill {
-        height: 100%;
-        border-radius: 7px;
-    }
-    .progress-value {
-        width: 50px;
-        font-weight: bold;
-        font-size: 13px;
-        text-align: right;
+    .cover-line {
+        width: 80px;
+        height: 3px;
+        background: #F90100;
+        margin: 30px auto;
     }
 
-    /* Contenuto Report */
-    .report-content {
-        padding: 0;
+    /* === DASHBOARD === */
+    .dashboard {
+        page-break-after: always;
+        padding: 15mm 0 0 0;
     }
-    h1 {
+    .dashboard-title {
         font-family: 'Poppins', sans-serif;
         font-size: 26px;
+        font-weight: 700;
+        color: #1A1A1A;
+        border-bottom: 3px solid #F90100;
+        padding-bottom: 12px;
+        margin-bottom: 35px;
+    }
+    .badges-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 40px;
+    }
+    .badge-card {
+        text-align: center;
+        width: 23%;
+        background: #FAFAFA;
+        border-radius: 12px;
+        padding: 20px 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .badge-circle {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto 12px auto;
+        background: white;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    }
+    .badge-number {
+        font-family: 'Poppins', sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+    }
+    .badge-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #666;
+    }
+    .bars-section {
+        margin-top: 30px;
+    }
+    .bar-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+    .bar-label {
+        width: 130px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #444;
+    }
+    .bar-track {
+        flex-grow: 1;
+        height: 12px;
+        background: #EEEEEE;
+        border-radius: 6px;
+        margin: 0 12px;
+        overflow: hidden;
+    }
+    .bar-fill {
+        height: 100%;
+        border-radius: 6px;
+        transition: width 0.3s;
+    }
+    .bar-value {
+        width: 55px;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: right;
+        color: #333;
+    }
+    .detail-box {
+        background: #F5F5F5;
+        border-radius: 10px;
+        padding: 20px 25px;
+        margin-top: 25px;
+    }
+    .detail-box-title {
+        font-family: 'Poppins', sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        color: #F90100;
+        margin-bottom: 15px;
+    }
+
+    /* === REPORT CONTENT === */
+    .report-content { padding: 0; }
+    
+    .report-content h1 {
+        font-family: 'Poppins', sans-serif;
+        font-size: 24px;
         color: #1A1A1A;
         border-bottom: 3px solid #F90100;
         padding-bottom: 10px;
-        margin-top: 40px;
+        margin-top: 45px;
+        margin-bottom: 20px;
+        page-break-after: avoid;
     }
-    h2 {
+    .report-content h2 {
         font-family: 'Poppins', sans-serif;
-        font-size: 20px;
+        font-size: 18px;
         color: #F90100;
         margin-top: 30px;
+        margin-bottom: 12px;
+        page-break-after: avoid;
     }
-    h3 {
+    .report-content h3 {
         font-family: 'Poppins', sans-serif;
-        font-size: 17px;
-        color: #1A1A1A;
-        margin-top: 20px;
+        font-size: 15px;
+        color: #333;
+        margin-top: 22px;
+        margin-bottom: 8px;
+        padding: 10px 15px;
+        background: #F8F8F8;
+        border-left: 4px solid #F90100;
+        border-radius: 0 6px 6px 0;
+        page-break-after: avoid;
     }
-    p {
-        font-size: 14px;
+    .report-content p {
+        font-size: 13px;
         line-height: 1.8;
-        margin-bottom: 15px;
+        margin-bottom: 14px;
         text-align: justify;
     }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 25px 0;
-        font-size: 13px;
+    .report-content strong {
+        color: #1A1A1A;
     }
-    th {
+
+    /* === TABLES === */
+    .report-content table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 20px 0;
+        font-size: 12px;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .report-content th {
         background: #F90100;
         color: white;
-        padding: 12px;
+        padding: 11px 14px;
         text-align: left;
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
-    td {
-        padding: 10px 12px;
-        border-bottom: 1px solid #E0E0E0;
+    .report-content td {
+        padding: 10px 14px;
+        border-bottom: 1px solid #EEE;
+        vertical-align: top;
     }
-    tr:nth-child(even) {
-        background: #F9F9F9;
-    }
-    blockquote {
-        border-left: 5px solid #F90100;
-        background: #FFF5F5;
-        padding: 20px;
-        margin: 25px 0;
+    .report-content tr:nth-child(even) { background: #FAFAFA; }
+    .report-content tr:last-child td { border-bottom: none; }
+
+    /* === BLOCKQUOTES === */
+    .report-content blockquote {
+        border-left: 4px solid #F90100;
+        background: linear-gradient(135deg, #FFF5F5, #FFFFFF);
+        padding: 18px 22px;
+        margin: 22px 0;
+        border-radius: 0 8px 8px 0;
         font-style: italic;
+        font-size: 13px;
+        color: #555;
     }
-    
-    /* Box Colorati */
+
+    /* === INFO BOXES === */
     .info-box {
-        padding: 20px;
+        padding: 18px 22px;
         margin: 20px 0;
         border-radius: 8px;
         border-left: 5px solid;
+        font-size: 13px;
     }
     .box-critical { background: #FFF0F0; border-color: #E74C3C; }
     .box-success { background: #F0FFF4; border-color: #27AE60; }
     .box-warning { background: #FFFBF0; border-color: #F39C12; }
     .box-ai { background: #F0F4FF; border-color: #3498DB; }
-    
-    /* Titoli con Badge (Fix Emoji) */
-    .title-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 4px;
-        font-size: 14px;
-        font-weight: bold;
-        color: white;
-        margin-right: 10px;
-        vertical-align: middle;
-        text-transform: uppercase;
-    }
-    .badge-red { background: #F90100; }
-    .badge-blue { background: #3498DB; }
-    .badge-green { background: #27AE60; }
-    .badge-grey { background: #666666; }
 
-    /* CTA */
-    .cta-container {
-        text-align: center;
-        margin: 50px 0;
-        padding: 40px;
-        background: #fdfdfd;
-        border: 1px dashed #F90100;
-        border-radius: 12px;
-    }
-    .cta-button {
-        background: #F90100;
+    /* === PREMIUM TEASER === */
+    .premium-teaser {
+        margin: 40px 0;
+        padding: 30px;
+        background: linear-gradient(135deg, #1A1A1A, #2D2D2D);
         color: white;
-        padding: 20px 50px;
-        border-radius: 8px;
-        font-size: 18px;
-        font-weight: bold;
-        text-decoration: none;
-        display: inline-block;
-        text-transform: uppercase;
-        box-shadow: 0 4px 15px rgba(249, 1, 0, 0.3);
+        border-radius: 12px;
+        text-align: center;
     }
-    
-    ol {
+    .premium-teaser h3 {
+        font-family: 'Poppins', sans-serif;
+        font-size: 20px;
+        color: #FF6B6B;
+        margin: 0 0 15px 0;
+        background: none;
+        border: none;
+        padding: 0;
+    }
+    .premium-teaser p {
+        color: #CCC;
+        font-size: 13px;
+        text-align: center;
+        margin: 8px 0;
+    }
+    .premium-features {
+        display: flex;
+        justify-content: space-around;
+        margin: 20px 0;
+        flex-wrap: wrap;
+    }
+    .premium-feat {
+        text-align: center;
+        width: 30%;
+        padding: 10px;
+    }
+    .premium-feat-icon {
+        font-size: 28px;
+        margin-bottom: 8px;
+    }
+    .premium-feat-text {
+        font-size: 11px;
+        color: #AAA;
+        line-height: 1.5;
+    }
+    .premium-price {
+        font-family: 'Poppins', sans-serif;
+        font-size: 36px;
+        font-weight: 800;
+        color: #F90100;
+        margin: 15px 0 5px 0;
+    }
+    .premium-price-note {
+        font-size: 12px;
+        color: #888;
+    }
+
+    /* === LISTS === */
+    .report-content ul {
+        padding-left: 0;
+        list-style: none;
+    }
+    .report-content ul li {
+        padding: 6px 0 6px 22px;
+        position: relative;
+        line-height: 1.7;
+    }
+    .report-content ul li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 13px;
+        width: 8px;
+        height: 8px;
+        background: #F90100;
+        border-radius: 50%;
+    }
+    .report-content ol {
         counter-reset: item;
         list-style: none;
         padding-left: 0;
     }
-    ol > li {
+    .report-content ol > li {
         counter-increment: item;
-        margin-bottom: 20px;
-        padding: 15px 20px;
-        background: #F9F9F9;
+        margin-bottom: 18px;
+        padding: 16px 20px 16px 55px;
+        background: #FAFAFA;
         border-radius: 8px;
         border-left: 4px solid #F90100;
+        position: relative;
     }
-    ol > li::before {
+    .report-content ol > li::before {
         content: counter(item);
+        position: absolute;
+        left: 14px;
+        top: 14px;
         background: #F90100;
         color: white;
         font-weight: 700;
-        font-size: 16px;
-        padding: 4px 10px;
+        font-size: 14px;
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
-        margin-right: 10px;
-    }
-    ul {
-        padding-left: 20px;
-    }
-    ul li {
-        margin-bottom: 8px;
-        line-height: 1.6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
-    .footer {
-        position: fixed;
-        bottom: -10mm;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: 10px;
-        color: #999;
-        border-top: 1px solid #EEE;
-        padding-top: 10px;
+    /* === FOOTER === */
+    @page {
+        @bottom-center {
+            content: "DigIdentity Agency | info@digidentityagency.it | digidentityagency.it";
+            font-family: 'Inter', sans-serif;
+            font-size: 9px;
+            color: #BBB;
+        }
+        @bottom-right {
+            content: counter(page);
+            font-family: 'Inter', sans-serif;
+            font-size: 9px;
+            color: #BBB;
+        }
     }
     """
+
 
 def _generate_cover(company_name: str, date_str: str, location: str) -> str:
     from datetime import datetime
@@ -447,86 +519,122 @@ def _generate_cover(company_name: str, date_str: str, location: str) -> str:
     return f'''
     <div class="cover">
         <div class="cover-logo">DigIdentity Agency</div>
-        <div style="margin-top: -50px;">
-            <h1>Diagnosi Digitale</h1>
-            <h2 style="font-weight: bold; font-family: 'Poppins', sans-serif; margin: 15px 0;">{company_name}</h2>
-            <h3>Strategia AI & Automazioni</h3>
-            <div class="cover-meta">
+        <div class="cover-badge">Versione Gratuita</div>
+        <div class="cover-content">
+            <h1>DIAGNOSI<br>DIGITALE</h1>
+            <div class="cover-line"></div>
+            <div class="company-name">{company_name}</div>
+            <div class="subtitle">Analisi AI della Presenza Digitale</div>
+            <div class="meta">
                 {location}<br>
-                Data: {date_val}
+                {date_val}<br><br>
+                7 Motori AI &bull; Analisi a 360&deg; &bull; Dati Reali
             </div>
-            <div class="badge-free">Versione Gratuita</div>
         </div>
     </div>
     '''
 
-def _generate_dashboard(scores: dict) -> str:
+
+def _generate_dashboard(scores: dict, scraping_data: dict = None) -> str:
+    if scraping_data is None:
+        scraping_data = {}
+    
     badges_html = ""
     bars_html = ""
+    labels = ["SITO WEB", "SEO", "SOCIAL", "GOOGLE BUSINESS"]
+    icons = {"SITO WEB": "&#x1F310;", "SEO": "&#x1F50D;", "SOCIAL": "&#x1F4F1;", "GOOGLE BUSINESS": "&#x1F4CD;"}
     
-    main_labels = ["SITO WEB", "SEO", "SOCIAL", "GOOGLE BUSINESS"]
-    
-    for label in main_labels:
+    for label in labels:
         value = scores.get(label, 0)
         color = "#E74C3C" if value < 40 else "#F39C12" if value < 70 else "#27AE60"
-        
         badges_html += f'''
-        <div class="badge-item">
-            <div class="circle" style="border: 6px solid {color}">
-                <span class="circle-score" style="color: {color}">{value}</span>
+        <div class="badge-card">
+            <div class="badge-circle" style="border: 5px solid {color}">
+                <span class="badge-number" style="color: {color}">{value}</span>
             </div>
             <div class="badge-label">{label}</div>
-        </div>
-        '''
-        
-        # Barre principali (escluso Sito Web che ha il dettaglio sotto)
-        if label != "SITO WEB":
-            bars_html += f'''
-            <div class="progress-row">
-                <div class="progress-label">{label}</div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" style="width: {value}%; background-color: {color}"></div>
-                </div>
-                <div class="progress-value">{value}/100</div>
+        </div>'''
+
+    all_bars = []
+    details = scores.get("DETAILS", {})
+    for d_label, d_value in details.items():
+        all_bars.append((d_label, d_value))
+    for label in ["SEO", "SOCIAL", "GOOGLE BUSINESS"]:
+        all_bars.append((label, scores.get(label, 0)))
+    
+    for label, value in all_bars:
+        color = "#E74C3C" if value < 40 else "#F39C12" if value < 70 else "#27AE60"
+        bars_html += f'''
+        <div class="bar-row">
+            <div class="bar-label">{label}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:{value}%;background:{color}"></div></div>
+            <div class="bar-value">{value}/100</div>
+        </div>'''
+
+    # Quick stats box
+    gb = scraping_data.get("google_business", {})
+    apify = scraping_data.get("apify", {})
+    ig = apify.get("instagram", {})
+    fb = apify.get("facebook", {})
+    competitors = scraping_data.get("competitors", [])
+    
+    ig_followers = ig.get("followers", 0) or 0
+    fb_followers = fb.get("followers", 0) or 0
+    gb_reviews = gb.get("reviews_count", 0) or 0
+    gb_rating = gb.get("rating") or "N/A"
+    n_competitors = len(competitors)
+    indexed = scraping_data.get("indexed_pages", {}).get("total", 0)
+
+    stats_html = f'''
+    <div class="detail-box">
+        <div class="detail-box-title">Dati Chiave</div>
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;">
+            <div style="width:30%;margin-bottom:12px;">
+                <div style="font-size:22px;font-weight:800;color:#F90100;">{ig_followers + fb_followers}</div>
+                <div style="font-size:10px;color:#888;text-transform:uppercase;">Follower Totali</div>
             </div>
-            '''
-        else:
-            # Dettaglio Sito (Mobile e Desktop)
-            details = scores.get("DETAILS", {})
-            for d_label, d_value in details.items():
-                d_color = "#E74C3C" if d_value < 40 else "#F39C12" if d_value < 70 else "#27AE60"
-                bars_html += f'''
-                <div class="progress-row">
-                    <div class="progress-label">{d_label}</div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" style="width: {d_value}%; background-color: {d_color}"></div>
-                    </div>
-                    <div class="progress-value">{d_value}/100</div>
-                </div>
-                '''
-        
+            <div style="width:30%;margin-bottom:12px;">
+                <div style="font-size:22px;font-weight:800;color:#F90100;">{gb_reviews}</div>
+                <div style="font-size:10px;color:#888;text-transform:uppercase;">Recensioni Google</div>
+            </div>
+            <div style="width:30%;margin-bottom:12px;">
+                <div style="font-size:22px;font-weight:800;color:#F90100;">{n_competitors}</div>
+                <div style="font-size:10px;color:#888;text-transform:uppercase;">Competitor Trovati</div>
+            </div>
+            <div style="width:30%;">
+                <div style="font-size:22px;font-weight:800;color:#F90100;">{indexed}</div>
+                <div style="font-size:10px;color:#888;text-transform:uppercase;">Pagine Indicizzate</div>
+            </div>
+            <div style="width:30%;">
+                <div style="font-size:22px;font-weight:800;color:#F90100;">{gb_rating}</div>
+                <div style="font-size:10px;color:#888;text-transform:uppercase;">Rating Google</div>
+            </div>
+            <div style="width:30%;">
+                <div style="font-size:22px;font-weight:800;color:#F90100;">{ig.get("engagement_rate", 0) or 0}%</div>
+                <div style="font-size:10px;color:#888;text-transform:uppercase;">Engagement IG</div>
+            </div>
+        </div>
+    </div>'''
+
     return f'''
     <div class="dashboard">
-        <h1>I Tuoi Punteggi</h1>
-        <div class="badges-container">
-            {badges_html}
-        </div>
-        <div class="progress-container">
-            {bars_html}
-        </div>
-    </div>
-    '''
+        <div class="dashboard-title">Dashboard Digitale</div>
+        <div class="badges-row">{badges_html}</div>
+        <div class="bars-section">{bars_html}</div>
+        {stats_html}
+    </div>'''
+
 
 def _replace_emoji_with_badges(html: str) -> str:
-    """Sostituisce le emoji nei titoli con badge circolari numerati."""
     replacements = {
-        '📊': '<span style="display:inline-block;background:#F90100;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">1</span>',
-        '🔍': '<span style="display:inline-block;background:#F90100;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">2</span>',
-        '⚔️': '<span style="display:inline-block;background:#F90100;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">3</span>',
-        '🤖': '<span style="display:inline-block;background:#2980B9;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">4</span>',
-        '✅': '<span style="display:inline-block;background:#27AE60;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">5</span>',
-        '🚀': '<span style="display:inline-block;background:#F90100;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">6</span>',
-        '📞': '<span style="display:inline-block;background:#666;color:white;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-size:16px;font-weight:700;margin-right:10px;">7</span>',
+        '📊': '<span style="display:inline-block;background:#F90100;color:white;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:14px;font-weight:700;margin-right:8px;vertical-align:middle;">1</span>',
+        '🔍': '<span style="display:inline-block;background:#F90100;color:white;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:14px;font-weight:700;margin-right:8px;vertical-align:middle;">2</span>',
+        '⚔️': '<span style="display:inline-block;background:#F90100;color:white;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:14px;font-weight:700;margin-right:8px;vertical-align:middle;">3</span>',
+        '⚔': '<span style="display:inline-block;background:#F90100;color:white;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:14px;font-weight:700;margin-right:8px;vertical-align:middle;">3</span>',
+        '🤖': '<span style="display:inline-block;background:#2980B9;color:white;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:14px;font-weight:700;margin-right:8px;vertical-align:middle;">4</span>',
+        '✅': '<span style="display:inline-block;background:#27AE60;color:white;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:14px;font-weight:700;margin-right:8px;vertical-align:middle;">5</span>',
+        '🚀': '<span style="display:inline-block;background:#F90100;color:white;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:14px;font-weight:700;margin-right:8px;vertical-align:middle;">6</span>',
+        '📞': '<span style="display:inline-block;background:#666;color:white;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;font-size:14px;font-weight:700;margin-right:8px;vertical-align:middle;">7</span>',
     }
     for emoji, badge in replacements.items():
         html = html.replace(emoji, badge)
@@ -534,17 +642,17 @@ def _replace_emoji_with_badges(html: str) -> str:
 
 
 def _convert_markdown_to_html(md_text: str, data: dict) -> str:
-    # 1. Pulisci solo tag HTML pericolosi (mantieni tabelle)
+    # Pulisci solo tag pericolosi
     md_text = re.sub(r'<(div|span|section)[^>]*>', '', md_text)
     md_text = re.sub(r'</(div|span|section)>', '', md_text)
     
-    # 2. Converti in HTML
+    # Converti markdown in HTML
     html = markdown.markdown(md_text, extensions=['tables', 'fenced_code', 'nl2br'])
     
-    # 3. Fix Emoji -> Badges nei titoli
+    # Emoji -> Badges
     html = _replace_emoji_with_badges(html)
     
-    # 4. Applica Box Emojis (nel corpo del testo)
+    # Info boxes
     box_patterns = [
         (r'<p>🚨(.*?)</p>', 'box-critical'),
         (r'<p>✅(.*?)</p>', 'box-success'),
@@ -554,14 +662,44 @@ def _convert_markdown_to_html(md_text: str, data: dict) -> str:
     for pattern, css_class in box_patterns:
         html = re.sub(pattern, f'<div class="info-box {css_class}">\\1</div>', html, flags=re.DOTALL)
     
-    # 5. Sostituisci CTA Placeholder
-    checkout_url = data.get("checkout_url") or data.get("stripe_checkout_url") or "#"
-    cta_html = f'''
-    <div class="cta-container">
-        <a href="{checkout_url}" class="cta-button">Ottieni il Report Premium a 99€</a>
-        <p style="font-size: 11px; margin-top: 15px; color: #666;">Include piano 90 giorni, calendario social e analisi AI ROI.</p>
-    </div>
-    '''
-    html = html.replace("{{CHECKOUT_PLACEHOLDER}}", cta_html)
+    # Premium teaser instead of CTA button
+    premium_html = '''
+    <div class="premium-teaser">
+        <h3>La Diagnosi Premium: 50 Pagine di Strategia</h3>
+        <p>Questa analisi gratuita ha fotografato la situazione. La Diagnosi Premium entra nel dettaglio e costruisce la strategia.</p>
+        <div class="premium-features">
+            <div class="premium-feat">
+                <div class="premium-feat-icon">&#x1F4CB;</div>
+                <div class="premium-feat-text"><strong>Piano 90 Giorni</strong><br>Settimana per settimana, azione per azione</div>
+            </div>
+            <div class="premium-feat">
+                <div class="premium-feat-icon">&#x1F4C5;</div>
+                <div class="premium-feat-text"><strong>Calendario Editoriale</strong><br>30 giorni di post pronti all'uso</div>
+            </div>
+            <div class="premium-feat">
+                <div class="premium-feat-icon">&#x1F4B0;</div>
+                <div class="premium-feat-text"><strong>Stima ROI</strong><br>Quanto puoi guadagnare investendo nel digitale</div>
+            </div>
+        </div>
+        <div class="premium-features">
+            <div class="premium-feat">
+                <div class="premium-feat-icon">&#x1F916;</div>
+                <div class="premium-feat-text"><strong>Analisi AI Avanzata</strong><br>Automazioni su misura per il tuo settore</div>
+            </div>
+            <div class="premium-feat">
+                <div class="premium-feat-icon">&#x2694;</div>
+                <div class="premium-feat-text"><strong>Mappa Competitiva</strong><br>SWOT digitale vs i tuoi concorrenti</div>
+            </div>
+            <div class="premium-feat">
+                <div class="premium-feat-icon">&#x1F4B3;</div>
+                <div class="premium-feat-text"><strong>Preventivo Personalizzato</strong><br>Costruito sulle tue priorita e il tuo budget</div>
+            </div>
+        </div>
+        <div class="premium-price">99&euro;</div>
+        <div class="premium-price-note">una tantum &bull; valore di mercato oltre 1.000&euro;</div>
+        <p style="margin-top:15px;font-size:12px;color:#999;">Controlla la tua email: troverai il link per sbloccare la versione Premium.</p>
+    </div>'''
+    
+    html = html.replace("{{CHECKOUT_PLACEHOLDER}}", premium_html)
     
     return html

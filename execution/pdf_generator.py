@@ -243,7 +243,7 @@ def _get_report_css() -> str:
     /* === COVER === */
     .cover {
         height: 297mm;
-        background: #1A1A1A;
+        background: #8B0000;
         color: white;
         display: flex;
         flex-direction: column;

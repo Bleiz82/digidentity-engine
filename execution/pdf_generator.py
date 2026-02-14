@@ -111,17 +111,12 @@ def _generate_final_score(scraping_data):
         giudizio = "Buona"
     circumference = 2 * 3.14159 * 55
     offset = circumference - (avg / 100) * circumference
-    return f"""<div style="text-align:center;margin:30px 0;padding:25px;background:linear-gradient(135deg,#8B0000,#A52A2A,#C0392B);border-radius:16px">
+    return f"""<div style="text-align:center;margin:30px 0;padding:25px;background-color:#8B0000;border-radius:16px">
         <div style="color:white;font-size:18px;font-weight:700;margin-bottom:15px">PUNTEGGIO FINALE PRESENZA DIGITALE</div>
-        <svg width="140" height="140" viewBox="0 0 140 140">
-            <circle cx="70" cy="70" r="55" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8"/>
-            <circle cx="70" cy="70" r="55" fill="none" stroke="{color}" stroke-width="8"
-                stroke-dasharray="{circumference}" stroke-dashoffset="{offset}"
-                transform="rotate(-90 70 70)" stroke-linecap="round"/>
-            <text x="70" y="65" text-anchor="middle" dominant-baseline="middle"
-                font-size="36" font-weight="bold" fill="white">{avg}</text>
-            <text x="70" y="90" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.8)">/100</text>
-        </svg>
+        <div style="width:120px;height:120px;border-radius:50%;border:8px solid {color};margin:0 auto;display:flex;align-items:center;justify-content:center;flex-direction:column">
+            <div style="color:white;font-size:36px;font-weight:bold;line-height:1">{avg}</div>
+            <div style="color:rgba(255,255,255,0.8);font-size:12px">/100</div>
+        </div>
         <div style="color:{color};font-size:16px;font-weight:700;margin-top:10px">{giudizio}</div>
         <div style="color:rgba(255,255,255,0.7);font-size:11px;margin-top:8px">Media: Sito Web, SEO, Social Media, Google Business</div>
     </div>"""
@@ -248,7 +243,7 @@ def _get_report_css() -> str:
     /* === COVER === */
     .cover {
         height: 297mm;
-        background: linear-gradient(160deg, #0D0D0D 0%, #1A1A1A 40%, #F90100 100%);
+        background: #1A1A1A;
         color: white;
         display: flex;
         flex-direction: column;
@@ -267,7 +262,7 @@ def _get_report_css() -> str:
         right: -50%;
         width: 100%;
         height: 100%;
-        background: radial-gradient(circle, rgba(249,1,0,0.15) 0%, transparent 70%);
+        background: rgba(249,1,0,0.15);
     }
     .cover-logo {
         position: absolute;

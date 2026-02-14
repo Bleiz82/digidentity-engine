@@ -42,7 +42,24 @@ Parla del SITO WEB in modo discorsivo: quanto e veloce, cosa succede quando qual
 
 Parla della VISIBILITA SU GOOGLE: quando qualcuno nella zona cerca quel tipo di servizio, dove appare l azienda? Prima? Quinta? Settima? E cosa significa in pratica: quante persone scorrono fino al settimo risultato?
 
-Parla dei SOCIAL con dettaglio: quanti follower, quanto spesso pubblica, che tipo di contenuti. Analizza il BRANDING: come si presenta l azienda visivamente? Ha un logo riconoscibile? Le foto sui social sono professionali o amatoriali? C e coerenza tra il sito, i social e la scheda Google? Il branding e come la divisa di un azienda: se ogni dipendente si veste diverso, il cliente non capisce con chi ha a che fare.
+Parla dei SOCIAL in modo MOLTO DETTAGLIATO, dedicando spazio a OGNI piattaforma trovata:
+
+Per FACEBOOK riporta: numero follower, numero like della pagina, categorie, rating e numero recensioni, engagement medio dei post. Cita almeno 2-3 post recenti descrivendo il contenuto e le interazioni (likes, commenti, condivisioni). Esempio: "Il post del 19 gennaio sull allerta meteo ha ricevuto 34 like e 5 commenti, segno che i follower sono attenti e partecipi."
+
+Per INSTAGRAM riporta: follower, following, numero totale post, likes medi per post, commenti medi. Cita almeno 2-3 post recenti. Confronta le performance tra le piattaforme: "Su Facebook il centro ha 2.638 follower contro i 1.325 di Instagram, ma su Instagram pubblica piu frequentemente con 732 post totali."
+
+Analizza la FREQUENZA di pubblicazione: pubblica ogni giorno? Una volta a settimana? In modo irregolare? La costanza e fondamentale.
+
+ANALISI DELLE BIO - Questo e un punto CRUCIALE. Per ogni piattaforma social presente, riporta la bio/descrizione ESATTA e analizzala:
+- La bio e chiara? Un potenziale cliente capisce in 3 secondi cosa fa l azienda e dove si trova?
+- Contiene le informazioni essenziali (cosa fa, dove si trova, come contattarla)?
+- Ha una call to action (prenota ora, chiama, visita il sito)?
+- E scritta in modo professionale o amatoriale?
+- Confronta le bio tra le piattaforme: sono coerenti o ognuna dice cose diverse?
+Dai UN CONSIGLIO pratico e specifico su come migliorare la bio (senza riscriverla, quello lo facciamo nella diagnosi premium).
+Analizza anche la DESCRIZIONE sulla scheda Google My Business allo stesso modo.
+
+Analizza il BRANDING: come si presenta l azienda visivamente? Ha un logo riconoscibile? Le foto sui social sono professionali o amatoriali? C e coerenza tra il sito, i social e la scheda Google? Il branding e come la divisa di un azienda: se ogni dipendente si veste diverso, il cliente non capisce con chi ha a che fare.
 
 Parla della SCHEDA GOOGLE (quella che appare su Google Maps): e completa? Ha foto? Ha orari? E soprattutto: ha recensioni? Le recensioni oggi sono il passaparola digitale.
 
@@ -101,7 +118,7 @@ NON inserire {{CHECKOUT_URL}} nel testo. Il link di pagamento viene aggiunto aut
 - Poche analogie (3-4 max), il resto e scritto semplice di suo
 - Racconto discorsivo, NON elenchi
 - Solo 3 competitor in tabella
-- Social analizzati con dettaglio + branding (logo, coerenza visiva)
+- Social analizzati con dettaglio + branding (logo, coerenza visiva) + BIO analizzate per ogni piattaforma con consiglio pratico
 - Perplexity integrata naturalmente
 - Sezione AI brevissima (max 600 caratteri)
 - Relazione finale di almeno 4.000 caratteri con scenario futuro e integrazione AI

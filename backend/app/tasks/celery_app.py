@@ -4,15 +4,15 @@ Task queue per pipeline asincrone.
 """
 
 from celery import Celery
-from app.config import get_settings
+from app.core.config import get_settings
 
 settings = get_settings()
 
 # Inizializza Celery
 celery_app = Celery(
     "digidentity_engine",
-    broker=settings.celery_broker_url,
-    backend=settings.celery_result_backend,
+    broker=settings.REDIS_URL,
+    backend=settings.REDIS_URL,
     include=["app.tasks.free_report_task", "app.tasks.premium_report_task"]
 )
 
@@ -31,5 +31,5 @@ celery_app.conf.update(
 )
 
 print("[OK] Celery configurato")
-print(f"   Broker: {settings.celery_broker_url}")
-print(f"   Backend: {settings.celery_result_backend}")
+print(f"   Broker: {settings.REDIS_URL}")
+print(f"   Backend: {settings.REDIS_URL}")

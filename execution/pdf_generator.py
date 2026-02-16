@@ -835,3 +835,144 @@ def _convert_markdown_to_html(md_text: str, data: dict) -> str:
     html = html.replace("{{CHECKOUT_PLACEHOLDER}}", premium_html)
     
     return html
+
+
+# ══════════════════════════════════════════════════════════
+# PREMIUM PDF GENERATOR
+# ══════════════════════════════════════════════════════════
+
+def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "free",
+                    company_name: str = "", scraping_data: dict = None):
+    """
+    Genera PDF da markdown. Supporta sia FREE che PREMIUM.
+    Per PREMIUM usa un layout esteso con tutte le sezioni.
+    """
+    import markdown
+    from weasyprint import HTML
+    from datetime import datetime
+
+    if report_type == "free":
+        # Usa la funzione esistente
+        return generate_pdf(markdown_text, output_path, scraping_data, company_name)
+
+    # ── PREMIUM ──
+    date_str = datetime.now().strftime("%d %B %Y")
+
+    # Converti markdown in HTML
+    md_extensions = [
+        'tables', 'fenced_code', 'nl2br', 'sane_lists',
+        'smarty', 'toc', 'attr_list'
+    ]
+    html_body = markdown.markdown(markdown_text, extensions=md_extensions)
+
+    # CSS Premium
+    css = _get_report_css()
+    premium_css = """
+    <style>
+    """ + css + """
+
+    /* Premium overrides */
+    @page {
+        size: A4;
+        margin: 2cm 2.5cm;
+        @bottom-center {
+            content: "Diagnosi Premium — """ + company_name + """ — Pagina " counter(page) " di " counter(pages);
+            font-size: 8pt;
+            color: #999;
+        }
+    }
+
+    .premium-cover {
+        page-break-after: always;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 90vh;
+        text-align: center;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        color: white;
+        padding: 3cm;
+        margin: -2cm -2.5cm 0 -2.5cm;
+    }
+
+    .premium-cover h1 {
+        font-size: 32pt;
+        font-weight: 800;
+        margin-bottom: 0.5cm;
+        letter-spacing: 1px;
+    }
+
+    .premium-cover h2 {
+        font-size: 18pt;
+        font-weight: 400;
+        opacity: 0.9;
+        margin-bottom: 1cm;
+    }
+
+    .premium-cover .date {
+        font-size: 11pt;
+        opacity: 0.7;
+        margin-top: 2cm;
+    }
+
+    .premium-cover .badge {
+        display: inline-block;
+        background: #e94560;
+        color: white;
+        padding: 8px 24px;
+        border-radius: 20px;
+        font-size: 11pt;
+        font-weight: 600;
+        margin-top: 1cm;
+    }
+
+    .premium-cover img {
+        max-width: 180px;
+        margin-bottom: 1.5cm;
+    }
+
+    h1 { color: #1a1a2e; font-size: 20pt; margin-top: 1.5cm; page-break-after: avoid; }
+    h2 { color: #0f3460; font-size: 16pt; margin-top: 1cm; page-break-after: avoid; }
+    h3 { color: #e94560; font-size: 13pt; margin-top: 0.8cm; page-break-after: avoid; }
+    p { font-size: 10.5pt; line-height: 1.7; text-align: justify; }
+    hr { border: none; border-top: 2px solid #e94560; margin: 1.5cm 0; page-break-after: avoid; }
+    table { width: 100%; border-collapse: collapse; margin: 0.5cm 0; font-size: 9.5pt; }
+    th { background: #1a1a2e; color: white; padding: 8px 12px; text-align: left; }
+    td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+    tr:nth-child(even) { background: #f8f9fa; }
+    strong { color: #1a1a2e; }
+    </style>
+    """
+
+    # Logo path
+    logo_path = "/app/assets/logo_light.png"
+
+    # Cover page
+    cover_html = f"""
+    <div class="premium-cover">
+        <img src="{logo_path}" alt="DigIdentity">
+        <h1>DIAGNOSI DIGITALE PREMIUM</h1>
+        <h2>{company_name}</h2>
+        <div class="badge">REPORT COMPLETO</div>
+        <div class="date">{date_str}</div>
+    </div>
+    """
+
+    # Assembla HTML completo
+    full_html = f"""<!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="utf-8">
+        {premium_css}
+    </head>
+    <body>
+        {cover_html}
+        {html_body}
+    </body>
+    </html>
+    """
+
+    # Genera PDF
+    HTML(string=full_html).write_pdf(output_path)
+    return output_path

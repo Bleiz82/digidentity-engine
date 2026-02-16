@@ -164,7 +164,18 @@ export default function DiagnosiPage() {
                                     <td className="px-6 py-4 text-sm text-slate-400">{d.ai_model || '—'}</td>
                                     <td className="px-6 py-4 text-sm text-slate-300">{d.ai_total_tokens?.toLocaleString('it-IT') || '—'}</td>
                                     <td className="px-6 py-4 text-sm text-emerald-400">${d.ai_cost_usd?.toFixed(4) || '—'}</td>
-                                    <td className="px-6 py-4 text-sm text-slate-300">{formatBytes(d.pdf_size_bytes)}</td>
+                                    <td className="px-6 py-4 text-sm text-slate-300">
+                                        {d.pdf_size_bytes ? (
+                                            <a
+                                                href={`https://api.digidentityagency.it/api/reports/${d.report_id}/pdf`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-orange-400 hover:text-orange-300 underline"
+                                            >
+                                                {formatBytes(d.pdf_size_bytes)}
+                                            </a>
+                                        ) : "—"}
+                                    </td>
                                     <td className="px-6 py-4 text-sm text-slate-300">{d.generation_time_seconds ? `${d.generation_time_seconds.toFixed(1)}s` : '—'}</td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${d.report_status === 'sent' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :

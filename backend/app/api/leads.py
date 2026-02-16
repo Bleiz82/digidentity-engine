@@ -5,9 +5,9 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-from backend.app.core.supabase_client import get_supabase
-from backend.app.models.lead import LeadCreate, LeadStatus
-from backend.app.tasks.free_report_task import task_free_report
+from app.core.supabase_client import get_supabase
+from app.models.lead import LeadCreate, LeadStatus
+from app.tasks.free_report_task import task_free_report
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/leads", tags=["leads"])
@@ -20,7 +20,7 @@ async def create_lead(lead: LeadCreate):
     now = datetime.now(timezone.utc).isoformat()
 
     website_url = lead.website_url.strip()
-    if not website_url.startswith(("http://", "https://")):
+    if website_url and not website_url.startswith(("http://", "https://")):
         website_url = f"https://{website_url}"
 
     lead_data = {
@@ -29,16 +29,16 @@ async def create_lead(lead: LeadCreate):
         "sito_web": website_url,
         "email": lead.email,
         "nome_contatto": lead.contact_name or "",
-        "telefono": getattr(lead, "telefono", "") or lead.phone or "",
+        "telefono": lead.phone or "",
         "settore_attivita": lead.sector or "",
-        "citta": getattr(lead, "citta", "") or "",
-        "provincia": getattr(lead, "provincia", "") or "",
+        "citta": lead.citta.strip() if lead.citta else "",
+        "provincia": lead.provincia.strip() if lead.provincia else "",
         "status": LeadStatus.NEW.value,
         "created_at": now,
     }
 
-    # Rimuovi campi vuoti che non sono obbligatori
-    for key in ["nome_contatto", "telefono", "settore_attivita", "citta", "provincia"]:
+    # Rimuovi campi vuoti che non sono obbligatori (ma NON citta/provincia che sono NOT NULL su Supabase)
+    for key in ["nome_contatto", "settore_attivita"]:
         if not lead_data[key]:
             lead_data[key] = None
 

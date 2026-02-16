@@ -120,7 +120,7 @@ export default function DashboardPage() {
                     title="Diagnosi Free Inviate"
                     value={kpi?.diagnosi_free_inviate || 0}
                     icon={FileCheck}
-                    color="orange"
+                    color="yellow"
                 />
                 <KPICard
                     title="Premium Completate"
@@ -143,7 +143,7 @@ export default function DashboardPage() {
                     value={`${kpi?.tasso_conversione_percent || 0}%`}
                     subtitle="Free → Premium"
                     icon={TrendingUp}
-                    color="orange"
+                    color="yellow"
                 />
                 <KPICard
                     title="Score Medio"

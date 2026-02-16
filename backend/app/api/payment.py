@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 import stripe
-from backend.app.core.config import settings
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/payment", tags=["payment"])
@@ -80,7 +80,7 @@ async def stripe_webhook(request: Request):
         if not lead_id:
             return JSONResponse(content={"status": "error", "detail": "lead_id mancante"})
         try:
-            from backend.app.core.supabase_client import get_supabase
+            from app.core.supabase_client import get_supabase
             supabase = get_supabase()
             supabase.table("leads").update({
                 "status": "payment_completed" if payment_type == "premium" else "consulenza_paid",
@@ -91,7 +91,7 @@ async def stripe_webhook(request: Request):
             logger.error("Errore Supabase: %s", str(e))
         if payment_type == "premium":
             try:
-                from backend.app.tasks.premium_report_task import task_premium_report
+                from app.tasks.premium_report_task import task_premium_report
                 task_premium_report.delay(lead_id)
                 logger.info("Task premium avviato per lead %s", lead_id)
             except Exception as e:

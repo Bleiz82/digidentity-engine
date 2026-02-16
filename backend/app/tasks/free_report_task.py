@@ -14,10 +14,12 @@ Flusso:
 import logging
 import tempfile
 from pathlib import Path
+import time
+import os
 
-from backend.app.core.celery_app import celery_app
-from backend.app.core.config import settings
-from backend.app.core.supabase_client import get_supabase
+from app.core.celery_app import celery_app
+from app.core.config import settings
+from app.core.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +102,14 @@ def task_free_report(self, lead_id: str):
     # ── 3. Generazione report AI ──
     try:
         db.table("leads").update({"status": "generating_free"}).eq("id", lead_id).execute()
-        report_markdown = generate_free_report(scraping_data)
+        _gen_start = time.time()
+        ai_result = generate_free_report(scraping_data)
+        _gen_time = round(time.time() - _gen_start, 1)
+        report_markdown = ai_result["text"]
+        ai_model = ai_result.get("model", "unknown")
+        ai_input = ai_result.get("input_tokens", 0)
+        ai_output = ai_result.get("output_tokens", 0)
+        ai_total = ai_input + ai_output
 
         # Salva report su Supabase
         db.table("leads").update({
@@ -164,7 +173,7 @@ def task_free_report(self, lead_id: str):
 
     # ── 4. Generazione PDF ──
     try:
-        pdf_dir = Path(tempfile.gettempdir()) / "digidentity" / "reports"
+        pdf_dir = Path("/app/reports/free")
         pdf_dir.mkdir(parents=True, exist_ok=True)
         pdf_path = str(pdf_dir / f"free_{lead_id}.pdf")
 
@@ -212,6 +221,65 @@ def task_free_report(self, lead_id: str):
             "error_message": f"Errore email: {str(e)}",
         }).eq("id", lead_id).execute()
         raise self.retry(exc=e)
+
+    # ── 7. Calcolo Score ──
+    try:
+        gb = scraping_data.get("google_business", {})
+        gmb_rating = gb.get("rating", 0) or 0
+        gmb_reviews_raw = gb.get("total_reviews", 0)
+        gmb_reviews = len(gmb_reviews_raw) if isinstance(gmb_reviews_raw, list) else (gmb_reviews_raw or 0)
+        score_gmb = min(100, int(gmb_rating * 12 + min(gmb_reviews, 200) * 0.2))
+
+        apify_data = scraping_data.get("apify", {})
+        ig_followers = (apify_data.get("instagram", {}).get("followers", 0) or 0)
+        fb_followers = (apify_data.get("facebook", {}).get("followers", 0) or 0)
+        ig_found = 1 if apify_data.get("instagram", {}).get("found") else 0
+        fb_found = 1 if apify_data.get("facebook", {}).get("found") else 0
+        score_social = min(100, int((ig_found + fb_found) * 25 + min(ig_followers + fb_followers, 5000) * 0.01))
+
+        ps = scraping_data.get("pagespeed", {})
+        perf = ps.get("performance_score", 0) or 0
+        has_site = 1 if scraping_data.get("has_website") else 0
+        score_sito = min(100, int(has_site * 40 + perf * 0.6))
+
+        indexed = scraping_data.get("indexed_pages", {}).get("total", 0) or 0
+        citations_count = len(scraping_data.get("citations", []))
+        score_seo = min(100, int(min(indexed, 100) * 0.3 + min(citations_count, 20) * 3))
+
+        comp = scraping_data.get("competitors", [])
+        n_comp = len(comp) if isinstance(comp, list) else 0
+        score_comp = max(20, 100 - n_comp * 10)
+
+        score_totale = int(score_gmb * 0.30 + score_social * 0.25 + score_sito * 0.20 + score_seo * 0.15 + score_comp * 0.10)
+
+        db.table("leads").update({
+            "score_gmb": score_gmb, "score_social": score_social,
+            "score_sito_web": score_sito, "score_seo": score_seo,
+            "score_competitivo": score_comp, "score_totale": score_totale,
+        }).eq("id", lead_id).execute()
+        logger.info(f"[FREE] Score: totale={score_totale}, gmb={score_gmb}, social={score_social}, sito={score_sito}, seo={score_seo}, comp={score_comp}")
+    except Exception as e:
+        logger.warning(f"[FREE] Errore score: {e}")
+
+    # ── 8. Insert in tabella reports ──
+    try:
+        pdf_size = 0
+        try:
+            pdf_size = os.path.getsize(pdf_path)
+        except Exception:
+            pass
+        ai_cost = round((ai_input / 1000) * 0.003 + (ai_output / 1000) * 0.015, 4)
+        db.table("reports").insert({
+            "lead_id": lead_id, "report_type": "free", "ai_model": ai_model,
+            "ai_tokens_input": ai_input, "ai_tokens_output": ai_output,
+            "ai_total_tokens": ai_total, "ai_cost_usd": ai_cost,
+            "pdf_path": pdf_path, "pdf_filename": os.path.basename(pdf_path),
+            "pdf_size_bytes": pdf_size, "generation_time_seconds": _gen_time,
+            "status": "generated",
+        }).execute()
+        logger.info(f"[FREE] Report in DB: model={ai_model}, tokens={ai_total}, cost=${ai_cost}")
+    except Exception as e:
+        logger.warning(f"[FREE] Errore insert reports: {e}")
 
     logger.info(f"[FREE] Pipeline completata con successo per {company_name} ({lead_id})")
     return {

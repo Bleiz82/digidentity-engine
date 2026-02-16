@@ -129,7 +129,12 @@ def generate_free_report(scraping_data: dict[str, Any]) -> str:
         f"{len(result['text'])} car, modello={result['model']}, "
         f"input={result['input_tokens']}, output={result['output_tokens']}"
     )
-    return result["text"]
+    return {
+        "text": result["text"],
+        "model": result["model"],
+        "input_tokens": result["input_tokens"],
+        "output_tokens": result["output_tokens"],
+    }
 
 
 def generate_premium_report(scraping_data: dict[str, Any], free_report: str = "") -> str:

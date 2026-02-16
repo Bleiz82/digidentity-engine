@@ -17,7 +17,8 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
-from backend.app.core.config import settings
+import os
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -64,21 +65,33 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         "errors": [],
     }
 
-    # 1. Scraping sito web
-    try:
-        results["website"] = _scrape_website(website_url)
-    except Exception as e:
-        logger.warning(f"Errore scraping sito {website_url}: {e}")
-        results["errors"].append(f"Sito web: {str(e)}")
+    # Determina se l'attività ha un sito web valido
+    has_website = bool(website_url and website_url.strip() and website_url.strip() not in ("", "https://", "http://"))
+    results["has_website"] = has_website
 
-    # 1b. PageSpeed Insights (Core Web Vitals, punteggi, suggerimenti)
-    try:
-        results["pagespeed"] = _analyze_pagespeed(website_url)
-        logger.info(f"PageSpeed completato per {website_url}")
-    except Exception as e:
-        logger.warning(f"Errore PageSpeed per {website_url}: {e}")
-        results["errors"].append(f"PageSpeed: {str(e)}")
-        results["pagespeed"] = {"error": str(e)}
+    if not has_website:
+        logger.info(f"[SKIP] {company_name} non ha sito web — skip scraping sito e PageSpeed")
+        results["website"] = {"reachable": False, "note": "Attività senza sito web"}
+        results["pagespeed"] = {"note": "Attività senza sito web — PageSpeed non applicabile"}
+        website_url = ""
+
+    # 1. Scraping sito web
+    if has_website:
+        try:
+            results["website"] = _scrape_website(website_url)
+        except Exception as e:
+            logger.warning(f"Errore scraping sito {website_url}: {e}")
+            results["errors"].append(f"Sito web: {str(e)}")
+
+    # 1b. PageSpeed Insights (SKIP se no sito)
+    if has_website:
+        try:
+            results["pagespeed"] = _analyze_pagespeed(website_url)
+            logger.info(f"PageSpeed completato per {website_url}")
+        except Exception as e:
+            logger.warning(f"Errore PageSpeed per {website_url}: {e}")
+            results["errors"].append(f"PageSpeed: {str(e)}")
+            results["pagespeed"] = {"error": str(e)}
 
     # 2. Analisi SEO avanzata via SerpAPI (6 query)
     try:
@@ -163,6 +176,25 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
                     social_links[platform] = item["url"]
                 elif isinstance(item, str):
                     social_links[platform] = item
+
+        # 3. Integra con link trovati nelle citations SerpAPI (fondamentale per attività senza sito)
+        for citation in results.get("citations", []):
+            cit_link = citation.get("link", "")
+            cit_type = citation.get("type", "")
+            if cit_type == "social" or "facebook.com" in cit_link or "instagram.com" in cit_link:
+                if "facebook.com" in cit_link and not social_links.get("facebook"):
+                    social_links["facebook"] = cit_link
+                    logger.info(f"[SOCIAL DISCOVERY] Facebook trovato nelle citations: {cit_link}")
+                elif "instagram.com" in cit_link and not social_links.get("instagram"):
+                    # Estrai username — accetta SOLO URL di profilo (instagram.com/username/ e basta)
+                    clean_ig = cit_link.split("?")[0].rstrip("/")
+                    ig_path = clean_ig.split("instagram.com/")[-1] if "instagram.com/" in clean_ig else ""
+                    if ig_path and "/" not in ig_path and len(ig_path) > 2:
+                        social_links["instagram"] = ig_path
+                        logger.info(f"[SOCIAL DISCOVERY] Instagram trovato nelle citations: @{ig_path} ({cit_link})")
+                elif "linkedin.com" in cit_link and not social_links.get("linkedin"):
+                    social_links["linkedin"] = cit_link
+                    logger.info(f"[SOCIAL DISCOVERY] LinkedIn trovato nelle citations: {cit_link}")
 
         # Tenta di determinare la città se manca
         active_city = city
@@ -530,13 +562,12 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
 
     # 4. QUERY 4: Settore + Capoluogo (Competitor Regionali)
     if sector:
-        capoluogo = "Cagliari" # Default per la Sardegna se non noto
-        # TODO: Implementare mappatura città-capoluogo più precisa se necessario
-        if city and city.lower() != capoluogo.lower():
+        # Query regionale: cerca "settore vicino a città" per trovare competitor nella zona
+        if city:
             try:
                 sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()
-                q4 = f"{sector_clean} {capoluogo}"
-                params = {"q": q4, "hl": "it", "gl": "it", "location": f"{capoluogo}, Italy", "api_key": api_key}
+                q4 = f"{sector_clean} vicino a {city}"
+                params = {"q": q4, "hl": "it", "gl": "it", "location": f"{city}, Italy", "api_key": api_key}
                 data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
                 
                 # Aggiungi competitor senza duplicati
@@ -552,23 +583,30 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
             except Exception as e:
                 logger.error(f"Errore Query 4 SerpAPI: {e}")
 
-    # 5. QUERY 5: Pagine Indicizzate (site:)
-    try:
-        q5 = f"site:{domain}"
-        params = {"q": q5, "hl": "it", "gl": "it", "api_key": api_key}
-        data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
-        
-        results["indexed_pages"] = {
-            "total": data.get("search_information", {}).get("total_results", 0),
-            "pages": [{"title": r.get("title"), "link": r.get("link")} for r in data.get("organic_results", [])[:10]]
-        }
-        logger.info(f"[SERPAPI] Indexed Pages: {results['indexed_pages']['total']}")
-    except Exception as e:
-        logger.error(f"Errore Query 5 SerpAPI: {e}")
+    # 5. QUERY 5: Pagine Indicizzate (site:) — SKIP se no sito
+    if not domain:
+        logger.info("[SERPAPI] Skip query site: — nessun dominio")
+        results["indexed_pages"] = {"total": 0, "pages": []}
+    elif domain:
+        try:
+            q5 = f"site:{domain}"
+            params = {"q": q5, "hl": "it", "gl": "it", "api_key": api_key}
+            data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
+            
+            results["indexed_pages"] = {
+                "total": data.get("search_information", {}).get("total_results", 0),
+                "pages": [{"title": r.get("title"), "link": r.get("link")} for r in data.get("organic_results", [])[:10]]
+            }
+            logger.info(f"[SERPAPI] Indexed Pages: {results['indexed_pages']['total']}")
+        except Exception as e:
+            logger.error(f"Errore Query 5 SerpAPI: {e}")
 
     # 6. QUERY 6: Citazioni / Presenza Online
     try:
-        q6 = f'"{company_name}" OR "{domain}" -site:{domain}'
+        if domain:
+            q6 = f'"{company_name}" OR "{domain}" -site:{domain}'
+        else:
+            q6 = f'"{company_name}"'
         params = {"q": q6, "hl": "it", "gl": "it", "api_key": api_key}
         data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
         

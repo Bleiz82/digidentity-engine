@@ -12,10 +12,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.app.core.config import settings
-from backend.app.api.leads import router as leads_router
-from backend.app.api.lead_workflow import router as workflow_router
-from backend.app.api.payment import router as payment_router
+from app.core.config import settings
+from app.api.leads import router as leads_router
+from app.api.lead_workflow import router as workflow_router
+from app.api.payment import router as payment_router
+from app.api.reports import router as reports_router
 
 # Logging
 logging.basicConfig(
@@ -73,6 +74,7 @@ app.add_middleware(
 app.include_router(leads_router)
 app.include_router(workflow_router)
 app.include_router(payment_router)
+app.include_router(reports_router)
 
 
 @app.get("/")

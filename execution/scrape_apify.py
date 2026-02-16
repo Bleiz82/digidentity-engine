@@ -446,6 +446,28 @@ def run_apify_scraping(
     if social_links is None:
         social_links = {}
 
+    # === AUTO-DISCOVERY SOCIAL VIA SERPAPI ===
+    if not social_links.get("facebook") or not social_links.get("instagram"):
+        try:
+            import os as _os
+            _serpapi_key = _os.getenv("SERPAPI_KEY", "") or _os.getenv("SERP_API_KEY", "")
+            if _serpapi_key:
+                _q = f"{company_name} {city}".strip()
+                _resp = requests.get("https://serpapi.com/search.json", params={"q": _q, "hl": "it", "gl": "it", "num": 10, "api_key": _serpapi_key}, timeout=15)
+                for _r in _resp.json().get("organic_results", []):
+                    _link = _r.get("link", "")
+                    if "facebook.com" in _link and not social_links.get("facebook") and "/posts/" not in _link and "/photos/" not in _link:
+                        social_links["facebook"] = _link
+                        logger.info(f"[APIFY DISCOVERY] Facebook: {_link}")
+                    elif "instagram.com" in _link and not social_links.get("instagram"):
+                        _clean = _link.split("?")[0].rstrip("/")
+                        _path = _clean.split("instagram.com/")[-1] if "instagram.com/" in _clean else ""
+                        if _path and "/" not in _path and len(_path) > 2 and _path not in ("explore","accounts","directory","tags"):
+                            social_links["instagram"] = _path
+                            logger.info(f"[APIFY DISCOVERY] Instagram: @{_path}")
+        except Exception as _e:
+            logger.warning(f"[APIFY DISCOVERY] Errore: {_e}")
+
     logger.info(f"[APIFY] === Inizio scraping completo per {company_name} ({city}) — Settore: {sector} ===")
 
     result = {

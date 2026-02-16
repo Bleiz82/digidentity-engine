@@ -17,7 +17,7 @@ COPY assets/ /app/assets/
 
 RUN mkdir -p /app/reports/free /app/reports/premium
 
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app:/app/backend
 EXPOSE 8080
 
 CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]

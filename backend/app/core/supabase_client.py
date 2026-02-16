@@ -3,7 +3,7 @@ DigIdentity Engine — Client Supabase singleton.
 """
 
 from supabase import create_client, Client
-from backend.app.core.config import settings
+from app.core.config import settings
 
 _client: Client | None = None
 

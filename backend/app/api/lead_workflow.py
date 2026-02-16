@@ -3,9 +3,9 @@ from fastapi.responses import JSONResponse
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from backend.app.core.supabase_client import get_supabase
-from backend.app.models.lead import LeadStatus
-from backend.app.tasks.free_report_task import task_free_report
+from app.core.supabase_client import get_supabase
+from app.models.lead import LeadStatus
+from app.tasks.free_report_task import task_free_report
 
 import logging
 logger = logging.getLogger(__name__)

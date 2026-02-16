@@ -3,7 +3,11 @@ DigIdentity Engine — Configurazione Celery.
 """
 
 from celery import Celery
-from backend.app.core.config import settings
+
+try:
+    from backend.app.core.config import settings
+except ImportError:
+    from app.core.config import settings
 
 celery_app = Celery(
     "digidentity",
@@ -24,7 +28,6 @@ celery_app.conf.update(
     task_track_started=True,
     task_acks_late=True,
     worker_prefetch_multiplier=1,
-    # Retry policy di default
     task_default_retry_delay=60,
     task_max_retries=3,
 )

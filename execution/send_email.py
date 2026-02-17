@@ -121,6 +121,7 @@ def send_premium_report_email(
     company_name: str,
     contact_name: str | None,
     pdf_path: str,
+    consulenza_url: str = "",
 ) -> bool:
     """
     Invia l'email con il report premium post-pagamento.
@@ -176,7 +177,7 @@ def send_premium_report_email(
                                     <p style="font-size: 14px; margin: 0 0 15px; opacity: 0.9;">45 minuti con Stefano per trasformare questa diagnosi in azioni concrete</p>
                                     <div style="font-size: 36px; font-weight: 800; color: #FFD700; margin: 15px 0;">€199</div>
                                     <p style="font-size: 12px; margin: 0 0 20px; opacity: 0.7;">Se poi lavoriamo insieme, li scaliamo dal primo progetto</p>
-                                    <a href="https://wa.me/393921990215?text=Ciao%20Stefano,%20ho%20ricevuto%20la%20Diagnosi%20Premium%20per%20{company_name}%20e%20vorrei%20prenotare%20la%20consulenza." style="display: inline-block; background: #FFD700; color: #1a0000; padding: 14px 35px; border-radius: 8px; font-weight: 800; font-size: 16px; text-decoration: none;">PRENOTA SU WHATSAPP</a>
+                                    <a href="{consulenza_url if consulenza_url else 'https://wa.me/393921990215?text=Ciao%20Stefano,%20vorrei%20prenotare%20la%20consulenza.'}" style="display: inline-block; background: #FFD700; color: #1a0000; padding: 14px 35px; border-radius: 8px; font-weight: 800; font-size: 16px; text-decoration: none;">{"PRENOTA LA CONSULENZA — €199" if consulenza_url else "PRENOTA SU WHATSAPP"}</a>
                                 </div>
                             </td>
                         </tr>

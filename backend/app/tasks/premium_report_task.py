@@ -187,11 +187,33 @@ def task_premium_report(self, lead_id: str):
 
     # ── 7. Invio email premium ──
     try:
+        # Crea checkout Stripe per consulenza
+        consulenza_url = ""
+        try:
+            import stripe
+            from backend.app.core.config import settings as _settings
+            stripe.api_key = _settings.STRIPE_SECRET_KEY
+            if _settings.STRIPE_PRICE_ID_CONSULENZA:
+                checkout = stripe.checkout.Session.create(
+                    payment_method_types=["card"],
+                    mode="payment",
+                    customer_email=email,
+                    line_items=[{"price": _settings.STRIPE_PRICE_ID_CONSULENZA, "quantity": 1}],
+                    metadata={"lead_id": lead_id, "type": "consulenza"},
+                    success_url=f"{_settings.APP_BASE_URL}/api/payment/success-consulenza?session_id={{CHECKOUT_SESSION_ID}}",
+                    cancel_url=f"{_settings.APP_BASE_URL}/api/payment/cancel",
+                )
+                consulenza_url = checkout.url
+                logger.info(f"[PREMIUM] Checkout consulenza creato per {company_name}")
+        except Exception as ce:
+            logger.warning(f"[PREMIUM] Checkout consulenza non creato: {ce}")
+
         email_sent = send_premium_report_email(
             to_email=email,
             company_name=company_name,
             contact_name=lead["nome_titolare"],
             pdf_path=pdf_path,
+            consulenza_url=consulenza_url,
         )
 
         if email_sent:

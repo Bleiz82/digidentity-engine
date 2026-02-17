@@ -242,6 +242,19 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         results["errors"].append(f"Apify: {str(e)}")
         results["apify"] = {"error": str(e)}
 
+    # 5b. Ricerca competitor reali via Google Maps Nearby Search
+    try:
+        gb = results.get("google_business", {})
+        comp_lat = gb.get("latitude")
+        comp_lng = gb.get("longitude")
+        if comp_lat and comp_lng:
+            results["competitors"] = _find_nearby_competitors(company_name, comp_lat, comp_lng, sector)
+            logger.info(f"Google Maps competitor: {len(results['competitors'])} trovati per {company_name}")
+        else:
+            logger.info(f"Coordinate non disponibili per ricerca competitor di {company_name}")
+    except Exception as e:
+        logger.warning(f"Errore ricerca competitor per {company_name}: {e}")
+
     # 6. Ricerca Perplexity AI (contesto mercato e reputazione online)
     try:
         results["perplexity"] = _perplexity_research(company_name, website_url, city=active_city, sector=sector)
@@ -814,7 +827,7 @@ def _enrich_gmb_with_places_api(place_id: str) -> dict:
             "https://maps.googleapis.com/maps/api/place/details/json",
             params={
                 "place_id": place_id,
-                "fields": "name,rating,user_ratings_total,formatted_address,formatted_phone_number,website,opening_hours,reviews,photos,types,business_status,url",
+                "fields": "name,rating,user_ratings_total,formatted_address,formatted_phone_number,website,opening_hours,reviews,photos,types,business_status,url,geometry",
                 "language": "it",
                 "key": api_key,
             },
@@ -837,6 +850,8 @@ def _enrich_gmb_with_places_api(place_id: str) -> dict:
                 "maps_url": place.get("url"),
                 "types": place.get("types"),
                 "source": "google_places_api",
+                "latitude": place.get("geometry", {}).get("location", {}).get("lat"),
+                "longitude": place.get("geometry", {}).get("location", {}).get("lng"),
             }
             # Salva recensioni con testo
             raw_reviews = place.get("reviews", [])
@@ -939,6 +954,68 @@ def _check_google_business(company_name: str) -> dict:
     return data
 
 
+
+
+def _find_nearby_competitors(company_name: str, lat: float, lng: float, sector: str = "") -> list:
+    """Cerca competitor reali via Google Maps Nearby Search per prossimita geografica."""
+    api_key = getattr(settings, 'GOOGLE_PAGESPEED_API_KEY', None) or os.environ.get('GOOGLE_PAGESPEED_API_KEY')
+    if not api_key or not lat or not lng:
+        return []
+
+    all_results = {}
+    location = f"{lat},{lng}"
+    searches = [
+        {"type": "restaurant", "keyword": None},
+        {"type": None, "keyword": "pizzeria"},
+        {"type": None, "keyword": "trattoria"},
+    ]
+
+    try:
+        for search in searches:
+            params = {
+                "location": location,
+                "radius": 15000,
+                "language": "it",
+                "key": api_key,
+            }
+            if search["type"]:
+                params["type"] = search["type"]
+            if search["keyword"]:
+                params["keyword"] = search["keyword"]
+
+            resp = requests.get(
+                "https://maps.googleapis.com/maps/api/place/nearbysearch/json",
+                params=params,
+                timeout=15,
+            )
+            data = resp.json()
+            if data.get("status") == "OK":
+                for r in data.get("results", []):
+                    pid = r.get("place_id", "")
+                    name = r.get("name", "")
+                    # Escludi l'attivita stessa
+                    if company_name and company_name.lower().split()[0] in name.lower():
+                        continue
+                    if pid not in all_results:
+                        all_results[pid] = {
+                            "name": name,
+                            "address": r.get("vicinity", ""),
+                            "rating": r.get("rating"),
+                            "reviews_count": r.get("user_ratings_total", 0),
+                            "types": r.get("types", []),
+                            "place_id": pid,
+                            "business_status": r.get("business_status"),
+                        }
+
+        # Ordina per numero recensioni (piu recensiti = piu rilevanti)
+        competitors = sorted(all_results.values(), key=lambda x: x.get("reviews_count", 0) or 0, reverse=True)
+        # Prendi top 8
+        return competitors[:8]
+
+    except Exception as e:
+        logger.warning(f"Errore ricerca competitor Google Maps: {e}")
+        return []
+
 def _perplexity_research(company_name: str, website_url: str, city: str = "", sector: str = "") -> dict[str, Any]:
     """
     Usa Perplexity AI per ricerca contestuale sull'azienda.
@@ -956,15 +1033,17 @@ def _perplexity_research(company_name: str, website_url: str, city: str = "", se
 
         prompt = (
             f"Analizza la presenza digitale e la reputazione dell'azienda '{company_name}'{city_str}{sector_str}{site_str}.\n\n"
-            f"1. REPUTAZIONE ONLINE: recensioni Google, Facebook, TripAdvisor e altri portali. Rating medio e volume recensioni.\n"
-            f"2. COMPETITOR DIRETTI: trova i 5 principali competitor diretti{sector_str} "
-            f"nei comuni limitrofi{city_str} (raggio massimo 15-20 km, NON tutta la provincia). "
-            f"Per ciascun competitor indica: nome, località/comune, rating Google, numero recensioni Google, "
-            f"se ha un sito web, se è presente sui social.\n"
-            f"3. PUNTI DI FORZA e DEBOLEZZA della presenza digitale di {company_name}.\n"
-            f"4. OPPORTUNITÀ DI MIGLIORAMENTO concrete.\n"
-            f"Rispondi in italiano con dati concreti e verificabili. "
-            f"Per i competitor concentrati SOLO sui comuni vicini{city_str}, non su tutta la regione."
+            f"1. REPUTAZIONE ONLINE: recensioni Google, Facebook, TripAdvisor e altri portali. Rating medio e volume recensioni.\n\n"
+            f"2. COMPETITOR DIRETTI: cerca su Google Maps TUTTI i ristoranti, pizzerie, trattorie e agriturismi "
+            f"che si trovano nei comuni PIU VICINI{city_str}. "
+            f"Parti dal comune stesso, poi espandi ai comuni confinanti, poi a quelli nel raggio di 15 km. "
+            f"NON cercare i piu famosi o i piu recensiti della provincia — cerca i PIU VICINI geograficamente. "
+            f"Elenca i 5 competitor piu vicini. Per ciascuno indica: nome esatto, comune, distanza approssimativa "
+            f"da {city if city else 'la sede'}, rating Google, numero recensioni Google, se ha sito web (URL se disponibile), "
+            f"se ha pagina Facebook o Instagram.\n\n"
+            f"3. PUNTI DI FORZA e DEBOLEZZA della presenza digitale di {company_name}.\n\n"
+            f"4. OPPORTUNITA DI MIGLIORAMENTO concrete.\n\n"
+            f"Rispondi in italiano con dati concreti e verificabili da Google Maps."
         )
 
         resp = req.post(

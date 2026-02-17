@@ -858,6 +858,11 @@ def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "fr
     # ── PREMIUM ──
     date_str = datetime.now().strftime("%d %B %Y")
 
+    # Estrai punteggio globale dal markdown
+    import re as _re
+    _score_match = _re.search(r"Punteggio DigIdentity[:\s]*(\d+)/100", markdown_text)
+    _global_score = _score_match.group(1) if _score_match else ""
+
     # Converti markdown in HTML
     md_extensions = [
         'tables', 'fenced_code', 'nl2br', 'sane_lists',
@@ -936,7 +941,7 @@ def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "fr
     h2 { color: #0f3460; font-size: 16pt; margin-top: 1cm; page-break-after: avoid; }
     h3 { color: #e94560; font-size: 13pt; margin-top: 0.8cm; page-break-after: avoid; }
     p { font-size: 10.5pt; line-height: 1.7; text-align: justify; }
-    hr { border: none; border-top: 2px solid #e94560; margin: 1.5cm 0; page-break-after: avoid; }
+    hr { border: none; border-top: 2px solid #e94560; margin: 1.5cm 0; page-break-before: always; }
     table { width: 100%; border-collapse: collapse; margin: 0.5cm 0; font-size: 9.5pt; }
     th { background: #1a1a2e; color: white; padding: 8px 12px; text-align: left; }
     td { padding: 8px 12px; border-bottom: 1px solid #eee; }
@@ -955,9 +960,29 @@ def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "fr
         <h1>DIAGNOSI DIGITALE PREMIUM</h1>
         <h2>{company_name}</h2>
         <div class="badge">REPORT COMPLETO</div>
+        {f'<div style="margin-top:1.5cm;font-size:48pt;font-weight:800;color:#e94560;">{_global_score}<span style="font-size:20pt;opacity:0.7">/100</span></div><div style="font-size:12pt;opacity:0.8;margin-top:0.3cm;">PUNTEGGIO DIGIDENTITY</div>' if _global_score else ''}
         <div class="date">{date_str}</div>
     </div>
     """
+
+
+    # Genera sommario dalle intestazioni H1/H2
+    import re as _re2
+    _headings = _re2.findall(r'<(h[12])[^>]*>(.*?)</\1>', html_body, _re2.IGNORECASE)
+    _toc_items = []
+    for _tag, _title in _headings:
+        _clean = _re2.sub(r'<[^>]+>', '', _title).strip()
+        if _clean and len(_clean) > 3:
+            _indent = 'margin-left:0' if _tag.lower() == 'h1' else 'margin-left:20px'
+            _size = '12pt' if _tag.lower() == 'h1' else '10.5pt'
+            _weight = '700' if _tag.lower() == 'h1' else '400'
+            _toc_items.append(f'<div style="{_indent};font-size:{_size};font-weight:{_weight};padding:4px 0;border-bottom:1px dotted #ddd;">{_clean}</div>')
+    _toc_html = ''
+    if _toc_items:
+        _toc_html = '<div style="page-break-after:always;padding-top:2cm;">'
+        _toc_html += '<h1 style="font-size:24pt;color:#1a1a2e;border-bottom:3px solid #e94560;padding-bottom:10px;margin-bottom:25px;">SOMMARIO</h1>'
+        _toc_html += ''.join(_toc_items)
+        _toc_html += '</div>'
 
     # Assembla HTML completo
     full_html = f"""<!DOCTYPE html>
@@ -968,7 +993,8 @@ def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "fr
     </head>
     <body>
         {cover_html}
-        {html_body}
+        {_toc_html}
+        <div class="report-content">{html_body}</div>
     </body>
     </html>
     """

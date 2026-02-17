@@ -172,15 +172,24 @@ def get_competitor_data(ctx: dict) -> str:
     competitors = ctx["scraping_data"].get("competitors", [])
     seo = ctx["scraping_data"].get("seo", {})
     positions = seo.get("positions", [])
+    perp = ctx["scraping_data"].get("perplexity", {})
+    perp_analysis = perp.get("analysis", "") if perp.get("found") else ""
+    perp_citations = perp.get("citations", [])
     return f"""
 ATTIVITA ANALIZZATA: {ctx['nome_attivita']}
 CITTA: {ctx['citta']}
 SETTORE: {ctx['settore']}
 
-COMPETITOR (top 5):
+COMPETITOR DA RICERCA LOCALE (SerpAPI):
 {json.dumps(competitors, indent=2, ensure_ascii=False) if competitors else 'Nessun dato disponibile'}
 
-POSIZIONAMENTO ATTUALE DELL'ATTIVITA:
+ANALISI COMPETITOR E MERCATO DA PERPLEXITY AI:
+{perp_analysis if perp_analysis else 'Nessun dato disponibile'}
+
+FONTI PERPLEXITY:
+{chr(10).join(perp_citations) if perp_citations else 'Nessuna'}
+
+POSIZIONAMENTO ATTUALE DELL ATTIVITA:
 {json.dumps(positions, indent=2, ensure_ascii=False) if positions else 'Nessun dato disponibile'}
 
 DATI GOOGLE BUSINESS ATTIVITA:

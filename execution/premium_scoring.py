@@ -120,7 +120,11 @@ def calculate_scores(data: dict) -> dict:
         fb_score += 10
     elif likes >= 50:
         fb_score += 5
-    fb_rating = fb.get("rating", 0) or 0
+    fb_rating_raw = fb.get("rating", 0) or 0
+    try:
+        fb_rating = float(fb_rating_raw)
+    except (ValueError, TypeError):
+        fb_rating = 5.0 if "100%" in str(fb_rating_raw) else 0.0
     if fb_rating >= 4.5:
         fb_score += 15
     elif fb_rating >= 4.0:

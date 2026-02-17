@@ -964,11 +964,31 @@ def _find_nearby_competitors(company_name: str, lat: float, lng: float, sector: 
 
     all_results = {}
     location = f"{lat},{lng}"
-    searches = [
-        {"type": "restaurant", "keyword": None},
-        {"type": None, "keyword": "pizzeria"},
-        {"type": None, "keyword": "trattoria"},
-    ]
+
+    # Keyword dinamiche per settore
+    sector_lower = (sector or "").lower()
+    SECTOR_SEARCHES = {
+        "ristor": [{"type": "restaurant", "keyword": None}, {"type": None, "keyword": "pizzeria"}, {"type": None, "keyword": "trattoria"}],
+        "pizz": [{"type": "restaurant", "keyword": None}, {"type": None, "keyword": "pizzeria"}, {"type": None, "keyword": "trattoria"}],
+        "bar": [{"type": "bar", "keyword": None}, {"type": None, "keyword": "pub"}, {"type": None, "keyword": "caffetteria"}],
+        "estet": [{"type": "beauty_salon", "keyword": None}, {"type": None, "keyword": "centro estetico"}, {"type": None, "keyword": "parrucchiere"}],
+        "parruc": [{"type": "hair_care", "keyword": None}, {"type": None, "keyword": "parrucchiere"}, {"type": None, "keyword": "barbiere"}],
+        "edil": [{"type": None, "keyword": "impresa edile"}, {"type": None, "keyword": "ristrutturazioni"}, {"type": None, "keyword": "costruzioni"}],
+        "idraul": [{"type": "plumber", "keyword": None}, {"type": None, "keyword": "idraulico"}, {"type": None, "keyword": "termoidraulica"}],
+        "elettr": [{"type": "electrician", "keyword": None}, {"type": None, "keyword": "elettricista"}, {"type": None, "keyword": "impianti elettrici"}],
+        "avvoc": [{"type": "lawyer", "keyword": None}, {"type": None, "keyword": "studio legale"}, {"type": None, "keyword": "avvocato"}],
+        "dentist": [{"type": "dentist", "keyword": None}, {"type": None, "keyword": "studio dentistico"}, {"type": None, "keyword": "odontoiatra"}],
+        "meccan": [{"type": "car_repair", "keyword": None}, {"type": None, "keyword": "officina meccanica"}, {"type": None, "keyword": "carrozzeria"}],
+        "palest": [{"type": "gym", "keyword": None}, {"type": None, "keyword": "palestra"}, {"type": None, "keyword": "fitness"}],
+        "hotel": [{"type": "lodging", "keyword": None}, {"type": None, "keyword": "hotel"}, {"type": None, "keyword": "bed and breakfast"}],
+        "farmac": [{"type": "pharmacy", "keyword": None}, {"type": None, "keyword": "farmacia"}, {"type": None, "keyword": "parafarmacia"}],
+        "veterin": [{"type": "veterinary_care", "keyword": None}, {"type": None, "keyword": "veterinario"}, {"type": None, "keyword": "clinica veterinaria"}],
+    }
+    searches = [{"type": None, "keyword": sector or "attività commerciale"}, {"type": None, "keyword": sector_lower.split("-")[0].strip() if sector_lower else "negozio"}, {"type": None, "keyword": "servizi"}]  # default generico
+    for key, srch in SECTOR_SEARCHES.items():
+        if key in sector_lower:
+            searches = srch
+            break
 
     try:
         for search in searches:

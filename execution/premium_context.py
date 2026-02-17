@@ -4,6 +4,14 @@ Estrae e organizza i dati per ogni sezione del report Premium.
 """
 import json
 from datetime import datetime
+MESI_IT = ["gennaio","febbraio","marzo","aprile","maggio","giugno",
+           "luglio","agosto","settembre","ottobre","novembre","dicembre"]
+
+def _format_date_it():
+    now = datetime.now()
+    return f"{now.day} {MESI_IT[now.month-1]} {now.year}"
+
+
 
 
 def build_context(lead: dict, scores: dict, top_actions: list) -> dict:
@@ -18,7 +26,7 @@ def build_context(lead: dict, scores: dict, top_actions: list) -> dict:
         "email": lead.get("email", ""),
         "telefono": lead.get("telefono", lead.get("phone", "")),
         "website_url": lead.get("website", lead.get("url", "")),
-        "data_odierna": datetime.now().strftime("%d %B %Y"),
+        "data_odierna": _format_date_it(),
         "scores": scores,
         "punteggio_globale": scores.get("globale", 0),
         "top_actions": top_actions,
@@ -180,7 +188,7 @@ ATTIVITA ANALIZZATA: {ctx['nome_attivita']}
 CITTA: {ctx['citta']}
 SETTORE: {ctx['settore']}
 
-COMPETITOR DA RICERCA LOCALE (SerpAPI):
+COMPETITOR DA GOOGLE MAPS NEARBY SEARCH (dati reali — nome, indirizzo, rating, recensioni):
 {json.dumps(competitors, indent=2, ensure_ascii=False) if competitors else 'Nessun dato disponibile'}
 
 ANALISI COMPETITOR E MERCATO DA PERPLEXITY AI:
@@ -203,6 +211,15 @@ def get_social_bio_data(ctx: dict) -> str:
     fb = ctx["scraping_data"].get("apify", {}).get("facebook", {})
     ig = ctx["scraping_data"].get("apify", {}).get("instagram", {})
     gb = ctx["scraping_data"].get("google_business", {})
+
+    # Anti-allucinazione: se i dati sono vuoti, istruzioni esplicite
+    fb_warning = ""
+    ig_warning = ""
+    if not fb or (not fb.get('page_name') and not fb.get('likes') and not fb.get('followers')):
+        fb_warning = "\n⚠️ ISTRUZIONE CRITICA: NON CI SONO DATI FACEBOOK. Non inventare nomi, numeri, follower o post. Scrivi SOLO che non è stata rilevata una pagina Facebook attiva per questa attività e spiega perché è importante averne una.\n"
+    if not ig or (not ig.get('username') and not ig.get('followers') and not ig.get('posts_count')):
+        ig_warning = "\n⚠️ ISTRUZIONE CRITICA: NON CI SONO DATI INSTAGRAM. Non inventare username, follower, post o engagement. Scrivi SOLO che non è stato rilevato un profilo Instagram attivo per questa attività e spiega perché è importante averne uno.\n"
+
     return f"""
 ATTIVITA: {ctx['nome_attivita']}
 TITOLARE: {ctx['nome_titolare']}
@@ -211,7 +228,7 @@ CITTA: {ctx['citta']}
 TELEFONO: {ctx['telefono']}
 SITO: {ctx['website_url']}
 
-FACEBOOK:
+{fb_warning}FACEBOOK:
 - Nome pagina: {fb.get('page_name', 'N/A')}
 - Likes: {fb.get('likes', 'N/A')}
 - Followers: {fb.get('followers', 'N/A')}
@@ -222,7 +239,7 @@ FACEBOOK:
 - Engagement rate: {fb.get('engagement_rate', 'N/A')}%
 - Bio attuale: {fb.get('about', fb.get('description', 'N/A'))}
 
-INSTAGRAM:
+{ig_warning}INSTAGRAM:
 - Username: @{ig.get('username', 'N/A')}
 - Followers: {ig.get('followers', 'N/A')}
 - Following: {ig.get('following', 'N/A')}

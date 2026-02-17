@@ -856,7 +856,10 @@ def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "fr
         return generate_pdf(markdown_text, output_path, scraping_data, company_name)
 
     # ── PREMIUM ──
-    date_str = datetime.now().strftime("%d %B %Y")
+    _mesi = ["gennaio","febbraio","marzo","aprile","maggio","giugno",
+             "luglio","agosto","settembre","ottobre","novembre","dicembre"]
+    _now = datetime.now()
+    date_str = f"{_now.day} {_mesi[_now.month-1]} {_now.year}"
 
     # Estrai punteggio globale dal markdown
     import re as _re

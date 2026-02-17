@@ -244,7 +244,7 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
 
     # 6. Ricerca Perplexity AI (contesto mercato e reputazione online)
     try:
-        results["perplexity"] = _perplexity_research(company_name, website_url)
+        results["perplexity"] = _perplexity_research(company_name, website_url, city=active_city, sector=sector)
         logger.info(f"Perplexity research completato per {company_name}")
     except Exception as e:
         logger.warning(f"Errore Perplexity per {company_name}: {e}")
@@ -939,7 +939,7 @@ def _check_google_business(company_name: str) -> dict:
     return data
 
 
-def _perplexity_research(company_name: str, website_url: str) -> dict[str, Any]:
+def _perplexity_research(company_name: str, website_url: str, city: str = "", sector: str = "") -> dict[str, Any]:
     """
     Usa Perplexity AI per ricerca contestuale sull'azienda.
     Restituisce informazioni su reputazione, mercato, competitor.
@@ -950,15 +950,21 @@ def _perplexity_research(company_name: str, website_url: str) -> dict[str, Any]:
     try:
         import requests as req
 
+        city_str = f" a {city}" if city else ""
+        sector_str = f" nel settore {sector}" if sector else ""
+        site_str = f" (sito: {website_url})" if website_url else " (non ha un sito web)"
+
         prompt = (
-            f"Analizza la presenza digitale e la reputazione dell'azienda '{company_name}' "
-            f"(sito: {website_url}). Cerca informazioni su:\n"
-            f"1. Reputazione online e recensioni\n"
-            f"2. Posizionamento nel mercato locale\n"
-            f"3. Principali competitor diretti\n"
-            f"4. Punti di forza e debolezza della loro presenza digitale\n"
-            f"5. Opportunità di miglioramento\n"
-            f"Rispondi in italiano con dati concreti."
+            f"Analizza la presenza digitale e la reputazione dell'azienda '{company_name}'{city_str}{sector_str}{site_str}.\n\n"
+            f"1. REPUTAZIONE ONLINE: recensioni Google, Facebook, TripAdvisor e altri portali. Rating medio e volume recensioni.\n"
+            f"2. COMPETITOR DIRETTI: trova i 5 principali competitor diretti{sector_str} "
+            f"nei comuni limitrofi{city_str} (raggio massimo 15-20 km, NON tutta la provincia). "
+            f"Per ciascun competitor indica: nome, località/comune, rating Google, numero recensioni Google, "
+            f"se ha un sito web, se è presente sui social.\n"
+            f"3. PUNTI DI FORZA e DEBOLEZZA della presenza digitale di {company_name}.\n"
+            f"4. OPPORTUNITÀ DI MIGLIORAMENTO concrete.\n"
+            f"Rispondi in italiano con dati concreti e verificabili. "
+            f"Per i competitor concentrati SOLO sui comuni vicini{city_str}, non su tutta la regione."
         )
 
         resp = req.post(

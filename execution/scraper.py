@@ -1054,7 +1054,7 @@ def _perplexity_research(company_name: str, website_url: str, city: str = "", se
         prompt = (
             f"Analizza la presenza digitale e la reputazione dell'azienda '{company_name}'{city_str}{sector_str}{site_str}.\n\n"
             f"1. REPUTAZIONE ONLINE: recensioni Google, Facebook, TripAdvisor e altri portali. Rating medio e volume recensioni.\n\n"
-            f"2. COMPETITOR DIRETTI: cerca su Google Maps TUTTI i ristoranti, pizzerie, trattorie e agriturismi "
+            f"2. COMPETITOR DIRETTI: cerca su Google Maps TUTTE le attività dello stesso settore ({sector if sector else 'commerciale'}) "
             f"che si trovano nei comuni PIU VICINI{city_str}. "
             f"Parti dal comune stesso, poi espandi ai comuni confinanti, poi a quelli nel raggio di 15 km. "
             f"NON cercare i piu famosi o i piu recensiti della provincia — cerca i PIU VICINI geograficamente. "

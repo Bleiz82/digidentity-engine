@@ -166,9 +166,17 @@ def send_premium_report_email(
                                 <div style="background-color: #f0fff4; border-left: 4px solid #10B981; padding: 20px; margin: 30px 0;">
                                     <p style="margin: 0; font-weight: bold; color: #10B981;">📅 Cosa fare ora?</p>
                                     <p style="margin: 5px 0 0; font-size: 14px;">
-                                        Leggi con attenzione il report e segna i punti che vorresti approfondire. 
-                                        Siamo pronti ad aiutarti nell'implementazione.
+                                        Leggi con attenzione il report e segna i punti che vorresti approfondire.
                                     </p>
+                                </div>
+
+                                <div style="background: linear-gradient(135deg, #1a0000, #8B0000); border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center; color: white;">
+                                    <p style="font-size: 12px; letter-spacing: 2px; margin: 0 0 10px; opacity: 0.8;">OFFERTA ESCLUSIVA</p>
+                                    <p style="font-size: 22px; font-weight: 800; margin: 0 0 5px;">Consulenza Strategica 1-to-1</p>
+                                    <p style="font-size: 14px; margin: 0 0 15px; opacity: 0.9;">45 minuti con Stefano per trasformare questa diagnosi in azioni concrete</p>
+                                    <div style="font-size: 36px; font-weight: 800; color: #FFD700; margin: 15px 0;">€199</div>
+                                    <p style="font-size: 12px; margin: 0 0 20px; opacity: 0.7;">Se poi lavoriamo insieme, li scaliamo dal primo progetto</p>
+                                    <a href="https://wa.me/393921990215?text=Ciao%20Stefano,%20ho%20ricevuto%20la%20Diagnosi%20Premium%20per%20{company_name}%20e%20vorrei%20prenotare%20la%20consulenza." style="display: inline-block; background: #FFD700; color: #1a0000; padding: 14px 35px; border-radius: 8px; font-weight: 800; font-size: 16px; text-decoration: none;">PRENOTA SU WHATSAPP</a>
                                 </div>
                             </td>
                         </tr>

@@ -841,6 +841,61 @@ def _convert_markdown_to_html(md_text: str, data: dict) -> str:
 # PREMIUM PDF GENERATOR
 # ══════════════════════════════════════════════════════════
 
+
+def _generate_premium_dashboard(scores: dict) -> str:
+    """Genera dashboard grafica per il PDF premium."""
+    if not scores:
+        return ""
+    
+    score_map = [
+        ("Sito Web", "sito", "🌐"),
+        ("Velocità Mobile", "velocita_mobile", "📱"),
+        ("Velocità Desktop", "velocita_desktop", "💻"),
+        ("SEO", "seo_score", "🔍"),
+        ("Accessibilità", "accessibilita", "♿"),
+        ("Best Practices", "best_practices", "✅"),
+        ("Google Business", "google_business", "📍"),
+        ("Facebook", "facebook", "👥"),
+        ("Instagram", "instagram", "📸"),
+        ("Reputazione AI", "reputazione_ai", "🤖"),
+    ]
+    
+    globale = scores.get("globale", 0)
+    g_color = "#E74C3C" if globale < 40 else "#F39C12" if globale < 70 else "#27AE60"
+    
+    bars = ""
+    for label, key, icon in score_map:
+        val = scores.get(key, 0)
+        color = "#E74C3C" if val < 40 else "#F39C12" if val < 70 else "#27AE60"
+        bars += f"""
+        <div style="display:flex;align-items:center;margin-bottom:8px;">
+            <div style="width:25px;text-align:center;font-size:14px;">{icon}</div>
+            <div style="width:140px;font-size:10px;font-weight:600;color:#333;padding-left:8px;">{label}</div>
+            <div style="flex:1;background:#e8e8e8;border-radius:8px;height:18px;margin:0 10px;overflow:hidden;">
+                <div style="width:{val}%;background:{color};height:100%;border-radius:8px;transition:width 0.3s;"></div>
+            </div>
+            <div style="width:45px;text-align:right;font-size:11px;font-weight:700;color:{color};">{val}/100</div>
+        </div>"""
+    
+    return f"""
+    <div style="page-break-after:always;padding:1.5cm 0;">
+        <h1 style="text-align:center;color:#1a1a2e;font-size:22pt;margin-bottom:0.3cm;">PANORAMICA PUNTEGGI</h1>
+        <div style="text-align:center;margin-bottom:1cm;">
+            <div style="display:inline-block;border:6px solid {g_color};border-radius:50%;width:100px;height:100px;line-height:100px;text-align:center;">
+                <span style="font-size:36px;font-weight:800;color:{g_color};">{globale}</span>
+            </div>
+            <div style="font-size:11px;color:#666;margin-top:8px;font-weight:600;">PUNTEGGIO GLOBALE DIGIDENTITY</div>
+        </div>
+        <div style="max-width:480px;margin:0 auto;">
+            {bars}
+        </div>
+        <div style="text-align:center;margin-top:1cm;">
+            <div style="display:inline-block;padding:8px 20px;border-radius:6px;font-size:10px;font-weight:600;color:white;background:{g_color};">
+                {"CRITICO — Intervento urgente" if globale < 40 else "SUFFICIENTE — Margini di miglioramento" if globale < 70 else "BUONO — Ottimizzazione avanzata"}
+            </div>
+        </div>
+    </div>"""
+
 def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "free",
                     company_name: str = "", scraping_data: dict = None):
     """
@@ -898,7 +953,7 @@ def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "fr
         align-items: center;
         min-height: 90vh;
         text-align: center;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        background: linear-gradient(135deg, #1a0000 0%, #8B0000 40%, #F90100 100%);
         color: white;
         padding: 3cm;
         margin: -2cm -2.5cm 0 -2.5cm;
@@ -987,6 +1042,23 @@ def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "fr
         _toc_html += ''.join(_toc_items)
         _toc_html += '</div>'
 
+
+    # Genera dashboard grafica premium
+    _premium_scores = {}
+    import re as _re3
+    for _sk, _sp in [("sito","Sito Web[:\\s]*(\\d+)"),("velocita_mobile","Velocit.*Mobile[:\\s]*(\\d+)"),
+                      ("velocita_desktop","Velocit.*Desktop[:\\s]*(\\d+)"),("seo_score","SEO[:\\s]*(\\d+)"),
+                      ("accessibilita","Accessibilit.*[:\\s]*(\\d+)"),("best_practices","Best Practices[:\\s]*(\\d+)"),
+                      ("google_business","Google Business[:\\s]*(\\d+)"),("facebook","Facebook[:\\s]*(\\d+)"),
+                      ("instagram","Instagram[:\\s]*(\\d+)"),("reputazione_ai","Reputazione AI[:\\s]*(\\d+)"),
+                      ("globale","PUNTEGGIO COMPLESSIVO.*?(\\d+)")]:
+        _sm = _re3.search(_sp, markdown_text)
+        if _sm:
+            _premium_scores[_sk] = int(_sm.group(1))
+    if not _premium_scores.get("globale") and _global_score:
+        _premium_scores["globale"] = int(_global_score)
+    _dashboard_html = _generate_premium_dashboard(_premium_scores) if _premium_scores else ""
+
     # Assembla HTML completo
     full_html = f"""<!DOCTYPE html>
     <html lang="it">
@@ -997,6 +1069,7 @@ def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "fr
     <body>
         {cover_html}
         {_toc_html}
+        {_dashboard_html}
         <div class="report-content">{html_body}</div>
     </body>
     </html>

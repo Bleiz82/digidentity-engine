@@ -843,98 +843,238 @@ def _convert_markdown_to_html(md_text: str, data: dict) -> str:
 
 
 def _generate_premium_dashboard(scores: dict) -> str:
-    """Deprecata — usa premium_pdf_style.generate_premium_dashboard()."""
-    from execution.premium_pdf_style import generate_premium_dashboard
-    return generate_premium_dashboard(scores)
-
+    """Genera dashboard grafica per il PDF premium."""
+    if not scores:
+        return ""
+    
+    score_map = [
+        ("Sito Web", "sito", "🌐"),
+        ("Velocità Mobile", "velocita_mobile", "📱"),
+        ("Velocità Desktop", "velocita_desktop", "💻"),
+        ("SEO", "seo_score", "🔍"),
+        ("Accessibilità", "accessibilita", "♿"),
+        ("Best Practices", "best_practices", "✅"),
+        ("Google Business", "google_business", "📍"),
+        ("Facebook", "facebook", "👥"),
+        ("Instagram", "instagram", "📸"),
+        ("Reputazione AI", "reputazione_ai", "🤖"),
+    ]
+    
+    globale = scores.get("globale", 0)
+    g_color = "#E74C3C" if globale < 40 else "#F39C12" if globale < 70 else "#27AE60"
+    
+    bars = ""
+    for label, key, icon in score_map:
+        val = scores.get(key, 0)
+        color = "#E74C3C" if val < 40 else "#F39C12" if val < 70 else "#27AE60"
+        bars += f"""
+        <div style="display:flex;align-items:center;margin-bottom:8px;">
+            <div style="width:25px;text-align:center;font-size:14px;">{icon}</div>
+            <div style="width:140px;font-size:10px;font-weight:600;color:#333;padding-left:8px;">{label}</div>
+            <div style="flex:1;background:#e8e8e8;border-radius:8px;height:18px;margin:0 10px;overflow:hidden;">
+                <div style="width:{val}%;background:{color};height:100%;border-radius:8px;transition:width 0.3s;"></div>
+            </div>
+            <div style="width:45px;text-align:right;font-size:11px;font-weight:700;color:{color};">{val}/100</div>
+        </div>"""
+    
+    return f"""
+    <div style="page-break-after:always;padding:1.5cm 0;">
+        <h1 style="text-align:center;color:#1a1a2e;font-size:22pt;margin-bottom:0.3cm;">PANORAMICA PUNTEGGI</h1>
+        <div style="text-align:center;margin-bottom:1cm;">
+            <div style="display:inline-block;border:6px solid {g_color};border-radius:50%;width:100px;height:100px;line-height:100px;text-align:center;">
+                <span style="font-size:36px;font-weight:800;color:{g_color};">{globale}</span>
+            </div>
+            <div style="font-size:11px;color:#666;margin-top:8px;font-weight:600;">PUNTEGGIO GLOBALE DIGIDENTITY</div>
+        </div>
+        <div style="max-width:480px;margin:0 auto;">
+            {bars}
+        </div>
+        <div style="text-align:center;margin-top:1cm;">
+            <div style="display:inline-block;padding:8px 20px;border-radius:6px;font-size:10px;font-weight:600;color:white;background:{g_color};">
+                {"CRITICO — Intervento urgente" if globale < 40 else "SUFFICIENTE — Margini di miglioramento" if globale < 70 else "BUONO — Ottimizzazione avanzata"}
+            </div>
+        </div>
+    </div>"""
 
 def markdown_to_pdf(markdown_text: str, output_path: str, report_type: str = "free",
                     company_name: str = "", scraping_data: dict = None):
     """
     Genera PDF da markdown. Supporta sia FREE che PREMIUM.
-    Per PREMIUM usa il dark theme identico all HTML.
+    Per PREMIUM usa un layout esteso con tutte le sezioni.
     """
-    import markdown as md_lib
+    import markdown
     from weasyprint import HTML
     from datetime import datetime
-    from pathlib import Path
-    import re as _re
 
     if report_type == "free":
+        # Usa la funzione esistente
         return generate_pdf(markdown_text, output_path, scraping_data, company_name)
 
-    # PREMIUM Dark Theme
-    from execution.premium_pdf_style import (
-        get_premium_css,
-        generate_premium_cover,
-        generate_premium_dashboard as gen_dashboard,
-    )
-
+    # ── PREMIUM ──
     _mesi = ["gennaio","febbraio","marzo","aprile","maggio","giugno",
              "luglio","agosto","settembre","ottobre","novembre","dicembre"]
     _now = datetime.now()
     date_str = f"{_now.day} {_mesi[_now.month-1]} {_now.year}"
 
-    _score_match = _re.search(r"Punteggio DigIdentity[:\\s]*(\\d+)/100", markdown_text)
-    _global_score = int(_score_match.group(1)) if _score_match else 0
+    # Estrai punteggio globale dal markdown
+    import re as _re
+    _score_match = _re.search(r"Punteggio DigIdentity[:\s]*(\d+)/100", markdown_text)
+    _global_score = _score_match.group(1) if _score_match else ""
 
-    _premium_scores = {}
-    score_patterns = [
-        ("sito", "Sito Web"),
-        ("velocita_mobile", "Velocit.* Mobile"),
-        ("velocita_desktop", "Velocit.* Desktop"),
-        ("seo_score", "SEO"),
-        ("accessibilita", "Accessibilit"),
-        ("best_practices", "Best Practices"),
-        ("google_business", "Google Business"),
-        ("facebook", "Facebook"),
-        ("instagram", "Instagram"),
-        ("reputazione_ai", "Reputazione AI"),
+    # Converti markdown in HTML
+    md_extensions = [
+        'tables', 'fenced_code', 'nl2br', 'sane_lists',
+        'smarty', 'toc', 'attr_list'
     ]
-    for key, label in score_patterns:
-        m = _re.search(label + r"[:\\s]*(\\d+)/100", markdown_text)
-        if m:
-            _premium_scores[key] = int(m.group(1))
+    html_body = markdown.markdown(markdown_text, extensions=md_extensions)
 
-    _gm = _re.search(r"PUNTEGGIO COMPLESSIVO.*?(\\d+)", markdown_text)
-    if _gm:
-        _premium_scores["globale"] = int(_gm.group(1))
-    if not _premium_scores.get("globale") and _global_score:
-        _premium_scores["globale"] = _global_score
+    # CSS Premium
+    css = _get_report_css()
+    premium_css = """
+    <style>
+    """ + css + """
 
-    location = ""
-    loc_match = _re.search(r"\\*\\*(.+?)\\*\\*\\s*\\|", markdown_text)
-    if loc_match:
-        location = loc_match.group(1)
+    /* Premium overrides */
+    @page {
+        size: A4;
+        margin: 2cm 2.5cm;
+        @bottom-center {
+            content: "Diagnosi Premium — """ + company_name + """ — Pagina " counter(page) " di " counter(pages);
+            font-size: 8pt;
+            color: #999;
+        }
+    }
 
-    html_body = md_lib.markdown(markdown_text, extensions=[
-        "tables", "fenced_code", "nl2br", "sane_lists",
-    ])
+    .premium-cover {
+        page-break-after: always;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 90vh;
+        text-align: center;
+        background: linear-gradient(135deg, #1a0000 0%, #8B0000 40%, #F90100 100%);
+        color: white;
+        padding: 3cm;
+        margin: -2cm -2.5cm 0 -2.5cm;
+    }
 
-    html_body = _re.sub(r"<(script|style)[^>]*>.*?</\\1>", "", html_body, flags=_re.DOTALL)
+    .premium-cover h1 {
+        font-size: 32pt;
+        font-weight: 800;
+        margin-bottom: 0.5cm;
+        letter-spacing: 1px;
+    }
 
-    cover = generate_premium_cover(company_name, date_str, location, _premium_scores.get("globale", _global_score))
-    dashboard = gen_dashboard(_premium_scores)
+    .premium-cover h2 {
+        font-size: 18pt;
+        font-weight: 400;
+        opacity: 0.9;
+        margin-bottom: 1cm;
+    }
 
-    css = get_premium_css()
-    full_html = f"""<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="utf-8">
-    <style>{css}</style>
-</head>
-<body>
-    {cover}
-    {dashboard}
-    <div class="report-content">
-        {html_body}
+    .premium-cover .date {
+        font-size: 11pt;
+        opacity: 0.7;
+        margin-top: 2cm;
+    }
+
+    .premium-cover .badge {
+        display: inline-block;
+        background: #e94560;
+        color: white;
+        padding: 8px 24px;
+        border-radius: 20px;
+        font-size: 11pt;
+        font-weight: 600;
+        margin-top: 1cm;
+    }
+
+    .premium-cover img {
+        max-width: 180px;
+        margin-bottom: 1.5cm;
+    }
+
+    h1 { color: #1a1a2e; font-size: 20pt; margin-top: 1.5cm; page-break-after: avoid; }
+    h2 { color: #0f3460; font-size: 16pt; margin-top: 1cm; page-break-after: avoid; }
+    h3 { color: #e94560; font-size: 13pt; margin-top: 0.8cm; page-break-after: avoid; }
+    p { font-size: 10.5pt; line-height: 1.7; text-align: justify; }
+    hr { border: none; border-top: 2px solid #e94560; margin: 1.5cm 0; page-break-before: always; }
+    table { width: 100%; border-collapse: collapse; margin: 0.5cm 0; font-size: 9.5pt; }
+    th { background: #1a1a2e; color: white; padding: 8px 12px; text-align: left; }
+    td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+    tr:nth-child(even) { background: #f8f9fa; }
+    strong { color: #1a1a2e; }
+    </style>
+    """
+
+    # Logo path
+    logo_path = "/app/assets/logo_light.png"
+
+    # Cover page
+    cover_html = f"""
+    <div class="premium-cover">
+        <img src="{logo_path}" alt="DigIdentity">
+        <h1>DIAGNOSI DIGITALE PREMIUM</h1>
+        <h2>{company_name}</h2>
+        <div class="badge">REPORT COMPLETO</div>
+        {f'<div style="margin-top:1.5cm;font-size:48pt;font-weight:800;color:#e94560;">{_global_score}<span style="font-size:20pt;opacity:0.7">/100</span></div><div style="font-size:12pt;opacity:0.8;margin-top:0.3cm;">PUNTEGGIO DIGIDENTITY</div>' if _global_score else ''}
+        <div class="date">{date_str}</div>
     </div>
-</body>
-</html>"""
+    """
 
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    HTML(string=full_html, base_url="/app/").write_pdf(output_path)
 
-    file_size = Path(output_path).stat().st_size / 1024
-    logger.info(f"PDF Premium generato: {output_path} ({file_size:.1f} KB)")
+    # Genera sommario dalle intestazioni H1/H2
+    import re as _re2
+    _headings = _re2.findall(r'<(h[12])[^>]*>(.*?)</\1>', html_body, _re2.IGNORECASE)
+    _toc_items = []
+    for _tag, _title in _headings:
+        _clean = _re2.sub(r'<[^>]+>', '', _title).strip()
+        if _clean and len(_clean) > 3:
+            _indent = 'margin-left:0' if _tag.lower() == 'h1' else 'margin-left:20px'
+            _size = '12pt' if _tag.lower() == 'h1' else '10.5pt'
+            _weight = '700' if _tag.lower() == 'h1' else '400'
+            _toc_items.append(f'<div style="{_indent};font-size:{_size};font-weight:{_weight};padding:4px 0;border-bottom:1px dotted #ddd;">{_clean}</div>')
+    _toc_html = ''
+    if _toc_items:
+        _toc_html = '<div style="page-break-after:always;padding-top:2cm;">'
+        _toc_html += '<h1 style="font-size:24pt;color:#1a1a2e;border-bottom:3px solid #e94560;padding-bottom:10px;margin-bottom:25px;">SOMMARIO</h1>'
+        _toc_html += ''.join(_toc_items)
+        _toc_html += '</div>'
+
+
+    # Genera dashboard grafica premium
+    _premium_scores = {}
+    import re as _re3
+    for _sk, _sp in [("sito","Sito Web[:\\s]*(\\d+)"),("velocita_mobile","Velocit.*Mobile[:\\s]*(\\d+)"),
+                      ("velocita_desktop","Velocit.*Desktop[:\\s]*(\\d+)"),("seo_score","SEO[:\\s]*(\\d+)"),
+                      ("accessibilita","Accessibilit.*[:\\s]*(\\d+)"),("best_practices","Best Practices[:\\s]*(\\d+)"),
+                      ("google_business","Google Business[:\\s]*(\\d+)"),("facebook","Facebook[:\\s]*(\\d+)"),
+                      ("instagram","Instagram[:\\s]*(\\d+)"),("reputazione_ai","Reputazione AI[:\\s]*(\\d+)"),
+                      ("globale","PUNTEGGIO COMPLESSIVO.*?(\\d+)")]:
+        _sm = _re3.search(_sp, markdown_text)
+        if _sm:
+            _premium_scores[_sk] = int(_sm.group(1))
+    if not _premium_scores.get("globale") and _global_score:
+        _premium_scores["globale"] = int(_global_score)
+    _dashboard_html = _generate_premium_dashboard(_premium_scores) if _premium_scores else ""
+
+    # Assembla HTML completo
+    full_html = f"""<!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="utf-8">
+        {premium_css}
+    </head>
+    <body>
+        {cover_html}
+        {_toc_html}
+        {_dashboard_html}
+        <div class="report-content">{html_body}</div>
+    </body>
+    </html>
+    """
+
+    # Genera PDF
+    HTML(string=full_html).write_pdf(output_path)
     return output_path

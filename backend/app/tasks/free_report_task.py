@@ -7,8 +7,9 @@ Flusso:
 3. Genera report AI con Claude (diagnosi gratuita)
 4. Converte in PDF professionale
 5. Crea Stripe Checkout Session per premium
-6. Invia email con PDF allegato e CTA per upgrade
-7. Aggiorna stato su Supabase
+6. Genera pagina HTML interattiva
+7. Invia email con PDF allegato, link HTML e CTA per upgrade
+8. Aggiorna stato su Supabase
 """
 
 import logging
@@ -40,6 +41,7 @@ def task_free_report(self, lead_id: str):
     from execution.ai_report import generate_free_report
     from execution.pdf_generator import generate_pdf
     from execution.send_email import send_free_report_email
+    from execution.html_generator import generate_free_html, save_free_html
 
     logger.info(f"[FREE] Inizio pipeline per lead {lead_id}")
     db = get_supabase()
@@ -62,7 +64,7 @@ def task_free_report(self, lead_id: str):
 
     logger.info(f"[FREE] Lead: {company_name} — {website_url} — {email}")
 
-    # Estrazione città e settore (Fix 1)
+    # Estrazione città e settore
     city = lead.get("citta") or lead.get("city", "")
     sector = lead.get("settore_attivita") or lead.get("sector", "")
     logger.info(f"[FREE] Città: {city}, Settore: {sector}")
@@ -125,7 +127,7 @@ def task_free_report(self, lead_id: str):
         }).eq("id", lead_id).execute()
         raise self.retry(exc=e)
 
-    # ── 5. Crea Stripe Checkout URL per il premium ──
+    # ── 4. Crea Stripe Checkout URL per il premium ──
     checkout_url = f"{settings.APP_BASE_URL}/api/payment/create-checkout"
     try:
         stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -168,10 +170,9 @@ def task_free_report(self, lead_id: str):
         logger.info(f"[FREE] Checkout session creata: {checkout_session.id}")
     except Exception as e:
         logger.warning(f"[FREE] Errore creazione Stripe session: {e} — uso URL fallback")
-        # Fallback: usa l'endpoint API che creerà la session on-demand
         checkout_url = f"{settings.APP_BASE_URL}/api/payment/create-checkout?lead_id={lead_id}"
 
-    # ── 4. Generazione PDF ──
+    # ── 5. Generazione PDF ──
     try:
         pdf_dir = Path("/app/reports/free")
         pdf_dir.mkdir(parents=True, exist_ok=True)
@@ -194,7 +195,29 @@ def task_free_report(self, lead_id: str):
         }).eq("id", lead_id).execute()
         raise self.retry(exc=e)
 
-    # ── 6. Invio email ──
+    # ── 6. Generazione HTML interattivo ──
+    html_url = ""
+    try:
+        base_url = settings.APP_BASE_URL.rstrip("/")
+
+        html_content = generate_free_html(
+            scraping_data=scraping_data,
+            report_markdown=report_markdown,
+            company_name=company_name,
+            contact_name=contact_name,
+            sector=sector,
+            city=city,
+            checkout_url=checkout_url,
+        )
+        html_path = save_free_html(html_content, lead_id)
+        html_url = f"{base_url}/api/reports/diagnosi/free/{lead_id}"
+
+        logger.info(f"[FREE] HTML generato: {html_url}")
+    except Exception as e:
+        # L'HTML è un bonus — se fallisce, il PDF è già pronto
+        logger.warning(f"[FREE] Errore generazione HTML (non bloccante): {e}")
+
+    # ── 7. Invio email ──
     try:
         email_sent = send_free_report_email(
             to_email=email,
@@ -202,6 +225,7 @@ def task_free_report(self, lead_id: str):
             contact_name=contact_name,
             pdf_path=pdf_path,
             checkout_url=checkout_url,
+            html_url=html_url,
         )
 
         if email_sent:
@@ -222,7 +246,7 @@ def task_free_report(self, lead_id: str):
         }).eq("id", lead_id).execute()
         raise self.retry(exc=e)
 
-    # ── 7. Calcolo Score ──
+    # ── 8. Calcolo Score ──
     try:
         gb = scraping_data.get("google_business", {})
         gmb_rating = gb.get("rating", 0) or 0
@@ -261,7 +285,7 @@ def task_free_report(self, lead_id: str):
     except Exception as e:
         logger.warning(f"[FREE] Errore score: {e}")
 
-    # ── 8. Insert in tabella reports ──
+    # ── 9. Insert in tabella reports ──
     try:
         pdf_size = 0
         try:
@@ -275,6 +299,7 @@ def task_free_report(self, lead_id: str):
             "ai_total_tokens": ai_total, "ai_cost_usd": ai_cost,
             "pdf_path": pdf_path, "pdf_filename": os.path.basename(pdf_path),
             "pdf_size_bytes": pdf_size, "generation_time_seconds": _gen_time,
+            "html_url": html_url,
             "status": "generated",
         }).execute()
         logger.info(f"[FREE] Report in DB: model={ai_model}, tokens={ai_total}, cost=${ai_cost}")
@@ -288,5 +313,6 @@ def task_free_report(self, lead_id: str):
         "company_name": company_name,
         "email": email,
         "pdf_path": pdf_path,
+        "html_url": html_url,
         "checkout_url": checkout_url,
     }

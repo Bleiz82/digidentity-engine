@@ -16,6 +16,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - digidentity_internal
 
   # ---- FastAPI Backend ----
   backend:
@@ -35,6 +37,16 @@ services:
         condition: service_healthy
     restart: unless-stopped
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    networks:
+      - root_default
+      - digidentity_internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.digidentity-api.rule=Host(`api.digidentityagency.it`)"
+      - "traefik.http.routers.digidentity-api.entrypoints=websecure"
+      - "traefik.http.routers.digidentity-api.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.digidentity-api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=root_default"
 
   # ---- Celery Worker (Task Queue) ----
   celery-worker:
@@ -52,6 +64,14 @@ services:
         condition: service_healthy
     restart: unless-stopped
     command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
+    networks:
+      - digidentity_internal
 
 volumes:
   redis_data:
+
+networks:
+  root_default:
+    external: true
+  digidentity_internal:
+    driver: bridge

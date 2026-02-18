@@ -9,8 +9,9 @@ Flusso:
 3. Costruisce contesto con premium_context
 4. Genera report premium AI con Claude (premium_ai)
 5. Converte in PDF professionale premium
-6. Invia email premium con PDF allegato
-7. Aggiorna stato su Supabase
+6. Genera pagina HTML interattiva
+7. Invia email premium con PDF allegato + link HTML
+8. Aggiorna stato su Supabase
 """
 
 import logging
@@ -29,13 +30,14 @@ def _normalize_lead(lead: dict) -> dict:
     """Normalizza i campi del lead per compatibilita con i moduli premium."""
     return {
         "id": lead.get("id", ""),
-        "nome_titolare": lead.get("contact_name") or lead.get("nome_titolare") or "Titolare",
-        "nome_attivita": lead.get("company_name") or lead.get("nome_attivita") or "Attivita",
-        "settore": lead.get("sector") or lead.get("settore") or "non specificato",
-        "citta": lead.get("city") or lead.get("citta") or "",
+        "nome_titolare": lead.get("nome_contatto") or lead.get("contact_name") or lead.get("nome_titolare") or "Titolare",
+        "nome_attivita": lead.get("nome_azienda") or lead.get("company_name") or lead.get("nome_attivita") or "Attivita",
+        "settore": lead.get("settore_attivita") or lead.get("sector") or lead.get("settore") or "non specificato",
+        "citta": lead.get("citta") or lead.get("city") or "",
+        "provincia": lead.get("provincia") or "",
         "email": lead.get("email", ""),
-        "telefono": lead.get("phone") or lead.get("telefono") or "",
-        "website": lead.get("website_url") or lead.get("website") or "",
+        "telefono": lead.get("telefono") or lead.get("phone") or "",
+        "website": lead.get("sito_web") or lead.get("website_url") or lead.get("website") or "",
         "scraping_data": lead.get("scraping_data") or {},
         "free_report_markdown": lead.get("free_report_markdown") or "",
     }
@@ -59,6 +61,7 @@ def task_premium_report(self, lead_id: str):
     from execution.premium_ai import generate_all_sections, assemble_premium_report
     from execution.pdf_generator import markdown_to_pdf
     from execution.send_email import send_premium_report_email
+    from execution.html_generator import generate_premium_html, save_premium_html
 
     logger.info(f"[PREMIUM] Inizio pipeline per lead {lead_id}")
     db = get_supabase()
@@ -185,13 +188,40 @@ def task_premium_report(self, lead_id: str):
         }).eq("id", lead_id).execute()
         raise self.retry(exc=e)
 
+    # ── 6b. Generazione HTML interattivo ──
+    html_url = ""
+    try:
+        from app.core.config import settings as _app_settings
+        base_url = _app_settings.APP_BASE_URL.rstrip("/")
+
+        # Crea URL consulenza per il CTA nell'HTML
+        _consulenza_url = "https://buy.stripe.com/3cI3cx3WUaTheOieMgdMI00"
+
+        html_content = generate_premium_html(
+            ctx=ctx,
+            sections=sections,
+            consulenza_url=_consulenza_url,
+        )
+        html_path = save_premium_html(html_content, lead_id)
+        html_url = f"{base_url}/api/reports/diagnosi/premium/{lead_id}"
+
+        # Salva URL su Supabase
+        db.table("leads").update({
+            "premium_html_url": html_url,
+        }).eq("id", lead_id).execute()
+
+        logger.info(f"[PREMIUM] HTML generato: {html_url}")
+    except Exception as e:
+        # L'HTML è un bonus — se fallisce, il PDF è già pronto
+        logger.warning(f"[PREMIUM] Errore generazione HTML (non bloccante): {e}")
+
     # ── 7. Invio email premium ──
     try:
         # Crea checkout Stripe per consulenza
         consulenza_url = ""
         try:
             import stripe
-            from backend.app.core.config import settings as _settings
+            from app.core.config import settings as _settings
             stripe.api_key = _settings.STRIPE_SECRET_KEY
             if _settings.STRIPE_PRICE_ID_CONSULENZA:
                 checkout = stripe.checkout.Session.create(
@@ -214,6 +244,7 @@ def task_premium_report(self, lead_id: str):
             contact_name=lead["nome_titolare"],
             pdf_path=pdf_path,
             consulenza_url=consulenza_url,
+            html_url=html_url,
         )
 
         if email_sent:
@@ -250,6 +281,7 @@ def task_premium_report(self, lead_id: str):
             "ai_total_tokens": _total_tokens, "ai_cost_usd": ai_cost,
             "pdf_path": pdf_path, "pdf_filename": os.path.basename(pdf_path),
             "pdf_size_bytes": pdf_size, "generation_time_seconds": _gen_time,
+            "html_url": html_url,
             "status": "generated",
         }).execute()
         logger.info(f"[PREMIUM] Report in DB: model={_ai_model}, tokens={_total_tokens}, cost=${ai_cost}")
@@ -266,6 +298,7 @@ def task_premium_report(self, lead_id: str):
         "company_name": company_name,
         "email": email,
         "pdf_path": pdf_path,
+        "html_url": html_url,
         "scores": scores,
         "sections_count": len(sections),
         "report_length": len(report_markdown),

@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnosi Digitale Premium — {nome_attivita} | DigIdentity Agency</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --di-red: #F90100;
+  --di-black: #0a0a0a;
+  --di-dark: #111111;
+  --di-card: #1a1a1a;
+  --di-border: #222222;
+  --di-white: #ffffff;
+  --di-gray-100: #f5f5f5;
+  --di-gray-200: #e0e0e0;
+  --di-gray-400: #999999;
+  --di-gray-600: #666666;
+  --di-gray-800: #333333;
+  --accent: #F90100;
+  --accent-light: #ff3333;
+  --accent-glow: rgba(249, 1, 0, 0.15);
+  --accent-glow-strong: rgba(249, 1, 0, 0.3);
+  --green: #4caf50;
+  --green-glow: rgba(76, 175, 80, 0.15);
+  --red: #f44336;
+  --yellow: #ffc107;
+  --yellow-glow: rgba(255, 193, 7, 0.15);
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+body {
+  font-family: var(--font);
+  background: var(--di-black);
+  color: var(--di-gray-200);
+  font-size: 1.05rem;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(249,1,0,0.3) 50%, transparent 100%),
+    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.2) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 30% 70%, rgba(249,1,0,0.25) 50%, transparent 100%),
+    radial-gradient(1px 1px at 70% 50%, rgba(255,255,255,0.15) 50%, transparent 100%),
+    radial-gradient(1px 1px at 50% 90%, rgba(249,1,0,0.2) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 90% 80%, rgba(255,255,255,0.2) 50%, transparent 100%);
+  background-size: 200% 200%;
+  animation: particleFloat 25s linear infinite;
+  opacity: 0.6;
+}
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 85%, rgba(249,1,0,0.2) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 15%, rgba(255,255,255,0.15) 50%, transparent 100%),
+    radial-gradient(1px 1px at 75% 65%, rgba(249,1,0,0.2) 50%, transparent 100%);
+  background-size: 250% 250%;
+  animation: particleFloat2 30s linear infinite;
+  opacity: 0.4;
+}
+@keyframes particleFloat {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 60%; }
+  100% { background-position: 0% 0%; }
+}
+@keyframes particleFloat2 {
+  0% { background-position: 100% 100%; }
+  50% { background-position: 30% 50%; }
+  100% { background-position: 100% 100%; }
+}
+.grid-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.report-header, .report-nav, .section, .report-footer {
+  position: relative;
+  z-index: 1;
+}
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  text-align: left;
+}
+/* HEADER */
+.report-header {
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  background: linear-gradient(180deg, #0d0d0d 0%, var(--di-black) 100%);
+  border-bottom: 1px solid var(--di-border);
+  position: relative;
+  overflow: hidden;
+}
+.report-header::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle at 50% 50%, var(--accent-glow) 0%, transparent 50%);
+  animation: headerPulse 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes headerPulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+.report-type-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--di-black);
+  background: var(--accent);
+  padding: 0.35rem 1.2rem;
+  border-radius: 3px;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+.business-name {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--di-white);
+  margin-bottom: 0.4rem;
+  line-height: 1.2;
+  position: relative;
+}
+.business-meta {
+  font-size: 0.95rem;
+  color: var(--di-gray-400);
+  margin-bottom: 2.5rem;
+  position: relative;
+}
+.header-score-wrapper {
+  display: inline-block;
+  margin: 0.5rem auto;
+  position: relative;
+}
+@property --score-deg {
+  syntax: '<number>';
+  initial-value: 0;
+  inherits: false;
+}
+.score-ring {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: conic-gradient(
+    var(--accent) 0deg,
+    var(--accent) calc(var(--score-deg, 0) * 1deg),
+    #1a1a1a calc(var(--score-deg, 0) * 1deg),
+    #1a1a1a 360deg
+  );
+  box-shadow: 0 0 40px var(--accent-glow), 0 0 80px var(--accent-glow);
+  animation: scoreReveal 2s ease-out forwards;
+}
+.score-ring-inner {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: var(--di-black);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+.score-number {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+  font-family: var(--font-mono);
+}
+.score-label {
+  font-size: 0.65rem;
+  color: var(--di-gray-400);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-top: 4px;
+}
+.header-date {
+  font-size: 0.8rem;
+  color: var(--di-gray-600);
+  margin-top: 1.5rem;
+  position: relative;
+}
+/* NAV */
+.report-nav {
+  background: rgba(17, 17, 17, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--di-border);
+  padding: 1rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+.nav-link {
+  font-size: 0.65rem;
+  color: var(--di-gray-400);
+  text-decoration: none;
+  padding: 0.25rem 0.6rem;
+  border-radius: 3px;
+  border: 1px solid var(--di-border);
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.nav-link:hover, .nav-link.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+/* SECTIONS */
+.section {
+  padding: 3.5rem 0;
+  border-bottom: 1px solid var(--di-border);
+}
+.section-alt { background: var(--di-dark); }
+.section-number {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--di-gray-600);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 3px solid var(--accent);
+  display: inline-block;
+  text-shadow: 0 0 20px var(--accent-glow);
+  animation: h2Glow 3s ease-in-out infinite;
+}
+@keyframes h2Glow {
+  0%, 100% { text-shadow: 0 0 15px var(--accent-glow); }
+  50% { text-shadow: 0 0 30px var(--accent-glow-strong); }
+}
+h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--di-white);
+  margin-top: 2.2rem;
+  margin-bottom: 0.8rem;
+}
+p { margin-bottom: 1.2rem; }
+strong { color: var(--di-white); font-weight: 600; }
+/* DASHBOARD */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin: 2rem 0;
+}
+.dash-card {
+  background: var(--di-card);
+  border: 1px solid var(--di-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.dash-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+.dash-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+.dash-card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--di-white);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.dash-score {
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+.score-high { color: var(--green); }
+.score-mid { color: var(--yellow); }
+.score-low { color: var(--red); }
+.score-na { color: var(--di-gray-600); font-size: 1rem; }
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--di-border);
+  border-radius: 3px;
+  margin: 0.6rem 0;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1.5s ease-out;
+}
+.progress-high { background: linear-gradient(90deg, var(--green), #66bb6a); }
+.progress-mid { background: linear-gradient(90deg, var(--yellow), #ffca28); }
+.progress-low { background: linear-gradient(90deg, var(--red), var(--accent-light)); }
+.progress-na { background: var(--di-gray-800); }
+.dash-card-text {
+  font-size: 0.85rem;
+  color: var(--di-gray-400);
+  line-height: 1.6;
+  margin-top: 0.4rem;
+}
+/* MINI RING */
+.section-score {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+}
+.mini-ring {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+.mini-ring svg {
+  width: 80px;
+  height: 80px;
+  transform: rotate(-90deg);
+}
+.mini-ring .ring-bg {
+  fill: none;
+  stroke: #2a2a2a;
+  stroke-width: 6;
+}
+.mini-ring .ring-fill {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 226;
+  stroke-dashoffset: 226;
+  transition: stroke-dashoffset 1.5s ease-out;
+}
+.mini-ring .ring-fill.red { stroke: #F90100; }
+.mini-ring .ring-fill.orange { stroke: #ff8c00; }
+.mini-ring .ring-fill.yellow { stroke: #f5c518; }
+.mini-ring .ring-fill.green { stroke: #00c853; }
+.mini-ring-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+}
+.section-score-label {
+  font-size: 0.95rem;
+  color: #aaa;
+  line-height: 1.5;
+}
+/* DATA BOX */
+.data-box {
+  background: var(--di-card);
+  border-left: 4px solid var(--accent);
+  padding: 1.3rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+}
+.data-box p { margin-bottom: 0.3rem; font-size: 0.9rem; }
+/* COMPARE BAR */
+.compare-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.5rem 0;
+}
+.compare-label {
+  font-size: 0.75rem;
+  color: var(--di-gray-400);
+  min-width: 120px;
+  text-align: right;
+}
+.compare-track {
+  flex: 1;
+  height: 8px;
+  background: var(--di-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.compare-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1.2s ease-out;
+}
+.compare-value {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  min-width: 35px;
+}
+/* COMPETITOR CARD */
+.competitor-card {
+  background: var(--di-card);
+  border: 1px solid var(--di-border);
+  border-radius: 8px;
+  padding: 1.8rem;
+  margin: 1.2rem 0;
+  transition: transform 0.2s;
+}
+.competitor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+.competitor-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.competitor-meta {
+  font-size: 0.85rem;
+  color: var(--di-gray-600);
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--di-border);
+}
+/* REVIEW QUOTE */
+.review-quote {
+  background: var(--di-card);
+  border-left: 4px solid var(--accent);
+  padding: 1.3rem 1.5rem;
+  margin: 1.2rem 0;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: var(--di-gray-400);
+}
+.review-stars {
+  color: var(--yellow);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+.review-author {
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin-top: 0.5rem;
+  display: block;
+  font-weight: 600;
+}
+/* PHASE CARD */
+.phase-card {
+  background: var(--di-card);
+  border: 1px solid var(--di-border);
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 1.2rem 0;
+  border-top: 3px solid var(--accent);
+}
+.phase-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+}
+.phase-week {
+  display: inline-block;
+  font-size: 0.6rem;
+  background: var(--accent);
+  color: var(--di-white);
+  padding: 0.15rem 0.6rem;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+}
+/* ACTION CARD */
+.action-card {
+  background: var(--di-card);
+  border: 1px solid var(--di-border);
+  border-radius: 8px;
+  padding: 1.3rem 1.5rem;
+  margin: 0.8rem 0;
+  display: flex;
+  gap: 1.2rem;
+  align-items: flex-start;
+  transition: transform 0.2s;
+}
+.action-card:hover { transform: translateX(4px); }
+.action-num {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--accent);
+  min-width: 40px;
+  line-height: 1;
+  font-family: var(--font-mono);
+}
+.action-body { flex: 1; }
+.action-title {
+  font-weight: 700;
+  color: var(--di-white);
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+}
+.action-tag {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-weight: 600;
+  display: inline-block;
+  margin-right: 0.3rem;
+}
+.tag-cost { background: rgba(249,1,0,0.1); color: var(--accent); }
+.tag-impact { background: rgba(76,175,80,0.1); color: var(--green); }
+.action-detail {
+  font-size: 0.85rem;
+  color: var(--di-gray-400);
+  line-height: 1.6;
+}
+/* CTA */
+.cta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.8rem;
+  margin: 2rem 0;
+}
+.cta-option {
+  background: var(--di-card);
+  border: 1px solid var(--di-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.cta-option:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+.cta-option-title {
+  font-weight: 700;
+  color: var(--di-white);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+.cta-option-text {
+  font-size: 0.8rem;
+  color: var(--di-gray-400);
+  line-height: 1.5;
+}
+.cta-button {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--di-white) !important;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 1rem 2.5rem;
+  border-radius: 8px;
+  text-decoration: none !important;
+  margin-top: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px var(--accent-glow);
+  animation: ctaPulse 2.5s ease-in-out infinite;
+}
+.cta-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px var(--accent-glow-strong);
+}
+@keyframes ctaPulse {
+  0%, 100% { box-shadow: 0 4px 15px var(--accent-glow); }
+  50% { box-shadow: 0 4px 30px var(--accent-glow-strong), 0 0 50px var(--accent-glow); }
+}
+/* GLOBAL SCORE */
+.global-score-wrap { text-align: center; margin: 2.5rem 0; }
+.global-score-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--di-gray-600);
+  margin-bottom: 1rem;
+}
+.global-score-verdict { font-size: 1.1rem; font-weight: 700; margin-top: 1rem; }
+.global-score-text {
+  max-width: 660px;
+  margin: 1rem auto 0;
+  color: var(--di-gray-400);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+.sub-divider {
+  border: none;
+  border-top: 1px dashed var(--di-border);
+  margin: 3rem 0;
+}
+/* FOOTER */
+.report-footer {
+  text-align: center;
+  padding: 3rem 2rem;
+  border-top: 1px solid var(--di-border);
+}
+.footer-text {
+  font-size: 0.75rem;
+  color: var(--di-gray-600);
+  line-height: 1.8;
+}
+/* SECTION CONTENT from Claude */
+.section-content h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--di-white);
+  margin-top: 2.2rem;
+  margin-bottom: 0.8rem;
+}
+.section-content p {
+  margin-bottom: 1.2rem;
+  line-height: 1.8;
+}
+.section-content strong {
+  color: var(--di-white);
+}
+.section-content a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+/* RESPONSIVE */
+@media (max-width: 700px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .cta-grid { grid-template-columns: 1fr; }
+  .business-name { font-size: 1.7rem; }
+  .container { padding: 0 1.2rem; }
+  .action-card { flex-direction: column; gap: 0.5rem; }
+  .report-nav { padding: 0.8rem 1rem; }
+  .nav-link { font-size: 0.6rem; padding: 0.2rem 0.5rem; }
+  .compare-label { min-width: 80px; font-size: 0.65rem; }
+  .score-ring { width: 130px; height: 130px; }
+  .score-ring-inner { width: 108px; height: 108px; }
+  .score-number { font-size: 2.4rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001s !important;
+    transition-duration: 0.001s !important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="grid-overlay"></div>
+
+<!-- HEADER -->
+<header class="report-header">
+  <img src="https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_dark_removebg.png" alt="DigIdentity Agency" style="height: 80px; margin-bottom: 2rem; position: relative; display: block; margin-left: auto; margin-right: auto;">
+  <div class="report-type-badge">Diagnosi Digitale Premium</div>
+  <h1 class="business-name">{nome_attivita}</h1>
+  <div class="business-meta">{settore} — {citta}</div>
+  <div class="header-score-wrapper">
+    <div class="score-ring" style="--score-deg: {score_deg};">
+      <div class="score-ring-inner">
+        <span class="score-number" id="mainScore">{punteggio_globale}</span>
+        <span class="score-label">su 100</span>
+      </div>
+    </div>
+  </div>
+  <div class="header-date">Generata il {data_odierna}</div>
+</header>
+
+<!-- NAV -->
+<nav class="report-nav">
+  <div class="nav-inner">
+    <a href="#lettera" class="nav-link active">Lettera</a>
+    <a href="#dashboard" class="nav-link">Dashboard</a>
+    <a href="#sito" class="nav-link">Sito Web</a>
+    <a href="#seo" class="nav-link">SEO</a>
+    <a href="#keyword" class="nav-link">Keyword</a>
+    <a href="#gmb" class="nav-link">Google Business</a>
+    <a href="#reputazione" class="nav-link">Reputazione</a>
+    <a href="#competitor" class="nav-link">Competitor</a>
+    <a href="#social" class="nav-link">Social</a>
+    <a href="#branding" class="nav-link">Branding</a>
+    <a href="#ai" class="nav-link">AI</a>
+    <a href="#ads" class="nav-link">Ads</a>
+    <a href="#piano90" class="nav-link">Piano 90gg</a>
+    <a href="#relazione" class="nav-link">Relazione</a>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<section class="section section-alt" id="dashboard">
+  <div class="container">
+    <div class="section-number">I tuoi numeri</div>
+    <h2>Dashboard</h2>
+    <div class="dashboard-grid">
+      {dashboard_cards}
+    </div>
+    <div class="global-score-wrap">
+      <div class="global-score-label">Punteggio Complessivo DigIdentity</div>
+      <div class="score-ring" style="width: 170px; height: 170px; --score-deg: {score_deg};">
+        <div class="score-ring-inner" style="width: 144px; height: 144px;">
+          <span class="score-number" style="font-size: 3.2rem;" id="dashScore">{punteggio_globale}</span>
+          <span class="score-label">su 100</span>
+        </div>
+      </div>
+      <div class="global-score-verdict {verdict_class}">{verdict_text}</div>
+      <div class="global-score-text">{verdict_description}</div>
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 1: LETTERA + APERTURA (from Claude) -->
+<section class="section" id="lettera">
+  <div class="container">
+    <div class="section-number">Sezione 1 di 11</div>
+    <h2>Lettera di Apertura</h2>
+    <div class="section-content">
+      {sezione_01}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 2: SITO WEB -->
+<section class="section section-alt" id="sito">
+  <div class="container">
+    <div class="section-number">Sezione 2 di 11</div>
+    <h2>Analisi Sito Web</h2>
+    <div class="section-score">
+      <div class="mini-ring">
+        <svg viewBox="0 0 80 80"><circle class="ring-bg" cx="40" cy="40" r="36"/><circle class="ring-fill {color_sito}" cx="40" cy="40" r="36" style="stroke-dashoffset:{dashoffset_sito}"/></svg>
+        <div class="mini-ring-value"><span class="score-number">{score_sito}</span></div>
+      </div>
+      <div class="section-score-label">Punteggio Sito Web: <strong>{score_sito}/100</strong></div>
+    </div>
+    <div class="section-content">
+      {sezione_02}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 3: PERFORMANCE + SEO -->
+<section class="section" id="seo">
+  <div class="container">
+    <div class="section-number">Sezione 3 di 11</div>
+    <h2>Performance e SEO</h2>
+    <div class="section-score">
+      <div class="mini-ring">
+        <svg viewBox="0 0 80 80"><circle class="ring-bg" cx="40" cy="40" r="36"/><circle class="ring-fill {color_seo}" cx="40" cy="40" r="36" style="stroke-dashoffset:{dashoffset_seo}"/></svg>
+        <div class="mini-ring-value"><span class="score-number">{score_seo}</span></div>
+      </div>
+      <div class="section-score-label">Punteggio SEO: <strong>{score_seo}/100</strong></div>
+    </div>
+    <div class="section-content">
+      {sezione_03}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 4: KEYWORD -->
+<section class="section section-alt" id="keyword">
+  <div class="container">
+    <div class="section-number">Sezione 4 di 11</div>
+    <h2>Ricerca Keyword</h2>
+    <div class="section-content">
+      {sezione_04}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 5: GOOGLE BUSINESS + REPUTAZIONE -->
+<section class="section" id="gmb">
+  <div class="container">
+    <div class="section-number">Sezione 5 di 11</div>
+    <h2>Google Business</h2>
+    <div class="section-score">
+      <div class="mini-ring">
+        <svg viewBox="0 0 80 80"><circle class="ring-bg" cx="40" cy="40" r="36"/><circle class="ring-fill {color_gmb}" cx="40" cy="40" r="36" style="stroke-dashoffset:{dashoffset_gmb}"/></svg>
+        <div class="mini-ring-value"><span class="score-number">{score_gmb}</span></div>
+      </div>
+      <div class="section-score-label">Punteggio Google Business: <strong>{score_gmb}/100</strong></div>
+    </div>
+    <div class="section-content">
+      {sezione_05}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 5b: REPUTAZIONE -->
+<section class="section section-alt" id="reputazione">
+  <div class="container">
+    <h2>Reputazione Online</h2>
+    <div class="section-score">
+      <div class="mini-ring">
+        <svg viewBox="0 0 80 80"><circle class="ring-bg" cx="40" cy="40" r="36"/><circle class="ring-fill {color_reputazione}" cx="40" cy="40" r="36" style="stroke-dashoffset:{dashoffset_reputazione}"/></svg>
+        <div class="mini-ring-value"><span class="score-number">{score_reputazione}</span></div>
+      </div>
+      <div class="section-score-label">Punteggio Reputazione AI: <strong>{score_reputazione}/100</strong></div>
+    </div>
+    <div class="section-content">
+      {sezione_05_reputazione}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 6: COMPETITOR -->
+<section class="section" id="competitor">
+  <div class="container">
+    <div class="section-number">Sezione 6 di 11</div>
+    <h2>Analisi Competitor</h2>
+    <div class="section-content">
+      {sezione_06}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 7: SOCIAL -->
+<section class="section section-alt" id="social">
+  <div class="container">
+    <div class="section-number">Sezione 7 di 11</div>
+    <h2>Social Media</h2>
+    <div class="section-score">
+      <div class="mini-ring">
+        <svg viewBox="0 0 80 80"><circle class="ring-bg" cx="40" cy="40" r="36"/><circle class="ring-fill {color_facebook}" cx="40" cy="40" r="36" style="stroke-dashoffset:{dashoffset_facebook}"/></svg>
+        <div class="mini-ring-value"><span class="score-number">{score_facebook}</span></div>
+      </div>
+      <div class="section-score-label">Punteggio Social: <strong>{score_facebook}/100</strong></div>
+    </div>
+    <div class="section-content">
+      {sezione_07}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 8: BRANDING + AI -->
+<section class="section" id="branding">
+  <div class="container">
+    <div class="section-number">Sezione 8 di 11</div>
+    <h2>Branding e Identita Digitale</h2>
+    <div class="section-content">
+      {sezione_08_branding}
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt" id="ai">
+  <div class="container">
+    <h2>Analisi AI</h2>
+    <div class="section-content">
+      {sezione_08_ai}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 9: ADS -->
+<section class="section" id="ads">
+  <div class="container">
+    <div class="section-number">Sezione 9 di 11</div>
+    <h2>Piano Ads Suggerito</h2>
+    <div class="section-content">
+      {sezione_09}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 10: PIANO 90 GG -->
+<section class="section section-alt" id="piano90">
+  <div class="container">
+    <div class="section-number">Sezione 10 di 11</div>
+    <h2>Piano Operativo 90 Giorni</h2>
+    <div class="section-content">
+      {sezione_10}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 11: RELAZIONE + PUNTEGGIO + CTA -->
+<section class="section" id="relazione">
+  <div class="container">
+    <div class="section-number">Sezione 11 di 11</div>
+    <h2>Relazione Finale</h2>
+    <div class="section-content">
+      {sezione_11}
+    </div>
+
+    <div class="global-score-wrap">
+      <div class="global-score-label">Punteggio DigIdentity</div>
+      <div class="score-ring" style="width: 180px; height: 180px; --score-deg: {score_deg};">
+        <div class="score-ring-inner" style="width: 152px; height: 152px;">
+          <span class="score-number" style="font-size: 3.5rem;" id="finalScore">{punteggio_globale}</span>
+          <span class="score-label">su 100</span>
+        </div>
+      </div>
+      <div class="global-score-verdict {verdict_class}" style="font-size: 1.2rem; margin-top: 1.2rem;">{verdict_text}</div>
+    </div>
+
+    <div class="cta-grid">
+      <div class="cta-option">
+        <div class="cta-option-title">Fai da Te</div>
+        <div class="cta-option-text">Segui il piano operativo settimana per settimana. Hai la mappa completa.</div>
+      </div>
+      <div class="cta-option" style="border-color: var(--accent);">
+        <div class="cta-option-title" style="color: var(--accent);">Consulenza Strategica</div>
+        <div class="cta-option-text">45 minuti dedicati per trasformare questa diagnosi in un piano su misura.</div>
+      </div>
+      <div class="cta-option">
+        <div class="cta-option-title">Gestione Completa</div>
+        <div class="cta-option-text">Ci occupiamo noi di tutto. Parliamone nella consulenza.</div>
+      </div>
+    </div>
+
+    <div style="text-align: center; padding: 2.5rem 0;">
+      <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Trasforma questa diagnosi in azione.</p>
+      <p style="color: var(--di-gray-400); margin-bottom: 1.5rem;">Consulenza strategica dedicata — 45 minuti con Stefano</p>
+      <a href="{consulenza_url}" class="cta-button" style="font-size: 1.15rem; padding: 1rem 2.8rem;">Prenota la Consulenza — 199&euro;</a>
+      <p style="margin-top: 1rem; font-size: 0.8rem; color: var(--di-gray-600);">Se decidi di lavorare con noi, l'investimento lo scaliamo dal primo progetto.</p>
+      <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--di-gray-600);">Hai domande? <a href="https://wa.me/393921990215" style="color: var(--accent);">WhatsApp 392 1990215</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- CHI SIAMO -->
+<section class="section section-alt">
+  <div class="container">
+    <h2>Chi e DigIdentity Agency</h2>
+    <p>DigIdentity Agency e una web agency sarda nata con un'idea semplice: le piccole attivita locali meritano strumenti digitali professionali senza dover spendere cifre da grande azienda.</p>
+    <p>Questa Diagnosi Premium e il nostro servizio di punta: un'analisi completa con strategia operativa, pensata per chi vuole fare sul serio ma non sa da dove iniziare.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="report-footer">
+  <img src="https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_dark_removebg.png" alt="DigIdentity Agency" style="height: 40px; margin-bottom: 1rem; opacity: 0.7;">
+  <div class="footer-text">
+    Diagnosi generata da DigIdentity Engine&trade;<br>
+    Copyright 2026 DigIdentity Agency — Proprieta di Stefano Ferrante<br>
+    <a href="https://www.digidentityagency.it" style="color: var(--di-gray-600);">www.digidentityagency.it</a><br>
+    Via Dettori 3, 09020 Samatzai (SU) — info@digidentityagency.it
+  </div>
+</footer>
+
+<!-- JS: Counter animation + nav -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Score targets from data
+  var scoreMap = {score_map_json};
+
+  function animateCounter(el, target, duration) {
+    if (el.dataset.animated === 'true') return;
+    el.dataset.animated = 'true';
+    var startTime = performance.now();
+    function tick(now) {
+      var elapsed = now - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+      var ease = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(ease * target);
+      if (progress < 1) requestAnimationFrame(tick);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  var counterObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var el = entry.target;
+        var id = el.id;
+        if (scoreMap[id] !== undefined) {
+          animateCounter(el, scoreMap[id], 1800);
+        }
+      }
+    });
+  }, { threshold: 0.5 });
+
+  Object.keys(scoreMap).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.textContent = '0'; counterObserver.observe(el); }
+  });
+
+  // Mini ring animation
+  var ringObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var fill = entry.target.querySelector('.ring-fill');
+        if (fill && fill.dataset.animated !== 'true') {
+          fill.dataset.animated = 'true';
+          var target = fill.style.strokeDashoffset;
+          fill.style.strokeDashoffset = '226';
+          setTimeout(function() { fill.style.strokeDashoffset = target; }, 200);
+        }
+      }
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('.mini-ring').forEach(function(r) { ringObserver.observe(r); });
+
+  // Nav smooth scroll + active
+  document.querySelectorAll('.nav-link').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      var t = document.querySelector(this.getAttribute('href'));
+      if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+  var sections = document.querySelectorAll('section[id]');
+  var navLinks = document.querySelectorAll('.nav-link');
+  window.addEventListener('scroll', function() {
+    var current = '';
+    sections.forEach(function(s) { if (window.scrollY >= s.offsetTop - 120) current = s.getAttribute('id'); });
+    navLinks.forEach(function(l) {
+      l.classList.remove('active');
+      if (l.getAttribute('href') === '#' + current) l.classList.add('active');
+    });
+  });
+
+  // Progress bar animation
+  var barObs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        var fill = e.target.querySelector('.progress-fill');
+        if (fill) { var w = fill.style.width; fill.style.width = '0%'; setTimeout(function() { fill.style.width = w; }, 100); }
+      }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('.progress-bar').forEach(function(b) { barObs.observe(b); });
+});
+</script>
+</body>
+</html>

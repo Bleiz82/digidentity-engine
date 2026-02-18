@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { FileText, RefreshCw, Cpu, FileOutput, Clock } from 'lucide-react'
+import { FileText, RefreshCw, Cpu, FileOutput, Clock, Globe } from 'lucide-react'
 
 interface DiagnosiRow {
     report_id: string
@@ -17,6 +17,7 @@ interface DiagnosiRow {
     pdf_filename: string | null
     pdf_size_bytes: number | null
     generation_time_seconds: number | null
+    html_url: string | null
     report_status: string
     report_generato_il: string
 }
@@ -141,6 +142,7 @@ export default function DiagnosiPage() {
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Token</th>
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Costo</th>
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">PDF</th>
+                                <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">HTML</th>
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Tempo</th>
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Stato</th>
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Data</th>
@@ -175,6 +177,21 @@ export default function DiagnosiPage() {
                                                 {formatBytes(d.pdf_size_bytes)}
                                             </a>
                                         ) : "—"}
+                                    </td>
+                                    <td className="px-6 py-4 text-sm">
+                                        {d.html_url ? (
+                                            <a
+                                                href={d.html_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 text-red-400 hover:text-red-300 underline"
+                                            >
+                                                <Globe className="w-3.5 h-3.5" />
+                                                Apri
+                                            </a>
+                                        ) : (
+                                            <span className="text-slate-600">—</span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-sm text-slate-300">{d.generation_time_seconds ? `${d.generation_time_seconds.toFixed(1)}s` : '—'}</td>
                                     <td className="px-6 py-4">

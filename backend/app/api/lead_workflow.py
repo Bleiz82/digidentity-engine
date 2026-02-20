@@ -34,6 +34,11 @@ async def lead_workflow(request: Request):
             provincia = parti[-1].strip().upper()[:2]
         elif len(parti) == 2:
             citta = parti[-1].strip()
+        # Pulisci città: rimuovi CAP (5 cifre) e sigla provincia (2 lettere maiuscole)
+        import re
+        if citta:
+            citta = re.sub(r'\d{5}', '', citta).strip()
+            citta = re.sub(r'[A-Z]{2}$', '', citta).strip()
 
     lead_data = {
         "id": lead_id,
@@ -45,7 +50,7 @@ async def lead_workflow(request: Request):
         "settore_attivita": data.get("settore_attivita") or None,
         "indirizzo": indirizzo or None,
         "citta": citta or None,
-        "provincia": provincia or None,
+        "provincia": provincia or "ND",
         "status": LeadStatus.NEW.value,
         "created_at": now,
     }

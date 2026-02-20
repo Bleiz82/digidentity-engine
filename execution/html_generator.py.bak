@@ -487,107 +487,15 @@ def generate_free_html(
     now = datetime.now()
     data_odierna = f"{now.day} {MESI[now.month-1]} {now.year}"
 
-    # Converti tutto il markdown in HTML (stesso contenuto del PDF)
-    report_html = _markdown_to_html(report_markdown)
+    # Split report in sezioni
+    free_sections = _split_free_sections(report_markdown)
 
-    # Aggiungi id ai titoli h2 per la navigazione
-    import re as _re
-    def _slugify(text):
-        text = _re.sub(r'<[^>]+>', '', text).strip().lower()
-        text = _re.sub(r'[^a-z0-9\u00e0\u00e8\u00e9\u00ec\u00f2\u00f9]+', '-', text).strip('-')
-        return text[:40]
-    _nav_links = []
-    def _add_id(m):
-        title = m.group(1)
-        slug = _slugify(title)
-        _nav_links.append((slug, _re.sub(r'<[^>]+>', '', title).strip()))
-        return f'<h2 id="{slug}">{title}</h2>'
-    # Converti # heading rimasti come testo in <h2>
-    report_html = _re.sub(r"<p>#{1,2}\s+(.+?)\s*</p>", r"<h2>\g<1></h2>", report_html)
-    report_html = _re.sub(r'<h1>(.*?)</h1>', r'<h2>\1</h2>', report_html)
-    report_html = _re.sub(r'<h2>(.*?)</h2>', _add_id, report_html)
-
-    # Inietta tabella competitor stilizzata dai dati reali
-    competitors = scraping_data.get("competitors", [])
-    if competitors:
-        comp_html = '<div style="margin:1.5rem 0;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.9rem;">'
-        comp_html += '<thead><tr>'
-        comp_html += '<th style="background:var(--di-card);color:var(--accent);text-align:left;padding:0.8rem 1rem;border-bottom:2px solid var(--accent);font-weight:700;text-transform:uppercase;font-size:0.75rem;">Competitor</th>'
-        comp_html += '<th style="background:var(--di-card);color:var(--accent);text-align:center;padding:0.8rem 1rem;border-bottom:2px solid var(--accent);font-weight:700;text-transform:uppercase;font-size:0.75rem;">Rating</th>'
-        comp_html += '<th style="background:var(--di-card);color:var(--accent);text-align:center;padding:0.8rem 1rem;border-bottom:2px solid var(--accent);font-weight:700;text-transform:uppercase;font-size:0.75rem;">Recensioni</th>'
-        comp_html += '<th style="background:var(--di-card);color:var(--accent);text-align:left;padding:0.8rem 1rem;border-bottom:2px solid var(--accent);font-weight:700;text-transform:uppercase;font-size:0.75rem;">Sito Web</th>'
-        comp_html += '</tr></thead><tbody>'
-        for c in competitors[:5]:
-            name = c.get("name", "N/D")
-            rating = c.get("rating", "N/D")
-            if rating and rating != "N/D":
-                rating_str = f"\u2B50 {rating}"
-            else:
-                rating_str = "N/D"
-            reviews = c.get("reviews_count", "N/D") or "N/D"
-            website = c.get("website", "")
-            if website:
-                site_label = "Sito Web" if "facebook.com" not in website else "Facebook"
-                site_link = f'<a href="{website}" target="_blank" style="color:var(--accent);text-decoration:none;">{site_label}</a>'
-            else:
-                site_link = "N/D"
-            comp_html += f'<tr><td style="padding:0.7rem 1rem;border-bottom:1px solid var(--di-border);color:var(--di-white);font-weight:600;">{name}</td>'
-            comp_html += f'<td style="padding:0.7rem 1rem;border-bottom:1px solid var(--di-border);text-align:center;">{rating_str}</td>'
-            comp_html += f'<td style="padding:0.7rem 1rem;border-bottom:1px solid var(--di-border);text-align:center;">{reviews}</td>'
-            comp_html += f'<td style="padding:0.7rem 1rem;border-bottom:1px solid var(--di-border);">{site_link}</td></tr>'
-        comp_html += '</tbody></table></div>'
-        # Sostituisci la tabella markdown dei competitor con quella stilizzata
-        report_html = _re.sub(r'<table>.*?</table>', '', report_html, count=1, flags=_re.DOTALL)
-        # Inserisci dopo il titolo competitor
-        for slug, title in _nav_links:
-            if 'competitor' in slug.lower():
-                report_html = report_html.replace(f'<h2 id="{slug}">{title}</h2>', f'<h2 id="{slug}">{title}</h2>\n{comp_html}')
-                break
-
-    # Inietta punteggi PageSpeed dai dati reali
-    ps = scraping_data.get("pagespeed", {})
-    mobile = ps.get("mobile", {}).get("scores", {})
-    desktop = ps.get("desktop", {}).get("scores", {})
-    if mobile or desktop:
-        ps_html = '<div style="background:var(--di-card);border-radius:12px;padding:1.5rem;margin:1.5rem 0;border:1px solid var(--di-border);">'
-        ps_html += '<div style="font-size:1.1rem;font-weight:700;color:var(--accent);margin-bottom:1rem;text-align:center;">Punteggi PageSpeed Insights</div>'
-        for device, scores in [("MOBILE", mobile), ("DESKTOP", desktop)]:
-            if not scores:
-                continue
-            ps_html += f'<div style="margin-bottom:1rem;"><div style="font-size:0.75rem;font-weight:700;color:var(--di-gray-400);margin-bottom:0.5rem;text-align:center;text-transform:uppercase;letter-spacing:2px;">{device}</div>'
-            ps_html += '<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:1.5rem;">'
-            for key, label in [("performance","Performance"),("accessibility","Accessibilita"),("best-practices","Best Practices"),("seo","SEO")]:
-                val = scores.get(key, 0)
-                if val is None:
-                    val = 0
-                color = "var(--green)" if val >= 70 else "var(--yellow)" if val >= 50 else "var(--red)"
-                ps_html += f'<div style="text-align:center;"><div style="width:60px;height:60px;border-radius:50%;border:4px solid {color};display:flex;align-items:center;justify-content:center;margin:0 auto;"><span style="font-size:1.2rem;font-weight:800;color:{color};font-family:var(--font-mono);">{val}</span></div><div style="font-size:0.7rem;color:var(--di-gray-400);margin-top:0.3rem;">{label}</div></div>'
-            ps_html += '</div></div>'
-        ps_html += '</div>'
-        # Inserisci dopo la sezione sito web
-        for slug, title in _nav_links:
-            if 'sito' in slug.lower():
-                # Trova la fine della sezione sito (prima del prossimo h2)
-                marker = f'<h2 id="{slug}">{title}</h2>'
-                pos = report_html.find(marker)
-                if pos >= 0:
-                    # Trova il prossimo <h2 dopo questo
-                    next_h2 = report_html.find('<h2 id=', pos + len(marker))
-                    if next_h2 >= 0:
-                        report_html = report_html[:next_h2] + ps_html + report_html[next_h2:]
-                    else:
-                        report_html += ps_html
-                break
-
-    # Genera nav dinamica
-    if _nav_links:
-        nav_html = '<a href="#dashboard" class="nav-link active">Dashboard</a>'
-        for slug, title in _nav_links:
-            short = title[:25] + ('...' if len(title) > 25 else '')
-            nav_html += '\n    <a href="#' + slug + '" class="nav-link">' + short + '</a>'
-    else:
-        nav_html = '<a href="#dashboard" class="nav-link active">Dashboard</a>'
-    nav_html += '\n    <a href="#upgrade" class="nav-link" style="color:#FFD700;border-color:rgba(255,215,0,0.4);">Premium</a>'
+    # Converti in HTML
+    sez_01 = _markdown_to_html(free_sections.get('sezione_01', ''))
+    sez_02 = _markdown_to_html(free_sections.get('sezione_02', ''))
+    sez_03 = _markdown_to_html(free_sections.get('sezione_03', ''))
+    sez_04 = _markdown_to_html(free_sections.get('sezione_04', ''))
+    sez_05 = _markdown_to_html(free_sections.get('sezione_05', ''))
 
     # Score map per JS
     score_map = {
@@ -609,12 +517,11 @@ def generate_free_html(
         "{verdict_text}": verdict_text,
         "{verdict_description}": verdict_description,
         "{checkout_url}": checkout_url or "#",
-        "{sezione_01}": report_html,
-        "{nav_links}": nav_html,
-        "{sezione_02}": "",
-        "{sezione_03}": "",
-        "{sezione_04}": "",
-        "{sezione_05}": "",
+        "{sezione_01}": sez_01,
+        "{sezione_02}": sez_02,
+        "{sezione_03}": sez_03,
+        "{sezione_04}": sez_04,
+        "{sezione_05}": sez_05,
         "{score_map_json}": json.dumps(score_map),
     }
 

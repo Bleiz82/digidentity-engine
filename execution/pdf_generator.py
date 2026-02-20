@@ -86,17 +86,22 @@ def _generate_pagespeed_detail(scraping_data):
 
 
 def _generate_final_score(scraping_data):
-    ps = scraping_data.get("pagespeed", {})
-    desktop = ps.get("desktop", {}).get("scores", {})
-    mobile = ps.get("mobile", {}).get("scores", {})
-    site_score = int((desktop.get("performance", 0) + desktop.get("seo", 0)) / 2) if desktop else 0
-    seo_score = desktop.get("seo", 0) if desktop else 0
-    social_score = scraping_data.get("social_score", 50)
-    gb = scraping_data.get("google_business", {})
-    gb_score = 10 if gb.get("found") and not gb.get("rating") else (70 if gb.get("found") and gb.get("rating") else 0)
-    scores = {"site": site_score, "seo": seo_score, "social": social_score, "google_business": gb_score}
-    vals = [v for v in scores.values() if isinstance(v, (int, float)) and v > 0]
-    avg = int(sum(vals) / len(vals)) if vals else 0
+    # Usa score canonici pre-calcolati se disponibili
+    pre = scraping_data.get("scores", {})
+    if pre and pre.get("punteggio_globale") is not None:
+        avg = int(pre["punteggio_globale"])
+    else:
+        ps = scraping_data.get("pagespeed", {})
+        desktop = ps.get("desktop", {}).get("scores", {})
+        mobile = ps.get("mobile", {}).get("scores", {})
+        site_score = int((desktop.get("performance", 0) + desktop.get("seo", 0)) / 2) if desktop else 0
+        seo_score = desktop.get("seo", 0) if desktop else 0
+        social_score = scraping_data.get("social_score", 50)
+        gb = scraping_data.get("google_business", {})
+        gb_score = 10 if gb.get("found") and not gb.get("rating") else (70 if gb.get("found") and gb.get("rating") else 0)
+        scores = {"site": site_score, "seo": seo_score, "social": social_score, "google_business": gb_score}
+        vals = [v for v in scores.values() if isinstance(v, (int, float)) and v > 0]
+        avg = int(sum(vals) / len(vals)) if vals else 0
     if avg < 40:
         color = "#e74c3c"
         giudizio = "Critica"

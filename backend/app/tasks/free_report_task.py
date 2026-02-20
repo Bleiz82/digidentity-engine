@@ -73,6 +73,11 @@ def task_free_report(self, lead_id: str):
         sector = scraping_cached.get("sector") or scraping_cached.get("extracted_sector") or ""
     
     indirizzo = lead.get("indirizzo") or ""
+    # Pulisci città: rimuovi CAP e sigla provincia
+    import re as _re
+    if city:
+        city = _re.sub(r"\b\d{5}\b", "", city).strip()
+        city = _re.sub(r"\b[A-Z]{2}\b$", "", city).strip()
     logger.info(f"[FREE] Città: {city}, Settore: {sector}, Indirizzo: {indirizzo}")
 
     # Parsa piattaforme_social dal lead
@@ -93,15 +98,18 @@ def task_free_report(self, lead_id: str):
         db.table("leads").update({"status": "scraping"}).eq("id", lead_id).execute()
         scraping_data = scrape_lead(website_url, company_name, social_links_db, city, sector, indirizzo)
 
-        # Salva dati scraping su Supabase (Fix 1: persistenza totale)
+        # Aggiorna variabili locali PRIMA del salvataggio
+        sector = scraping_data.get("sector") or scraping_data.get("extracted_sector") or sector
+        city = scraping_data.get("city") or scraping_data.get("extracted_city") or city
+
+        # Salva dati scraping + settore + citta su Supabase
         db.table("leads").update({
             "scraping_data": scraping_data,
-            "settore_attivita": scraping_data.get("sector") or scraping_data.get("extracted_sector") or sector,
-            "citta": scraping_data.get("city") or city,
+            "settore_attivita": sector,
+            "citta": city,
         }).eq("id", lead_id).execute()
 
-
-        logger.info(f"[FREE] Scraping completato per {company_name}")
+        logger.info(f"[FREE] Scraping completato per {company_name} — Città: {city}, Settore: {sector}")
     except Exception as e:
         logger.error(f"[FREE] Errore scraping per {company_name}: {e}")
         db.table("leads").update({
@@ -203,7 +211,7 @@ def task_free_report(self, lead_id: str):
             scraping_data=scraping_data,
             company_name=company_name,
             date_str="",
-            location=f"{city}, {lead.get('provincia', '')}"
+            location=f"{city}" if lead.get('provincia', '') in ('', 'ND', None) else f"{city}, {lead.get('provincia', '')}"
         )
         logger.info(f"[FREE] PDF generato: {pdf_path}")
     except Exception as e:

@@ -299,7 +299,19 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         seo_data = _analyze_seo(website_url, company_name, city, sector)
         results["seo"] = seo_data.get("seo", {})
         results["google_business"] = seo_data.get("google_business", {})
-        results["competitors"] = seo_data.get("competitors", [])
+        # Mantieni competitor Google Places API se presenti, altrimenti usa SerpAPI
+        seo_competitors = seo_data.get("competitors", [])
+        if not results["competitors"]:
+            results["competitors"] = seo_competitors
+        else:
+            # Aggiungi competitor SerpAPI non duplicati (max 15 totali)
+            existing_names = {c["name"].lower() for c in results["competitors"]}
+            for sc in seo_competitors:
+                if len(results["competitors"]) >= 15:
+                    break
+                if sc.get("name", "").lower() not in existing_names:
+                    results["competitors"].append(sc)
+                    existing_names.add(sc["name"].lower())
         results["citations"] = seo_data.get("citations", [])
         results["indexed_pages"] = seo_data.get("indexed_pages", {"total": 0, "pages": []})
         

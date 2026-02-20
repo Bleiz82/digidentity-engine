@@ -191,6 +191,32 @@ def _calculate_social_score(scraping_data):
 
 
 def _calculate_all_scores(data: dict) -> dict:
+    # Se gli score canonici sono già stati calcolati dal task, usali
+    pre = data.get("scores", {})
+    if pre and pre.get("score_sito_web") is not None:
+        # Estrai dettagli PageSpeed per i gauge
+        ps = data.get("pagespeed", {})
+        ps_d = ps.get("desktop", {})
+        ps_d_scores = ps_d.get("scores", ps_d)
+        desktop_perf = ps_d_scores.get("performance", 0) or 0
+        if 0 < desktop_perf < 1: desktop_perf *= 100
+        ps_m = ps.get("mobile", {})
+        ps_m_scores = ps_m.get("scores", ps_m)
+        mobile_perf = ps_m_scores.get("performance", 0) or 0
+        if 0 < mobile_perf < 1: mobile_perf *= 100
+        return {
+            "SITO WEB": int(pre.get("score_sito_web", 0)),
+            "SEO": int(pre.get("score_seo", 0)),
+            "SOCIAL": int(pre.get("score_social", 0)),
+            "GOOGLE BUSINESS": int(pre.get("score_gmb", 0)),
+            "COMPETITIVITA": int(pre.get("score_competitivo", 0)),
+            "DETAILS": {
+                "Mobile": int(mobile_perf),
+                "Desktop": int(desktop_perf)
+            }
+        }
+
+    # Fallback: calcola da zero se scores non presenti
     ps = data.get("pagespeed", {})
     ps_d = ps.get("desktop", {})
     ps_d_scores = ps_d.get("scores", ps_d)

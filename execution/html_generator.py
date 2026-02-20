@@ -502,6 +502,9 @@ def generate_free_html(
         slug = _slugify(title)
         _nav_links.append((slug, _re.sub(r'<[^>]+>', '', title).strip()))
         return f'<h2 id="{slug}">{title}</h2>'
+    # Converti # heading rimasti come testo in <h2>
+    report_html = _re.sub(r"<p>#{1,2}\s+(.+?)\s*</p>", r"<h2>\g<1></h2>", report_html)
+    report_html = _re.sub(r'<h1>(.*?)</h1>', r'<h2>\1</h2>', report_html)
     report_html = _re.sub(r'<h2>(.*?)</h2>', _add_id, report_html)
 
     # Genera nav dinamica

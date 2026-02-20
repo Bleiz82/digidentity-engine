@@ -20,8 +20,8 @@ from pathlib import Path
 import time
 import os
 
-from app.core.celery_app import celery_app
-from app.core.supabase_client import get_supabase
+from backend.app.core.celery_app import celery_app
+from backend.app.core.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +191,7 @@ def task_premium_report(self, lead_id: str):
     # ── 6b. Generazione HTML interattivo ──
     html_url = ""
     try:
-        from app.core.config import settings as _app_settings
+        from backend.app.core.config import settings as _app_settings
         base_url = _app_settings.APP_BASE_URL.rstrip("/")
 
         # Crea URL consulenza per il CTA nell'HTML
@@ -221,7 +221,7 @@ def task_premium_report(self, lead_id: str):
         consulenza_url = ""
         try:
             import stripe
-            from app.core.config import settings as _settings
+            from backend.app.core.config import settings as _settings
             stripe.api_key = _settings.STRIPE_SECRET_KEY
             if _settings.STRIPE_PRICE_ID_CONSULENZA:
                 checkout = stripe.checkout.Session.create(

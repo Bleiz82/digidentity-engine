@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 import stripe
-from app.core.config import settings
+from backend.app.core.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/payment", tags=["payment"])
@@ -30,7 +30,7 @@ async def create_checkout_session(request: Request):
         )
         logger.info("Checkout premium creata: %s per lead %s", checkout_session.id, lead_id)
         return JSONResponse(content={"checkout_url": checkout_session.url, "session_id": checkout_session.id})
-    except stripe.error.StripeError as e:
+    except stripe.StripeError as e:
         logger.error("Errore Stripe: %s", str(e))
         raise HTTPException(status_code=502, detail=f"Errore Stripe: {str(e)}")
 
@@ -53,7 +53,7 @@ async def create_checkout_consulenza(request: Request):
         )
         logger.info("Checkout consulenza creata: %s per lead %s", checkout_session.id, lead_id)
         return JSONResponse(content={"checkout_url": checkout_session.url, "session_id": checkout_session.id})
-    except stripe.error.StripeError as e:
+    except stripe.StripeError as e:
         logger.error("Errore Stripe: %s", str(e))
         raise HTTPException(status_code=502, detail=f"Errore Stripe: {str(e)}")
 
@@ -67,7 +67,7 @@ async def stripe_webhook(request: Request):
         event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
     except ValueError:
         raise HTTPException(status_code=400, detail="Payload non valido.")
-    except stripe.error.SignatureVerificationError:
+    except stripe.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Firma non valida.")
     logger.info("Webhook: tipo=%s", event["type"])
     if event["type"] == "checkout.session.completed":
@@ -80,7 +80,7 @@ async def stripe_webhook(request: Request):
         if not lead_id:
             return JSONResponse(content={"status": "error", "detail": "lead_id mancante"})
         try:
-            from app.core.supabase_client import get_supabase
+            from backend.app.core.supabase_client import get_supabase
             supabase = get_supabase()
             supabase.table("leads").update({
                 "status": "payment_completed" if payment_type == "premium" else "consulenza_paid",
@@ -91,7 +91,7 @@ async def stripe_webhook(request: Request):
             logger.error("Errore Supabase: %s", str(e))
         if payment_type == "premium":
             try:
-                from app.tasks.premium_report_task import task_premium_report
+                from backend.app.tasks.premium_report_task import task_premium_report
                 task_premium_report.delay(lead_id)
                 logger.info("Task premium avviato per lead %s", lead_id)
             except Exception as e:

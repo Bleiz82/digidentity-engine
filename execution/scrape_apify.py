@@ -317,10 +317,21 @@ def scrape_facebook(page_url: str = "", company_name: str = "") -> dict[str, Any
     }
     posts_results = _run_actor("KoJrdxJCTtpon81KY", run_input_posts)
 
+    # Fallback per profili personali — se page_results è vuoto, usa solo i post
     if not page_results:
-        return {"source": "facebook", "found": False, "error": "Pagina non trovata"}
-
-    page = page_results[0]
+        if not posts_results:
+            return {"source": "facebook", "found": False, "error": "Pagina non trovata"}
+        # Profilo personale — costruiamo dati dai post
+        logger.info(f"[APIFY] Facebook: pagina non trovata, uso post come fallback (profilo personale)")
+        first_post = posts_results[0] if posts_results else {}
+        page = {
+            "name": first_post.get("ownerName") or first_post.get("authorName") or company_name,
+            "likes": 0,
+            "followers": first_post.get("ownerFollowersCount") or 0,
+            "pageName": company_name,
+        }
+    else:
+        page = page_results[0]
     
     # Analisi post (dalla Chiamata 2)
     posts = []

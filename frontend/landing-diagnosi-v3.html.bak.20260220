@@ -720,9 +720,15 @@ footer{border-top:1px solid var(--dark3);padding:3rem 2rem;text-align:center}
             <label>Nome della tua attività *</label>
             <input type="text" name="nome_azienda" placeholder="Es. Bar Sport da Mario" required>
           </div>
-          <div class="form-group">
-            <label>Indirizzo completo *</label>
-            <input type="text" name="indirizzo" placeholder="Es. Via Roma 15, Sestu, CA" required>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Città *</label>
+              <input type="text" name="citta" placeholder="Es. Cagliari" required>
+            </div>
+            <div class="form-group">
+              <label>Provincia *</label>
+              <input type="text" name="provincia" placeholder="Es. CA" required maxlength="2" style="text-transform:uppercase">
+            </div>
           </div>
           <div class="form-group">
             <label>Sito web (se ce l'hai)</label>

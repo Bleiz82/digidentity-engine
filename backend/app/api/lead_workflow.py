@@ -22,6 +22,19 @@ async def lead_workflow(request: Request):
     if website_url and not website_url.startswith(("http://", "https://")):
         website_url = f"https://{website_url}"
 
+    # Estrai città e provincia dall'indirizzo completo
+    # Es. "Via Roma 15, Sestu, CA" → città="Sestu", provincia="CA"
+    indirizzo = (data.get("indirizzo") or "").strip()
+    citta = (data.get("citta") or "").strip()
+    provincia = (data.get("provincia") or "").strip()
+    if indirizzo and not citta:
+        parti = [p.strip() for p in indirizzo.split(",")]
+        if len(parti) >= 3:
+            citta = parti[-2].strip()
+            provincia = parti[-1].strip().upper()[:2]
+        elif len(parti) == 2:
+            citta = parti[-1].strip()
+
     lead_data = {
         "id": lead_id,
         "nome_azienda": (data.get("nome_azienda") or "").strip(),
@@ -30,8 +43,9 @@ async def lead_workflow(request: Request):
         "nome_contatto": data.get("nome_contatto") or None,
         "telefono": data.get("telefono") or None,
         "settore_attivita": data.get("settore_attivita") or None,
-        "citta": data.get("citta") or None,
-        "provincia": data.get("provincia") or None,
+        "indirizzo": indirizzo or None,
+        "citta": citta or None,
+        "provincia": provincia or None,
         "status": LeadStatus.NEW.value,
         "created_at": now,
     }

@@ -17,8 +17,7 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
-import os
-from app.core.config import settings
+from backend.app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ HEADERS = {
 }
 
 
-def scrape_lead(website_url: str, company_name: str, social_links_db: dict = None, city: str = "", sector: str = "") -> dict[str, Any]:
+def scrape_lead(website_url: str, company_name: str, social_links_db: dict = None, city: str = "", sector: str = "", indirizzo: str = "") -> dict[str, Any]:
     """
     Esegue lo scraping completo di un'azienda.
     Restituisce un dizionario strutturato con tutti i dati raccolti.
@@ -45,6 +44,14 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         city: Città dell'azienda (se nota)
         sector: Settore dell'azienda (se noto)
     """
+    # Se abbiamo indirizzo completo, estraiamo subito città e provincia
+    if indirizzo and not city:
+        parti = [p.strip() for p in indirizzo.split(",")]
+        if len(parti) >= 3:
+            city = parti[-2].strip()
+        elif len(parti) == 2:
+            city = parti[-1].strip()
+        logger.info(f"Città estratta dall'indirizzo: {city}")
     logger.info(f"Inizio scraping per {company_name} — {website_url} ({city or 'città non fornita'})")
     results = {
         "company_name": company_name,
@@ -65,63 +72,30 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         "errors": [],
     }
 
-    # Determina se l'attività ha un sito web valido
-    has_website = bool(website_url and website_url.strip() and website_url.strip() not in ("", "https://", "http://"))
-    results["has_website"] = has_website
-
-    if not has_website:
-        logger.info(f"[SKIP] {company_name} non ha sito web — skip scraping sito e PageSpeed")
-        results["website"] = {"reachable": False, "note": "Attività senza sito web"}
-        results["pagespeed"] = {"note": "Attività senza sito web — PageSpeed non applicabile"}
-        website_url = ""
-
     # 1. Scraping sito web
-    if has_website:
-        try:
-            results["website"] = _scrape_website(website_url)
-        except Exception as e:
-            logger.warning(f"Errore scraping sito {website_url}: {e}")
-            results["errors"].append(f"Sito web: {str(e)}")
+    try:
+        results["website"] = _scrape_website(website_url)
+    except Exception as e:
+        logger.warning(f"Errore scraping sito {website_url}: {e}")
+        results["errors"].append(f"Sito web: {str(e)}")
 
-    # 1b. PageSpeed Insights (SKIP se no sito)
-    if has_website:
-        try:
-            results["pagespeed"] = _analyze_pagespeed(website_url)
-            logger.info(f"PageSpeed completato per {website_url}")
-        except Exception as e:
-            logger.warning(f"Errore PageSpeed per {website_url}: {e}")
-            results["errors"].append(f"PageSpeed: {str(e)}")
-            results["pagespeed"] = {"error": str(e)}
+    # 1b. PageSpeed Insights (Core Web Vitals, punteggi, suggerimenti)
+    try:
+        results["pagespeed"] = _analyze_pagespeed(website_url)
+        logger.info(f"PageSpeed completato per {website_url}")
+    except Exception as e:
+        logger.warning(f"Errore PageSpeed per {website_url}: {e}")
+        results["errors"].append(f"PageSpeed: {str(e)}")
+        results["pagespeed"] = {"error": str(e)}
 
     # 2. Analisi SEO avanzata via SerpAPI (6 query)
     try:
         seo_data = _analyze_seo(website_url, company_name, city, sector)
         results["seo"] = seo_data.get("seo", {})
         results["google_business"] = seo_data.get("google_business", {})
-        
-        # Arricchisci GMB con Google Places API se abbiamo place_id
-        gb_place_id = results["google_business"].get("place_id")
-        if gb_place_id:
-            try:
-                places_data = _enrich_gmb_with_places_api(gb_place_id)
-                if places_data.get("found"):
-                    for k, v in places_data.items():
-                        if v is not None:
-                            results["google_business"][k] = v
-                    logger.info(f"GMB arricchito con Places API: rating={places_data.get('rating')}, reviews={places_data.get('reviews_count')}, photos={places_data.get('photos_count')}")
-            except Exception as e:
-                logger.warning(f"Places API enrichment failed: {e}")
-        
         results["competitors"] = seo_data.get("competitors", [])
         results["citations"] = seo_data.get("citations", [])
         results["indexed_pages"] = seo_data.get("indexed_pages", {"total": 0, "pages": []})
-        
-        # Keyword suggestions
-        try:
-            results["keyword_suggestions"] = _get_keyword_suggestions(sector, city)
-        except Exception as e:
-            logger.warning(f"Keyword suggestions error: {e}")
-            results["keyword_suggestions"] = []
         
         # Aggiorna città e settore se estratti da SerpAPI
         if not results["city"] and seo_data.get("extracted_city"):
@@ -177,25 +151,6 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
                 elif isinstance(item, str):
                     social_links[platform] = item
 
-        # 3. Integra con link trovati nelle citations SerpAPI (fondamentale per attività senza sito)
-        for citation in results.get("citations", []):
-            cit_link = citation.get("link", "")
-            cit_type = citation.get("type", "")
-            if cit_type == "social" or "facebook.com" in cit_link or "instagram.com" in cit_link:
-                if "facebook.com" in cit_link and not social_links.get("facebook"):
-                    social_links["facebook"] = cit_link
-                    logger.info(f"[SOCIAL DISCOVERY] Facebook trovato nelle citations: {cit_link}")
-                elif "instagram.com" in cit_link and not social_links.get("instagram"):
-                    # Estrai username — accetta SOLO URL di profilo (instagram.com/username/ e basta)
-                    clean_ig = cit_link.split("?")[0].rstrip("/")
-                    ig_path = clean_ig.split("instagram.com/")[-1] if "instagram.com/" in clean_ig else ""
-                    if ig_path and "/" not in ig_path and len(ig_path) > 2:
-                        social_links["instagram"] = ig_path
-                        logger.info(f"[SOCIAL DISCOVERY] Instagram trovato nelle citations: @{ig_path} ({cit_link})")
-                elif "linkedin.com" in cit_link and not social_links.get("linkedin"):
-                    social_links["linkedin"] = cit_link
-                    logger.info(f"[SOCIAL DISCOVERY] LinkedIn trovato nelle citations: {cit_link}")
-
         # Tenta di determinare la città se manca
         active_city = city
         if not active_city:
@@ -242,22 +197,9 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         results["errors"].append(f"Apify: {str(e)}")
         results["apify"] = {"error": str(e)}
 
-    # 5b. Ricerca competitor reali via Google Maps Nearby Search
-    try:
-        gb = results.get("google_business", {})
-        comp_lat = gb.get("latitude")
-        comp_lng = gb.get("longitude")
-        if comp_lat and comp_lng:
-            results["competitors"] = _find_nearby_competitors(company_name, comp_lat, comp_lng, sector)
-            logger.info(f"Google Maps competitor: {len(results['competitors'])} trovati per {company_name}")
-        else:
-            logger.info(f"Coordinate non disponibili per ricerca competitor di {company_name}")
-    except Exception as e:
-        logger.warning(f"Errore ricerca competitor per {company_name}: {e}")
-
     # 6. Ricerca Perplexity AI (contesto mercato e reputazione online)
     try:
-        results["perplexity"] = _perplexity_research(company_name, website_url, city=active_city, sector=sector)
+        results["perplexity"] = _perplexity_research(company_name, website_url)
         logger.info(f"Perplexity research completato per {company_name}")
     except Exception as e:
         logger.warning(f"Errore Perplexity per {company_name}: {e}")
@@ -575,12 +517,13 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
 
     # 4. QUERY 4: Settore + Capoluogo (Competitor Regionali)
     if sector:
-        # Query regionale: cerca "settore vicino a città" per trovare competitor nella zona
-        if city:
+        capoluogo = "Cagliari" # Default per la Sardegna se non noto
+        # TODO: Implementare mappatura città-capoluogo più precisa se necessario
+        if city and city.lower() != capoluogo.lower():
             try:
                 sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()
-                q4 = f"{sector_clean} vicino a {city}"
-                params = {"q": q4, "hl": "it", "gl": "it", "location": f"{city}, Italy", "api_key": api_key}
+                q4 = f"{sector_clean} {capoluogo}"
+                params = {"q": q4, "hl": "it", "gl": "it", "location": f"{capoluogo}, Italy", "api_key": api_key}
                 data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
                 
                 # Aggiungi competitor senza duplicati
@@ -596,30 +539,23 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
             except Exception as e:
                 logger.error(f"Errore Query 4 SerpAPI: {e}")
 
-    # 5. QUERY 5: Pagine Indicizzate (site:) — SKIP se no sito
-    if not domain:
-        logger.info("[SERPAPI] Skip query site: — nessun dominio")
-        results["indexed_pages"] = {"total": 0, "pages": []}
-    elif domain:
-        try:
-            q5 = f"site:{domain}"
-            params = {"q": q5, "hl": "it", "gl": "it", "api_key": api_key}
-            data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
-            
-            results["indexed_pages"] = {
-                "total": data.get("search_information", {}).get("total_results", 0),
-                "pages": [{"title": r.get("title"), "link": r.get("link")} for r in data.get("organic_results", [])[:10]]
-            }
-            logger.info(f"[SERPAPI] Indexed Pages: {results['indexed_pages']['total']}")
-        except Exception as e:
-            logger.error(f"Errore Query 5 SerpAPI: {e}")
+    # 5. QUERY 5: Pagine Indicizzate (site:)
+    try:
+        q5 = f"site:{domain}"
+        params = {"q": q5, "hl": "it", "gl": "it", "api_key": api_key}
+        data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
+        
+        results["indexed_pages"] = {
+            "total": data.get("search_information", {}).get("total_results", 0),
+            "pages": [{"title": r.get("title"), "link": r.get("link")} for r in data.get("organic_results", [])[:10]]
+        }
+        logger.info(f"[SERPAPI] Indexed Pages: {results['indexed_pages']['total']}")
+    except Exception as e:
+        logger.error(f"Errore Query 5 SerpAPI: {e}")
 
     # 6. QUERY 6: Citazioni / Presenza Online
     try:
-        if domain:
-            q6 = f'"{company_name}" OR "{domain}" -site:{domain}'
-        else:
-            q6 = f'"{company_name}"'
+        q6 = f'"{company_name}" OR "{domain}" -site:{domain}'
         params = {"q": q6, "hl": "it", "gl": "it", "api_key": api_key}
         data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
         
@@ -657,29 +593,12 @@ def _add_competitor(comp_list: list, item: dict, source: str):
     if any(c["name"].lower() == name.lower() for c in comp_list):
         return
         
-    # Pulisci website
-    raw_website = item.get("links", {}).get("website") or item.get("link")
-    if raw_website and any(x in raw_website.lower() for x in ["aggiungi sito", "add website", "aggiungisito"]):
-        raw_website = None
-    
-    # Arrotondi rating
-    raw_rating = item.get("rating")
-    if raw_rating is not None:
-        raw_rating = round(float(raw_rating), 1)
-    
-    # Pulisci indirizzo (rimuovi emoji e caratteri strani)
-    import re as _re
-    raw_address = item.get("address")
-    if raw_address:
-        raw_address = _re.sub(r"[^\w\s,./°]", "", raw_address).strip()
-        raw_address = _re.sub(r'\s+', ' ', raw_address)
-    
     comp_list.append({
         "name": name,
-        "website": raw_website,
-        "rating": raw_rating,
+        "website": item.get("links", {}).get("website") or item.get("link"),
+        "rating": item.get("rating"),
         "reviews_count": item.get("reviews"),
-        "address": raw_address,
+        "address": item.get("address"),
         "phone": item.get("phone"),
         "source": source,
         "position": item.get("position"),
@@ -760,117 +679,6 @@ def _find_social_media(website_url: str, company_name: str, social_links_db: dic
     return data
 
 
-
-
-def _get_keyword_suggestions(sector: str, city: str) -> list:
-    """Genera keyword strategiche per settore + città. Zero API calls."""
-    if not sector or not city:
-        return []
-    
-    # Pulisci settore: prendi solo la prima parte prima di "-" o "–"
-    sector_clean = sector.split("-")[0].split("–")[0].strip()
-    sector_lower = sector_clean.lower()
-    city_lower = city.lower()
-    
-    # Keyword base: settore + città
-    keywords = [
-        f"{sector_lower} {city_lower}",
-        f"{sector_lower} a {city_lower}",
-        f"{sector_lower} {city_lower} prezzi",
-        f"{sector_lower} {city_lower} preventivo",
-        f"{sector_lower} {city_lower} opinioni",
-        f"{sector_lower} {city_lower} migliore",
-        f"{sector_lower} vicino a me",
-        f"preventivo {sector_lower} {city_lower}",
-        f"migliore {sector_lower} {city_lower}",
-    ]
-    
-    # Keyword specifiche per macro-settori comuni
-    sector_keywords = {
-        "edil": ["ristrutturazione casa", "ristrutturazione bagno", "costruzione casa", "preventivo ristrutturazione", "impresa ristrutturazioni"],
-        "ristor": ["ristorante", "trattoria", "dove mangiare", "ristorante economico", "ristorante pesce"],
-        "estet": ["centro estetico", "trattamenti viso", "epilazione laser", "manicure pedicure", "massaggi"],
-        "parruc": ["parrucchiere", "taglio capelli", "colore capelli", "barbiere", "salone bellezza"],
-        "idraul": ["idraulico", "pronto intervento idraulico", "riparazione perdite", "sostituzione caldaia", "bagno nuovo"],
-        "elettr": ["elettricista", "impianto elettrico", "pronto intervento elettricista", "domotica", "fotovoltaico"],
-        "avvoc": ["avvocato", "studio legale", "consulenza legale", "avvocato divorzista", "avvocato penalista"],
-        "dentist": ["dentista", "studio dentistico", "impianti dentali", "sbiancamento denti", "ortodonzia"],
-        "meccan": ["officina meccanica", "meccanico auto", "tagliando auto", "revisione auto", "carrozzeria"],
-    }
-    
-    for key, extra_kw in sector_keywords.items():
-        if key in sector_lower:
-            for kw in extra_kw:
-                keywords.append(f"{kw} {city_lower}")
-            break
-    
-    # Rimuovi duplicati mantenendo ordine
-    seen = set()
-    unique = []
-    for k in keywords:
-        if k not in seen:
-            seen.add(k)
-            unique.append(k)
-    
-    logger.info(f"[KEYWORDS] Generate {len(unique)} keyword per {sector} + {city}")
-    return unique[:20]
-
-
-def _enrich_gmb_with_places_api(place_id: str) -> dict:
-    """Arricchisce i dati GMB usando Google Places API (più affidabile di SerpAPI)."""
-    data = {}
-    api_key = getattr(settings, 'GOOGLE_PAGESPEED_API_KEY', None) or os.environ.get('GOOGLE_PAGESPEED_API_KEY')
-    if not api_key or not place_id:
-        return data
-    try:
-        resp = requests.get(
-            "https://maps.googleapis.com/maps/api/place/details/json",
-            params={
-                "place_id": place_id,
-                "fields": "name,rating,user_ratings_total,formatted_address,formatted_phone_number,website,opening_hours,reviews,photos,types,business_status,url,geometry",
-                "language": "it",
-                "key": api_key,
-            },
-            timeout=15,
-        )
-        result = resp.json()
-        if result.get("status") == "OK":
-            place = result.get("result", {})
-            data = {
-                "found": True,
-                "name": place.get("name"),
-                "rating": place.get("rating"),
-                "reviews_count": place.get("user_ratings_total"),
-                "address": place.get("formatted_address"),
-                "phone": place.get("formatted_phone_number"),
-                "website": place.get("website"),
-                "business_status": place.get("business_status"),
-                "hours": place.get("opening_hours", {}).get("weekday_text"),
-                "photos_count": len(place.get("photos", [])),
-                "maps_url": place.get("url"),
-                "types": place.get("types"),
-                "source": "google_places_api",
-                "latitude": place.get("geometry", {}).get("location", {}).get("lat"),
-                "longitude": place.get("geometry", {}).get("location", {}).get("lng"),
-            }
-            # Salva recensioni con testo
-            raw_reviews = place.get("reviews", [])
-            if raw_reviews:
-                data["reviews"] = []
-                for rev in raw_reviews[:5]:
-                    data["reviews"].append({
-                        "author": rev.get("author_name"),
-                        "rating": rev.get("rating"),
-                        "text": rev.get("text", ""),
-                        "time": rev.get("relative_time_description"),
-                    })
-            logger.info(f"Google Places API OK: {data.get('name')}, rating={data.get('rating')}, reviews={data.get('reviews_count')}, photos={data.get('photos_count')}, reviews_text={len(raw_reviews)}")
-        else:
-            logger.warning(f"Google Places API status: {result.get('status')} - {result.get('error_message','')}")
-    except Exception as e:
-        logger.warning(f"Google Places API error: {e}")
-    return data
-
 def _check_google_business(company_name: str) -> dict:
     """Verifica la presenza su Google Business."""
     data = {
@@ -929,114 +737,10 @@ def _check_google_business(company_name: str) -> dict:
         logger.warning(f"Errore Google Business per {company_name}: {e}")
         data["error"] = str(e)
 
-    # Arricchisci con Google Places API se abbiamo un place_id
-    place_id = data.get("place_id") or kg.get("place_id") if 'kg' in dir() else None
-    if not place_id:
-        # Prova a estrarre place_id dal knowledge graph
-        try:
-            resp2 = requests.get(
-                "https://serpapi.com/search.json",
-                params={"q": company_name, "hl": "it", "gl": "it", "api_key": settings.SERPAPI_KEY},
-                timeout=REQUEST_TIMEOUT,
-            )
-            kg2 = resp2.json().get("knowledge_graph", {})
-            place_id = kg2.get("place_id")
-        except Exception:
-            pass
-    if place_id:
-        places_data = _enrich_gmb_with_places_api(place_id)
-        if places_data.get("found"):
-            for k, v in places_data.items():
-                if v is not None:
-                    data[k] = v
-            logger.info(f"GMB arricchito con Places API per {company_name}")
-
     return data
 
 
-
-
-def _find_nearby_competitors(company_name: str, lat: float, lng: float, sector: str = "") -> list:
-    """Cerca competitor reali via Google Maps Nearby Search per prossimita geografica."""
-    api_key = getattr(settings, 'GOOGLE_PAGESPEED_API_KEY', None) or os.environ.get('GOOGLE_PAGESPEED_API_KEY')
-    if not api_key or not lat or not lng:
-        return []
-
-    all_results = {}
-    location = f"{lat},{lng}"
-
-    # Keyword dinamiche per settore
-    sector_lower = (sector or "").lower()
-    SECTOR_SEARCHES = {
-        "ristor": [{"type": "restaurant", "keyword": None}, {"type": None, "keyword": "pizzeria"}, {"type": None, "keyword": "trattoria"}],
-        "pizz": [{"type": "restaurant", "keyword": None}, {"type": None, "keyword": "pizzeria"}, {"type": None, "keyword": "trattoria"}],
-        "bar": [{"type": "bar", "keyword": None}, {"type": None, "keyword": "pub"}, {"type": None, "keyword": "caffetteria"}],
-        "estet": [{"type": "beauty_salon", "keyword": None}, {"type": None, "keyword": "centro estetico"}, {"type": None, "keyword": "parrucchiere"}],
-        "parruc": [{"type": "hair_care", "keyword": None}, {"type": None, "keyword": "parrucchiere"}, {"type": None, "keyword": "barbiere"}],
-        "edil": [{"type": None, "keyword": "impresa edile"}, {"type": None, "keyword": "ristrutturazioni"}, {"type": None, "keyword": "costruzioni"}],
-        "idraul": [{"type": "plumber", "keyword": None}, {"type": None, "keyword": "idraulico"}, {"type": None, "keyword": "termoidraulica"}],
-        "elettr": [{"type": "electrician", "keyword": None}, {"type": None, "keyword": "elettricista"}, {"type": None, "keyword": "impianti elettrici"}],
-        "avvoc": [{"type": "lawyer", "keyword": None}, {"type": None, "keyword": "studio legale"}, {"type": None, "keyword": "avvocato"}],
-        "dentist": [{"type": "dentist", "keyword": None}, {"type": None, "keyword": "studio dentistico"}, {"type": None, "keyword": "odontoiatra"}],
-        "meccan": [{"type": "car_repair", "keyword": None}, {"type": None, "keyword": "officina meccanica"}, {"type": None, "keyword": "carrozzeria"}],
-        "palest": [{"type": "gym", "keyword": None}, {"type": None, "keyword": "palestra"}, {"type": None, "keyword": "fitness"}],
-        "hotel": [{"type": "lodging", "keyword": None}, {"type": None, "keyword": "hotel"}, {"type": None, "keyword": "bed and breakfast"}],
-        "farmac": [{"type": "pharmacy", "keyword": None}, {"type": None, "keyword": "farmacia"}, {"type": None, "keyword": "parafarmacia"}],
-        "veterin": [{"type": "veterinary_care", "keyword": None}, {"type": None, "keyword": "veterinario"}, {"type": None, "keyword": "clinica veterinaria"}],
-    }
-    searches = [{"type": None, "keyword": sector or "attività commerciale"}, {"type": None, "keyword": sector_lower.split("-")[0].strip() if sector_lower else "negozio"}, {"type": None, "keyword": "servizi"}]  # default generico
-    for key, srch in SECTOR_SEARCHES.items():
-        if key in sector_lower:
-            searches = srch
-            break
-
-    try:
-        for search in searches:
-            params = {
-                "location": location,
-                "radius": 15000,
-                "language": "it",
-                "key": api_key,
-            }
-            if search["type"]:
-                params["type"] = search["type"]
-            if search["keyword"]:
-                params["keyword"] = search["keyword"]
-
-            resp = requests.get(
-                "https://maps.googleapis.com/maps/api/place/nearbysearch/json",
-                params=params,
-                timeout=15,
-            )
-            data = resp.json()
-            if data.get("status") == "OK":
-                for r in data.get("results", []):
-                    pid = r.get("place_id", "")
-                    name = r.get("name", "")
-                    # Escludi l'attivita stessa
-                    if company_name and company_name.lower().split()[0] in name.lower():
-                        continue
-                    if pid not in all_results:
-                        all_results[pid] = {
-                            "name": name,
-                            "address": r.get("vicinity", ""),
-                            "rating": r.get("rating"),
-                            "reviews_count": r.get("user_ratings_total", 0),
-                            "types": r.get("types", []),
-                            "place_id": pid,
-                            "business_status": r.get("business_status"),
-                        }
-
-        # Ordina per numero recensioni (piu recensiti = piu rilevanti)
-        competitors = sorted(all_results.values(), key=lambda x: x.get("reviews_count", 0) or 0, reverse=True)
-        # Prendi top 8
-        return competitors[:8]
-
-    except Exception as e:
-        logger.warning(f"Errore ricerca competitor Google Maps: {e}")
-        return []
-
-def _perplexity_research(company_name: str, website_url: str, city: str = "", sector: str = "") -> dict[str, Any]:
+def _perplexity_research(company_name: str, website_url: str) -> dict[str, Any]:
     """
     Usa Perplexity AI per ricerca contestuale sull'azienda.
     Restituisce informazioni su reputazione, mercato, competitor.
@@ -1047,23 +751,15 @@ def _perplexity_research(company_name: str, website_url: str, city: str = "", se
     try:
         import requests as req
 
-        city_str = f" a {city}" if city else ""
-        sector_str = f" nel settore {sector}" if sector else ""
-        site_str = f" (sito: {website_url})" if website_url else " (non ha un sito web)"
-
         prompt = (
-            f"Analizza la presenza digitale e la reputazione dell'azienda '{company_name}'{city_str}{sector_str}{site_str}.\n\n"
-            f"1. REPUTAZIONE ONLINE: recensioni Google, Facebook, TripAdvisor e altri portali. Rating medio e volume recensioni.\n\n"
-            f"2. COMPETITOR DIRETTI: cerca su Google Maps TUTTE le attività dello stesso settore ({sector if sector else 'commerciale'}) "
-            f"che si trovano nei comuni PIU VICINI{city_str}. "
-            f"Parti dal comune stesso, poi espandi ai comuni confinanti, poi a quelli nel raggio di 15 km. "
-            f"NON cercare i piu famosi o i piu recensiti della provincia — cerca i PIU VICINI geograficamente. "
-            f"Elenca i 5 competitor piu vicini. Per ciascuno indica: nome esatto, comune, distanza approssimativa "
-            f"da {city if city else 'la sede'}, rating Google, numero recensioni Google, se ha sito web (URL se disponibile), "
-            f"se ha pagina Facebook o Instagram.\n\n"
-            f"3. PUNTI DI FORZA e DEBOLEZZA della presenza digitale di {company_name}.\n\n"
-            f"4. OPPORTUNITA DI MIGLIORAMENTO concrete.\n\n"
-            f"Rispondi in italiano con dati concreti e verificabili da Google Maps."
+            f"Analizza la presenza digitale e la reputazione dell'azienda '{company_name}' "
+            f"(sito: {website_url}). Cerca informazioni su:\n"
+            f"1. Reputazione online e recensioni\n"
+            f"2. Posizionamento nel mercato locale\n"
+            f"3. Principali competitor diretti\n"
+            f"4. Punti di forza e debolezza della loro presenza digitale\n"
+            f"5. Opportunità di miglioramento\n"
+            f"Rispondi in italiano con dati concreti."
         )
 
         resp = req.post(

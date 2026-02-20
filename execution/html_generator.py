@@ -487,15 +487,8 @@ def generate_free_html(
     now = datetime.now()
     data_odierna = f"{now.day} {MESI[now.month-1]} {now.year}"
 
-    # Split report in sezioni
-    free_sections = _split_free_sections(report_markdown)
-
-    # Converti in HTML
-    sez_01 = _markdown_to_html(free_sections.get('sezione_01', ''))
-    sez_02 = _markdown_to_html(free_sections.get('sezione_02', ''))
-    sez_03 = _markdown_to_html(free_sections.get('sezione_03', ''))
-    sez_04 = _markdown_to_html(free_sections.get('sezione_04', ''))
-    sez_05 = _markdown_to_html(free_sections.get('sezione_05', ''))
+    # Converti tutto il markdown in HTML (stesso contenuto del PDF)
+    report_html = _markdown_to_html(report_markdown)
 
     # Score map per JS
     score_map = {
@@ -517,11 +510,11 @@ def generate_free_html(
         "{verdict_text}": verdict_text,
         "{verdict_description}": verdict_description,
         "{checkout_url}": checkout_url or "#",
-        "{sezione_01}": sez_01,
-        "{sezione_02}": sez_02,
-        "{sezione_03}": sez_03,
-        "{sezione_04}": sez_04,
-        "{sezione_05}": sez_05,
+        "{sezione_01}": report_html,
+        "{sezione_02}": "",
+        "{sezione_03}": "",
+        "{sezione_04}": "",
+        "{sezione_05}": "",
         "{score_map_json}": json.dumps(score_map),
     }
 

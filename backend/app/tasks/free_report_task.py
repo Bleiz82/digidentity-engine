@@ -66,7 +66,12 @@ def task_free_report(self, lead_id: str):
 
     # Estrazione città e settore
     city = lead.get("citta") or lead.get("city", "")
-    sector = lead.get("settore_attivita") or lead.get("sector", "")
+    sector = lead.get("settore_attivita") or ""
+    if not sector:
+        # Prova anche il campo scraping_data se già presente
+        scraping_cached = lead.get("scraping_data") or {}
+        sector = scraping_cached.get("sector") or scraping_cached.get("extracted_sector") or ""
+    
     indirizzo = lead.get("indirizzo") or ""
     logger.info(f"[FREE] Città: {city}, Settore: {sector}, Indirizzo: {indirizzo}")
 
@@ -88,22 +93,13 @@ def task_free_report(self, lead_id: str):
         db.table("leads").update({"status": "scraping"}).eq("id", lead_id).execute()
         scraping_data = scrape_lead(website_url, company_name, social_links_db, city, sector, indirizzo)
 
-        # Salva dati scraping su Supabase
-        update_payload = {"scraping_data": scraping_data}
+        # Salva dati scraping su Supabase (Fix 1: persistenza totale)
+        db.table("leads").update({
+            "scraping_data": scraping_data,
+            "settore_attivita": scraping_data.get("sector") or scraping_data.get("extracted_sector") or sector,
+            "citta": scraping_data.get("city") or city,
+        }).eq("id", lead_id).execute()
 
-        # Persisti settore e città estratti dallo scraper (Fix: settore vuoto al re-run)
-        extracted_sector = scraping_data.get("sector", "")
-        extracted_city = scraping_data.get("city", "")
-        if extracted_sector and not sector:
-            update_payload["settore_attivita"] = extracted_sector
-            sector = extracted_sector
-            logger.info(f"[FREE] Settore estratto e salvato: {extracted_sector}")
-        if extracted_city and not city:
-            update_payload["citta"] = extracted_city
-            city = extracted_city
-            logger.info(f"[FREE] Città estratta e salvata: {extracted_city}")
-
-        db.table("leads").update(update_payload).eq("id", lead_id).execute()
 
         logger.info(f"[FREE] Scraping completato per {company_name}")
     except Exception as e:
@@ -282,24 +278,37 @@ def task_free_report(self, lead_id: str):
     except Exception as e:
         logger.warning(f"[FREE] Errore salvataggio score DB: {e}")
 
-    # ── 9. Insert in tabella reports ──
+    # ── 9. Insert in tabella reports (Fix 4: FK retry) ──
     try:
-        pdf_size = 0
-        try:
-            pdf_size = os.path.getsize(pdf_path)
-        except Exception:
-            pass
-        ai_cost = round((ai_input / 1000) * 0.003 + (ai_output / 1000) * 0.015, 4)
-        db.table("reports").insert({
-            "lead_id": lead_id, "report_type": "free", "ai_model": ai_model,
-            "ai_tokens_input": ai_input, "ai_tokens_output": ai_output,
-            "ai_total_tokens": ai_total, "ai_cost_usd": ai_cost,
-            "pdf_path": pdf_path, "pdf_filename": os.path.basename(pdf_path),
-            "pdf_size_bytes": pdf_size, "generation_time_seconds": _gen_time,
-            "html_url": html_url,
-            "status": "generated",
-        }).execute()
-        logger.info(f"[FREE] Report in DB: model={ai_model}, tokens={ai_total}, cost=${ai_cost}")
+        # Verifica che il lead esista prima di inserire il report
+        max_retries = 3
+        for attempt in range(max_retries):
+            check = db.table("leads").select("id").eq("id", lead_id).execute()
+            if check.data:
+                break
+            logger.warning(f"[FREE] Lead {lead_id} non ancora in DB, retry {attempt+1}/{max_retries}")
+            time.sleep(2)
+        else:
+            logger.warning(f"[FREE] Lead {lead_id} non trovato dopo {max_retries} retry — skip insert reports")
+            check = None
+
+        if check and check.data:
+            pdf_size = 0
+            try:
+                pdf_size = os.path.getsize(pdf_path)
+            except Exception:
+                pass
+            ai_cost = round((ai_input / 1000) * 0.003 + (ai_output / 1000) * 0.015, 4)
+            db.table("reports").insert({
+                "lead_id": lead_id, "report_type": "free", "ai_model": ai_model,
+                "ai_tokens_input": ai_input, "ai_tokens_output": ai_output,
+                "ai_total_tokens": ai_total, "ai_cost_usd": ai_cost,
+                "pdf_path": pdf_path, "pdf_filename": os.path.basename(pdf_path),
+                "pdf_size_bytes": pdf_size, "generation_time_seconds": _gen_time,
+                "html_url": html_url,
+                "status": "generated",
+            }).execute()
+            logger.info(f"[FREE] Report in DB: model={ai_model}, tokens={ai_total}, cost=${ai_cost}")
     except Exception as e:
         logger.warning(f"[FREE] Errore insert reports: {e}")
 

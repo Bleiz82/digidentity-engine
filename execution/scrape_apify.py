@@ -296,76 +296,77 @@ def scrape_instagram(username: str = "", company_name: str = "", website: str = 
     }
 
 
-def _scrape_facebook_serp(company_name: str) -> dict[str, Any]:
-    """Fallback con SerpAPI per trovare info su Facebook se Apify fallisce o è profilo personale."""
-    api_key = os.getenv("SERP_API_KEY")
-    if not api_key:
-        return {"found": False, "error": "SerpAPI key mancante"}
-    
-    query = f"{company_name} facebook"
-    logger.info(f"[SERPAPI] Facebook fallback search: '{query}'")
-    
+def _scrape_facebook_serp_fallback(company_name: str, page_url: str = "") -> dict[str, Any]:
+    """Fallback SerpAPI per profili personali o quando Apify fallisce"""
+    logger.info(f"[APIFY] Fallback SerpAPI per Facebook: {company_name}")
     try:
+        import os
+        import requests as req
+        # Prova tutte le varianti comuni per compatibilità
+        api_key = os.getenv("SERPAPI_KEY") or os.getenv("SERP_API_KEY") or os.getenv("SERPAPI_API_KEY")
+        if not api_key:
+            return {"found": False, "error": "SerpAPI key mancante"}
+
         params = {
-            "q": query,
+            "q": f'"{company_name}" facebook',
             "hl": "it",
             "gl": "it",
-            "api_key": api_key
+            "api_key": api_key,
+            "num": 5
         }
-        resp = requests.get("https://serpapi.com/search.json", params=params, timeout=20)
+        resp = req.get("https://serpapi.com/search.json", params=params, timeout=20)
         data = resp.json()
         
-        # 1. Cerca nel Knowledge Graph
+        # Cerca nel Knowledge Graph
         kg = data.get("knowledge_graph", {})
-        if kg and "facebook.com" in str(kg).lower():
-            # A volte i follower sono nel KG
-            desc = kg.get("description", "")
-            followers = 0
-            m = re.search(r'([\d\.,kK]+)\s+(follower|seguaci)', desc, re.IGNORECASE)
-            if m:
-                f_str = m.group(1).replace(".", "").replace(",", "").lower()
-                if 'k' in f_str:
-                    followers = int(float(f_str.replace('k', '')) * 1000)
-                else:
-                    followers = int(f_str)
-
-            return {
-                "source": "facebook_serp_kg",
-                "found": True,
-                "name": kg.get("title") or company_name,
-                "followers": followers,
-                "page_name": kg.get("title"),
-                "description": desc,
-                "url": kg.get("website") if "facebook.com" in (kg.get("website") or "") else None
-            }
-            
-        # 2. Cerca nei risultati organici
-        for res in data.get("organic_results", [])[:3]:
-            link = res.get("link", "")
-            if "facebook.com" in link:
-                snippet = res.get("snippet", "")
-                followers = 0
-                # Cerca pattern follower nello snippet
-                m = re.search(r'([\d\.,kK]+)\s+(follower|seguaci)', snippet, re.IGNORECASE)
+        followers = None
+        for k, v in kg.items():
+            if "follower" in k.lower() and isinstance(v, str):
+                import re
+                m = re.search(r'[\d.,]+', v.replace('.', '').replace(',', ''))
                 if m:
-                    f_str = m.group(1).replace(".", "").replace(",", "").lower()
-                    if 'k' in f_str:
-                        followers = int(float(f_str.replace('k', '')) * 1000)
-                    else:
-                        followers = int(f_str)
-                
-                return {
-                    "source": "facebook_serp_organic",
-                    "found": True,
-                    "name": res.get("title", "").split("|")[0].strip(),
-                    "followers": followers,
-                    "url": link,
-                    "description": snippet
-                }
-    except Exception as e:
-        logger.error(f"[SERPAPI] Errore fallback Facebook: {e}")
+                    followers = int(m.group())
+                    break
         
-    return {"source": "facebook", "found": False, "error": "Nessun dato trovato su SerpAPI"}
+        # Cerca negli organic results
+        fb_snippet = ""
+        fb_url = page_url
+        for r in data.get("organic_results", []):
+            if "facebook.com" in r.get("link", ""):
+                fb_snippet = r.get("snippet", "")
+                fb_url = r.get("link", page_url)
+                # Prova a estrarre follower dallo snippet
+                if not followers:
+                    import re
+                    m = re.search(r'([\d.,]+)\s*(follower|seguaci|fan|mi piace)', fb_snippet, re.IGNORECASE)
+                    if m:
+                        followers = int(m.group(1).replace('.','').replace(',',''))
+                break
+        
+        if kg or fb_snippet:
+            logger.info(f"[APIFY] Facebook SerpAPI OK: followers={followers}, snippet={fb_snippet[:80]}")
+            return {
+                "source": "facebook",
+                "found": True,
+                "scraped_via": "serpapi_fallback",
+                "name": kg.get("title") or company_name,
+                "url": fb_url,
+                "followers": followers,
+                "likes": followers,
+                "description": kg.get("description") or fb_snippet,
+                "avg_engagement_per_post": None,
+                "recent_posts": []
+            }
+    except Exception as e:
+        logger.warning(f"[APIFY] SerpAPI Facebook fallback errore: {e}")
+
+    return {
+        "source": "facebook",
+        "found": False,
+        "not_scraped": True,
+        "reason": "profilo personale — nessun dato disponibile"
+    }
+
 
 
 def scrape_facebook(page_url: str = "", company_name: str = "") -> dict[str, Any]:
@@ -379,8 +380,7 @@ def scrape_facebook(page_url: str = "", company_name: str = "") -> dict[str, Any
     # Fix: Profili personali (profile.php?id=...) non supportati da Apify page-scraper
     if "profile.php" in page_url or "/people/" in page_url:
         logger.warning(f"[APIFY] Facebook URL è un profilo personale, non una pagina: {page_url}")
-        # Usa SerpAPI Fallback direttamente
-        return _scrape_facebook_serp(company_name)
+        return _scrape_facebook_serp_fallback(company_name, page_url)
 
     logger.info(f"[APIFY] Facebook Dual-Call per: {page_url}")
 
@@ -398,23 +398,10 @@ def scrape_facebook(page_url: str = "", company_name: str = "") -> dict[str, Any
     # Fallback per profili personali o errori — se page_results è vuoto, usa SerpAPI
     if not page_results:
         logger.warning(f"[APIFY] facebook-pages-scraper returned 0 results for {page_url}. Uso SerpAPI fallback.")
-        serp_fb = _scrape_facebook_serp(company_name)
-        if serp_fb.get("found"):
-            return serp_fb
-        
-        if not posts_results:
-            return {"source": "facebook", "found": False, "error": "Pagina non trovata"}
-        
-        # Se abbiamo almeno i post dai fallback Apify precedenti (mantenuto per sicurezza)
-        first_post = posts_results[0] if posts_results else {}
-        page = {
-            "name": first_post.get("ownerName") or first_post.get("authorName") or company_name,
-            "likes": 0,
-            "followers": first_post.get("ownerFollowersCount") or 0,
-            "pageName": company_name,
-        }
-    else:
-        page = page_results[0]
+        return _scrape_facebook_serp_fallback(company_name, page_url)
+    
+    page = page_results[0]
+
     
     # Analisi post (dalla Chiamata 2)
     posts = []

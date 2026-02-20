@@ -490,6 +490,30 @@ def generate_free_html(
     # Converti tutto il markdown in HTML (stesso contenuto del PDF)
     report_html = _markdown_to_html(report_markdown)
 
+    # Aggiungi id ai titoli h2 per la navigazione
+    import re as _re
+    def _slugify(text):
+        text = _re.sub(r'<[^>]+>', '', text).strip().lower()
+        text = _re.sub(r'[^a-z0-9\u00e0\u00e8\u00e9\u00ec\u00f2\u00f9]+', '-', text).strip('-')
+        return text[:40]
+    _nav_links = []
+    def _add_id(m):
+        title = m.group(1)
+        slug = _slugify(title)
+        _nav_links.append((slug, _re.sub(r'<[^>]+>', '', title).strip()))
+        return f'<h2 id="{slug}">{title}</h2>'
+    report_html = _re.sub(r'<h2>(.*?)</h2>', _add_id, report_html)
+
+    # Genera nav dinamica
+    if _nav_links:
+        nav_html = '<a href="#dashboard" class="nav-link active">Dashboard</a>'
+        for slug, title in _nav_links:
+            short = title[:25] + ('...' if len(title) > 25 else '')
+            nav_html += '\n    <a href="#' + slug + '" class="nav-link">' + short + '</a>'
+    else:
+        nav_html = '<a href="#dashboard" class="nav-link active">Dashboard</a>'
+    nav_html += '\n    <a href="#upgrade" class="nav-link" style="color:#FFD700;border-color:rgba(255,215,0,0.4);">Premium</a>'
+
     # Score map per JS
     score_map = {
         "mainScore": punteggio,
@@ -511,6 +535,7 @@ def generate_free_html(
         "{verdict_description}": verdict_description,
         "{checkout_url}": checkout_url or "#",
         "{sezione_01}": report_html,
+        "{nav_links}": nav_html,
         "{sezione_02}": "",
         "{sezione_03}": "",
         "{sezione_04}": "",

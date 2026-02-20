@@ -89,9 +89,21 @@ def task_free_report(self, lead_id: str):
         scraping_data = scrape_lead(website_url, company_name, social_links_db, city, sector, indirizzo)
 
         # Salva dati scraping su Supabase
-        db.table("leads").update({
-            "scraping_data": scraping_data,
-        }).eq("id", lead_id).execute()
+        update_payload = {"scraping_data": scraping_data}
+
+        # Persisti settore e città estratti dallo scraper (Fix: settore vuoto al re-run)
+        extracted_sector = scraping_data.get("sector", "")
+        extracted_city = scraping_data.get("city", "")
+        if extracted_sector and not sector:
+            update_payload["settore_attivita"] = extracted_sector
+            sector = extracted_sector
+            logger.info(f"[FREE] Settore estratto e salvato: {extracted_sector}")
+        if extracted_city and not city:
+            update_payload["citta"] = extracted_city
+            city = extracted_city
+            logger.info(f"[FREE] Città estratta e salvata: {extracted_city}")
+
+        db.table("leads").update(update_payload).eq("id", lead_id).execute()
 
         logger.info(f"[FREE] Scraping completato per {company_name}")
     except Exception as e:

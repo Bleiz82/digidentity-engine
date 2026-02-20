@@ -304,6 +304,19 @@ def scrape_facebook(page_url: str = "", company_name: str = "") -> dict[str, Any
     if not page_url:
         return {"source": "facebook", "found": False, "error": "URL pagina mancante"}
 
+    # Fix: Profili personali (profile.php?id=...) non supportati da Apify page-scraper
+    if "profile.php" in page_url or "/people/" in page_url:
+        logger.warning(f"[APIFY] Facebook URL è un profilo personale, non una pagina: {page_url}")
+        return {
+            "source": "facebook",
+            "found": False,
+            "is_personal_profile": True,
+            "url": page_url,
+            "error": "Profilo personale Facebook — non è una Pagina aziendale. "
+                     "Gli Actor Apify supportano solo Pagine Facebook. "
+                     "Consigliare al cliente di creare una Pagina Facebook Business.",
+        }
+
     logger.info(f"[APIFY] Facebook Dual-Call per: {page_url}")
 
     # Chiamata 1: Dati Pagina
@@ -492,9 +505,19 @@ def run_apify_scraping(
         "errors": [],
     }
 
-    # 1. Google Maps (DISABILITATO - Timeout eccessivi, usiamo SerpAPI)
-    logger.info("[APIFY] Google Maps scraping disabilitato — dati forniti da SerpAPI")
-    result["google_maps"] = {"found": False, "source": "google_maps", "note": "Disabled - using SerpAPI"}
+    # 1. Google Maps — controllato da env var (default: disabilitato per timeout)
+    enable_gmaps = os.getenv("ENABLE_GOOGLE_MAPS_APIFY", "false").lower() == "true"
+    if enable_gmaps:
+        try:
+            result["google_maps"] = scrape_google_maps(company_name, city, sector)
+            logger.info(f"[APIFY] Google Maps: found={result['google_maps'].get('found')}")
+        except Exception as e:
+            logger.error(f"[APIFY] Errore Google Maps: {e}")
+            result["errors"].append(f"Google Maps: {str(e)}")
+            result["google_maps"] = {"source": "google_maps", "found": False, "error": str(e)}
+    else:
+        logger.info("[APIFY] Google Maps disabilitato (ENABLE_GOOGLE_MAPS_APIFY=false) — dati da SerpAPI")
+        result["google_maps"] = {"found": False, "source": "google_maps", "note": "Disabled - set ENABLE_GOOGLE_MAPS_APIFY=true to enable"}
 
     # 2. Instagram — se ha il link
     ig_link = social_links.get("instagram", "")

@@ -104,6 +104,29 @@ def _call_ai(system_prompt: str, user_message: str, max_tokens: int = 16000, pre
     raise Exception(f"Tutti i provider AI hanno fallito. Ultimo errore: {last_error}")
 
 
+def _compact_scraping_data(data: dict) -> dict:
+    """Compatta i dati di scraping rimuovendo campi verbosi per il prompt AI."""
+    import copy
+    compact = copy.deepcopy(data)
+    
+    # PageSpeed: tieni solo scores e core_web_vitals, limita opportunities a top 3
+    ps = compact.get("pagespeed", {})
+    for strategy in ["mobile", "desktop"]:
+        s = ps.get(strategy, {})
+        if isinstance(s, dict) and "opportunities" in s:
+            s["opportunities"] = s["opportunities"][:3]
+    
+    # Indexed pages: limita a prime 5 pagine
+    ip = compact.get("indexed_pages", {})
+    if isinstance(ip, dict) and "pages" in ip:
+        ip["pages"] = ip["pages"][:5]
+    
+    # Rimuovi campi vuoti e errori interni per non confondere AI
+    compact.pop("errors", None)
+    
+    return compact
+
+
 def generate_free_report(scraping_data: dict[str, Any]) -> str:
     """
     Genera il report gratuito di diagnosi digitale.
@@ -115,12 +138,17 @@ def generate_free_report(scraping_data: dict[str, Any]) -> str:
     system_prompt = load_prompt("free_report_system")
     user_prompt_template = load_prompt("free_report_user")
 
-    # Costruiamo il messaggio utente appendendo il JSON (Fix critico)
+    # Compatta JSON per ridurre input tokens e non diluire le istruzioni
+    compact_data = _compact_scraping_data(scraping_data)
+
+    # Costruiamo il messaggio utente appendendo il JSON
     user_message = user_prompt_template + "\n\n---\n\n"
     user_message += "Ecco i dati di scraping dell'azienda in formato JSON:\n\n"
     user_message += "```json\n"
-    user_message += json.dumps(scraping_data, indent=2, default=str, ensure_ascii=False)
+    user_message += json.dumps(compact_data, default=str, ensure_ascii=False)
     user_message += "\n```"
+
+    logger.info(f"[FREE] Input prompt: {len(user_message)} caratteri")
 
     result = _call_ai(system_prompt, user_message, max_tokens=16000, prefer="openai")
     

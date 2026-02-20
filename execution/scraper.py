@@ -416,11 +416,24 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
             # Se city era vuota, prova a estrarla dall'indirizzo
             if not city and results["google_business"]["address"]:
                 addr = results["google_business"]["address"]
-                # Cerca pattern città dopo il CAP
-                m = re.search(r'\d{5}\s+([A-Za-z\s]+)(?:\s+\()?', addr)
+                # Prova 1: Cerca pattern città dopo il CAP (es. "09028 Sestu")
+                m = re.search(r'\d{5}\s+([A-Za-z\s]+?)(?:\s*\(|$)', addr)
                 if m:
                     results["extracted_city"] = m.group(1).strip()
+                else:
+                    # Prova 2: Split per virgola — in "Via X, Sestu, CA" la città è il penultimo
+                    parts = [p.strip() for p in addr.split(",")]
+                    if len(parts) >= 2:
+                        # Prendi il penultimo elemento, rimuovi eventuale CAP numerico
+                        candidate = re.sub(r'^\d{5}\s*', '', parts[-2]).strip()
+                        # Rimuovi sigla provincia tipo " CA" o " (CA)"
+                        candidate = re.sub(r'\s*\([A-Z]{2}\)\s*$', '', candidate)
+                        candidate = re.sub(r'\s+[A-Z]{2}$', '', candidate)
+                        if candidate and not candidate.isdigit():
+                            results["extracted_city"] = candidate
+                if results["extracted_city"]:
                     city = results["extracted_city"]
+                    logger.info(f"[SERPAPI] Città estratta dall'indirizzo: {city}")
             
             # Se sector era vuoto, usa la categoria
             if not sector and results["google_business"]["category"]:
@@ -486,6 +499,9 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
     if city and sector:
         try:
             sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()
+            # Fix: Rimuovi la città dal settore se già presente (evita "edilizia Sestu Sestu")
+            if city.lower() in sector_clean.lower():
+                sector_clean = re.sub(re.escape(city), '', sector_clean, flags=re.IGNORECASE).strip()
             q3 = f"{sector_clean} {city}"
             params = {"q": q3, "hl": "it", "gl": "it", "location": f"{city}, Italy", "api_key": api_key}
             data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
@@ -522,6 +538,9 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
         if city and city.lower() != capoluogo.lower():
             try:
                 sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()
+                # Fix: Rimuovi la città dal settore se presente
+                if city.lower() in sector_clean.lower():
+                    sector_clean = re.sub(re.escape(city), '', sector_clean, flags=re.IGNORECASE).strip()
                 q4 = f"{sector_clean} {capoluogo}"
                 params = {"q": q4, "hl": "it", "gl": "it", "location": f"{capoluogo}, Italy", "api_key": api_key}
                 data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()

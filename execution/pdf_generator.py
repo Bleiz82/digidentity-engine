@@ -774,12 +774,11 @@ def _replace_emoji_with_badges(html: str) -> str:
 
 
 def _convert_markdown_to_html(md_text: str, data: dict) -> str:
-    # Pulisci solo tag pericolosi
-    md_text = re.sub(r'<(div|span|section)[^>]*>', '', md_text)
-    md_text = re.sub(r'</(div|span|section)>', '', md_text)
+    # 1. Pulisci tag HTML residui (sanificazione completa)
+    md_text = re.sub(r'<[^>]+>', '', md_text)
     
-    # Converti markdown in HTML
-    html = markdown.markdown(md_text, extensions=['tables', 'fenced_code', 'nl2br'])
+    # 2. Converti in HTML (senza nl2br che può spezzare heading e tabelle)
+    html = markdown.markdown(md_text, extensions=['tables', 'fenced_code'])
     
     # Emoji -> Badges
     html = _replace_emoji_with_badges(html)
@@ -833,6 +832,8 @@ def _convert_markdown_to_html(md_text: str, data: dict) -> str:
     </div>'''
     
     html = html.replace("{{CHECKOUT_PLACEHOLDER}}", premium_html)
+    # Fallback: se il placeholder è dentro un <p> dopo la conversione markdown
+    html = re.sub(r'<p>\s*\{\{CHECKOUT_PLACEHOLDER\}\}\s*</p>', premium_html, html)
     
     return html
 

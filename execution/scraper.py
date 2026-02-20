@@ -31,6 +31,190 @@ HEADERS = {
     ),
 }
 
+# ============================================================
+# Google Places API (New) — Identificazione attività e competitor
+# ============================================================
+
+def _identify_with_google_places(company_name: str, city: str = "", sector: str = "") -> dict:
+    """
+    Usa Google Places API (New) per identificare l'attività e trovare competitor reali.
+    Restituisce settore, dati GMB e lista competitor.
+    """
+    api_key = getattr(settings, 'GOOGLE_PAGESPEED_API_KEY', None)
+    if not api_key:
+        logger.warning("[PLACES] API key non trovata, skip Google Places")
+        return {}
+
+    result = {
+        "sector": None,
+        "sector_display": None,
+        "primary_type": None,
+        "google_business": {},
+        "competitors": [],
+        "place_found": False,
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": api_key,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.types,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.rating,places.userRatingCount,places.websiteUri,places.nationalPhoneNumber,places.internationalPhoneNumber,places.currentOpeningHours,places.reviews,places.photos,places.location"
+    }
+
+    # --- STEP 1: Identifica l'attività ---
+    try:
+        search_query = f"{company_name} {city}".strip()
+        payload = {"textQuery": search_query, "languageCode": "it", "maxResultCount": 3}
+
+        resp = requests.post(
+            "https://places.googleapis.com/v1/places:searchText",
+            json=payload, headers=headers, timeout=15
+        )
+        data = resp.json()
+        places = data.get("places", [])
+
+        if not places:
+            logger.warning(f"[PLACES] Nessun risultato per: {search_query}")
+            return result
+
+        # Prendi il primo risultato (più rilevante)
+        place = places[0]
+        result["place_found"] = True
+        result["primary_type"] = place.get("primaryType", "")
+        
+        ptype_display = place.get("primaryTypeDisplayName", {})
+        result["sector_display"] = ptype_display.get("text", "")
+        result["sector"] = result["sector_display"] or result["primary_type"]
+
+        # Coordinate per la ricerca competitor
+        location = place.get("location", {})
+        lat = location.get("latitude")
+        lng = location.get("longitude")
+
+        # Dati GMB
+        result["google_business"] = {
+            "found": True,
+            "source": "google_places_api",
+            "title": place.get("displayName", {}).get("text", ""),
+            "rating": place.get("rating"),
+            "reviews_count": place.get("userRatingCount"),
+            "address": place.get("formattedAddress", ""),
+            "phone": place.get("nationalPhoneNumber") or place.get("internationalPhoneNumber"),
+            "website": place.get("websiteUri"),
+            "category": result["sector_display"],
+            "primary_type": result["primary_type"],
+            "place_id": place.get("id"),
+            "hours": None,
+            "reviews": [],
+        }
+
+        # Orari
+        hours_data = place.get("currentOpeningHours", {})
+        if hours_data:
+            result["google_business"]["hours"] = hours_data.get("weekdayDescriptions", [])
+
+        # Recensioni reali
+        reviews_list = place.get("reviews", [])
+        for rev in reviews_list[:5]:
+            result["google_business"]["reviews"].append({
+                "author": rev.get("authorAttribution", {}).get("displayName", ""),
+                "rating": rev.get("rating"),
+                "text": rev.get("text", {}).get("text", ""),
+                "time": rev.get("relativePublishTimeDescription", ""),
+            })
+
+        logger.info(f"[PLACES] Attività trovata: {result['google_business']['title']} — Settore: {result['sector_display']} ({result['primary_type']}) — Rating: {result['google_business']['rating']}")
+
+        # --- STEP 2: Cerca competitor reali nella zona ---
+        if lat and lng and result["primary_type"]:
+            try:
+                # Costruisci query competitor usando il tipo trovato
+                # Usa termini di ricerca migliori basati sul primary_type
+                type_to_search = {
+                    "general_contractor": "impresa edile ristrutturazioni",
+                    "electrician": "elettricista impianti elettrici",
+                    "plumber": "idraulico impianti idraulici",
+                    "restaurant": "ristorante",
+                    "cafe": "bar caffetteria",
+                    "hair_salon": "parrucchiere",
+                    "beauty_salon": "centro estetico",
+                    "dentist": "dentista studio dentistico",
+                    "lawyer": "avvocato studio legale",
+                    "accounting": "commercialista studio commercialista",
+                    "car_repair": "meccanico officina auto",
+                    "bakery": "panificio forno",
+                    "pharmacy": "farmacia",
+                    "gym": "palestra centro fitness",
+                    "hotel": "hotel albergo",
+                    "real_estate_agency": "agenzia immobiliare",
+                    "insurance_agency": "agenzia assicurazioni",
+                    "travel_agency": "agenzia viaggi",
+                    "veterinary_care": "veterinario clinica veterinaria",
+                    "pizza_restaurant": "pizzeria",
+                    "clothing_store": "negozio abbigliamento",
+                    "furniture_store": "negozio mobili arredamento",
+                    "florist": "fiorista",
+                    "pet_store": "negozio animali",
+                    "car_dealer": "concessionaria auto",
+                    "shopping_mall": "centro commerciale",
+                    "supermarket": "supermercato",
+                    "school": "scuola",
+                    "church": "chiesa",
+                }
+                primary = result.get("primary_type", "")
+                sector_for_search = type_to_search.get(primary, result["sector_display"] or primary)
+                comp_query = f"{sector_for_search} {city}".strip()
+                
+                comp_headers = {
+                    "Content-Type": "application/json",
+                    "X-Goog-Api-Key": api_key,
+                    "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.websiteUri,places.primaryTypeDisplayName"
+                }
+                comp_payload = {
+                    "textQuery": comp_query,
+                    "languageCode": "it",
+                    "maxResultCount": 15,
+                    "locationBias": {
+                        "circle": {
+                            "center": {"latitude": lat, "longitude": lng},
+                            "radius": 15000.0
+                        }
+                    }
+                }
+
+                comp_resp = requests.post(
+                    "https://places.googleapis.com/v1/places:searchText",
+                    json=comp_payload, headers=comp_headers, timeout=15
+                )
+                comp_data = comp_resp.json()
+                comp_places = comp_data.get("places", [])
+
+                company_lower = company_name.lower()
+                for cp in comp_places:
+                    cp_name = cp.get("displayName", {}).get("text", "")
+                    # Escludi l'attività stessa
+                    if company_lower in cp_name.lower():
+                        continue
+                    result["competitors"].append({
+                        "name": cp_name,
+                        "website": cp.get("websiteUri"),
+                        "rating": cp.get("rating"),
+                        "reviews_count": cp.get("userRatingCount"),
+                        "address": cp.get("formattedAddress", ""),
+                        "source": "google_places_api",
+                        "category": cp.get("primaryTypeDisplayName", {}).get("text", ""),
+                    })
+
+                logger.info(f"[PLACES] Competitor trovati: {len(result['competitors'])} per \"{comp_query}\" (raggio 15km)")
+            except Exception as e:
+                logger.warning(f"[PLACES] Errore ricerca competitor: {e}")
+
+    except Exception as e:
+        logger.warning(f"[PLACES] Errore identificazione attività: {e}")
+
+    return result
+
+
+
 
 def scrape_lead(website_url: str, company_name: str, social_links_db: dict = None, city: str = "", sector: str = "", indirizzo: str = "") -> dict[str, Any]:
     """
@@ -87,6 +271,28 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         logger.warning(f"Errore PageSpeed per {website_url}: {e}")
         results["errors"].append(f"PageSpeed: {str(e)}")
         results["pagespeed"] = {"error": str(e)}
+
+    # 1c. Google Places API — Identificazione attività, settore e competitor
+    try:
+        places_data = _identify_with_google_places(company_name, city, sector)
+        if places_data.get("place_found"):
+            # Aggiorna settore se trovato
+            if places_data.get("sector") and (not sector or sector == "Da identificare"):
+                sector = places_data["sector"]
+                results["sector"] = sector
+                results["extracted_sector"] = sector
+                logger.info(f"[PLACES] Settore aggiornato: {sector}")
+            
+            # Aggiorna GMB se più ricco
+            if places_data.get("google_business", {}).get("found"):
+                results["google_business"] = places_data["google_business"]
+            
+            # Salva competitor da Places API
+            if places_data.get("competitors"):
+                results["competitors"] = places_data["competitors"]
+                logger.info(f"[PLACES] {len(results['competitors'])} competitor caricati")
+    except Exception as e:
+        logger.warning(f"Errore Google Places: {e}")
 
     # 2. Analisi SEO avanzata via SerpAPI (6 query)
     try:

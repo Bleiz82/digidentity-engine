@@ -185,7 +185,17 @@ def task_free_report(self, lead_id: str):
         logger.warning(f"[FREE] Errore creazione Stripe session: {e} — uso URL fallback")
         checkout_url = f"{settings.APP_BASE_URL}/api/payment/create-checkout?lead_id={lead_id}"
 
-    # ── 5. Generazione PDF ──
+    # ── 5. Calcolo Score Canonico (Fix: allineamento PDF/HTML/DB) ──
+    from execution.calculate_scores import compute_free_scores
+    scores = compute_free_scores(scraping_data)
+    # Inietta score in scraping_data così che i generatori li trovino
+    scraping_data["scores"] = scores
+    # Per retrocompatibilità con pdf_generator
+    scraping_data["social_score"] = scores["score_social"]
+    
+    logger.info(f"[FREE] Score calcolati: {scores['punteggio_globale']}/100")
+
+    # ── 6. Generazione PDF ──
     try:
         pdf_dir = Path("/app/reports/free")
         pdf_dir.mkdir(parents=True, exist_ok=True)
@@ -208,7 +218,7 @@ def task_free_report(self, lead_id: str):
         }).eq("id", lead_id).execute()
         raise self.retry(exc=e)
 
-    # ── 6. Generazione HTML interattivo ──
+    # ── 7. Generazione HTML interattivo ──
     html_url = ""
     try:
         base_url = settings.APP_BASE_URL.rstrip("/")
@@ -230,7 +240,7 @@ def task_free_report(self, lead_id: str):
         # L'HTML è un bonus — se fallisce, il PDF è già pronto
         logger.warning(f"[FREE] Errore generazione HTML (non bloccante): {e}")
 
-    # ── 7. Invio email ──
+    # ── 8. Invio email ──
     try:
         email_sent = send_free_report_email(
             to_email=email,
@@ -259,44 +269,18 @@ def task_free_report(self, lead_id: str):
         }).eq("id", lead_id).execute()
         raise self.retry(exc=e)
 
-    # ── 8. Calcolo Score ──
+    # ── 9. Salvataggio Score su Supabase ──
     try:
-        gb = scraping_data.get("google_business", {})
-        gmb_rating = gb.get("rating", 0) or 0
-        gmb_reviews_raw = gb.get("total_reviews", 0)
-        gmb_reviews = len(gmb_reviews_raw) if isinstance(gmb_reviews_raw, list) else (gmb_reviews_raw or 0)
-        score_gmb = min(100, int(gmb_rating * 12 + min(gmb_reviews, 200) * 0.2))
-
-        apify_data = scraping_data.get("apify", {})
-        ig_followers = (apify_data.get("instagram", {}).get("followers", 0) or 0)
-        fb_followers = (apify_data.get("facebook", {}).get("followers", 0) or 0)
-        ig_found = 1 if apify_data.get("instagram", {}).get("found") else 0
-        fb_found = 1 if apify_data.get("facebook", {}).get("found") else 0
-        score_social = min(100, int((ig_found + fb_found) * 25 + min(ig_followers + fb_followers, 5000) * 0.01))
-
-        ps = scraping_data.get("pagespeed", {})
-        perf = ps.get("performance_score", 0) or 0
-        has_site = 1 if scraping_data.get("has_website") else 0
-        score_sito = min(100, int(has_site * 40 + perf * 0.6))
-
-        indexed = scraping_data.get("indexed_pages", {}).get("total", 0) or 0
-        citations_count = len(scraping_data.get("citations", []))
-        score_seo = min(100, int(min(indexed, 100) * 0.3 + min(citations_count, 20) * 3))
-
-        comp = scraping_data.get("competitors", [])
-        n_comp = len(comp) if isinstance(comp, list) else 0
-        score_comp = max(20, 100 - n_comp * 10)
-
-        score_totale = int(score_gmb * 0.30 + score_social * 0.25 + score_sito * 0.20 + score_seo * 0.15 + score_comp * 0.10)
-
         db.table("leads").update({
-            "score_gmb": score_gmb, "score_social": score_social,
-            "score_sito_web": score_sito, "score_seo": score_seo,
-            "score_competitivo": score_comp, "score_totale": score_totale,
+            "score_gmb": scores["score_gmb"], 
+            "score_social": scores["score_social"],
+            "score_sito_web": scores["score_sito_web"], 
+            "score_seo": scores["score_seo"],
+            "score_competitivo": scores["score_competitvo"] if "score_competitvo" in scores else scores["score_competitivo"], 
+            "score_totale": scores["punteggio_globale"],
         }).eq("id", lead_id).execute()
-        logger.info(f"[FREE] Score: totale={score_totale}, gmb={score_gmb}, social={score_social}, sito={score_sito}, seo={score_seo}, comp={score_comp}")
     except Exception as e:
-        logger.warning(f"[FREE] Errore score: {e}")
+        logger.warning(f"[FREE] Errore salvataggio score DB: {e}")
 
     # ── 9. Insert in tabella reports ──
     try:

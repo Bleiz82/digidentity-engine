@@ -363,99 +363,6 @@ def save_premium_html(html: str, lead_id: str, output_dir: str = "/app/reports/p
 # FREE HTML REPORT GENERATOR
 # ══════════════════════════════════════════════════════════
 
-def _build_free_dashboard(scraping_data: dict) -> str:
-    """Genera le card della dashboard per il report free."""
-    cards = []
-
-    # Sito Web
-    ps = scraping_data.get("pagespeed", {})
-    has_site = scraping_data.get("has_website", False)
-    perf_mobile = ps.get("mobile", {}).get("performance") if ps else None
-    perf_desktop = ps.get("desktop", {}).get("performance") if ps else None
-    seo_score = ps.get("mobile", {}).get("seo") or ps.get("desktop", {}).get("seo")
-
-    if has_site:
-        site_score = max(0, min(100, int((perf_mobile or 0) * 0.4 + (perf_desktop or 0) * 0.3 + (seo_score or 0) * 0.3)))
-    else:
-        site_score = 0
-    cards.append(_build_dashboard_card("Sito Web", "🌐", site_score))
-
-    # SEO
-    indexed = scraping_data.get("seo", {}).get("indexed_pages", {})
-    indexed_total = indexed.get("total", 0) if isinstance(indexed, dict) else 0
-    citations = len(scraping_data.get("citations", []))
-    seo_calc = min(100, int(min(indexed_total, 100) * 0.3 + min(citations, 20) * 3))
-    cards.append(_build_dashboard_card("SEO", "🔍", seo_calc))
-
-    # Google Business
-    gb = scraping_data.get("google_business", {})
-    gb_rating = gb.get("rating", 0) or 0
-    gb_reviews_raw = gb.get("reviews_count", gb.get("total_reviews", 0))
-    gb_reviews = len(gb_reviews_raw) if isinstance(gb_reviews_raw, list) else (gb_reviews_raw or 0)
-    gb_score = min(100, int(gb_rating * 12 + min(gb_reviews, 200) * 0.2))
-    cards.append(_build_dashboard_card("Google Business", "📍", gb_score))
-
-    # Social
-    apify = scraping_data.get("apify", {})
-    ig = apify.get("instagram", {})
-    fb = apify.get("facebook", {})
-    ig_found = 1 if ig.get("found") or ig.get("followers") else 0
-    fb_found = 1 if fb.get("found") or fb.get("followers") or fb.get("likes") else 0
-    ig_followers = ig.get("followers", 0) or 0
-    fb_followers = fb.get("followers", fb.get("likes", 0)) or 0
-    social_score = min(100, int((ig_found + fb_found) * 25 + min(ig_followers + fb_followers, 5000) * 0.01))
-    cards.append(_build_dashboard_card("Social Media", "📱", social_score))
-
-    # Competitor
-    comp = scraping_data.get("competitors", [])
-    n_comp = len(comp) if isinstance(comp, list) else 0
-    comp_score = max(20, 100 - n_comp * 10)
-    cards.append(_build_dashboard_card("Competitivita", "⚔", comp_score))
-
-    return "\n".join(cards)
-
-
-def _calc_free_total(scraping_data: dict) -> int:
-    """Calcola il punteggio totale per il report free."""
-    ps = scraping_data.get("pagespeed", {})
-    has_site = scraping_data.get("has_website", False)
-    perf_mobile = ps.get("mobile", {}).get("performance") if ps else None
-    perf_desktop = ps.get("desktop", {}).get("performance") if ps else None
-    seo_ps = ps.get("mobile", {}).get("seo") or ps.get("desktop", {}).get("seo")
-
-    if has_site:
-        site_score = max(0, min(100, int((perf_mobile or 0) * 0.4 + (perf_desktop or 0) * 0.3 + (seo_ps or 0) * 0.3)))
-    else:
-        site_score = 0
-
-    indexed = scraping_data.get("seo", {}).get("indexed_pages", {})
-    indexed_total = indexed.get("total", 0) if isinstance(indexed, dict) else 0
-    citations = len(scraping_data.get("citations", []))
-    seo_calc = min(100, int(min(indexed_total, 100) * 0.3 + min(citations, 20) * 3))
-
-    gb = scraping_data.get("google_business", {})
-    gb_rating = gb.get("rating", 0) or 0
-    gb_reviews_raw = gb.get("reviews_count", gb.get("total_reviews", 0))
-    gb_reviews = len(gb_reviews_raw) if isinstance(gb_reviews_raw, list) else (gb_reviews_raw or 0)
-    gb_score = min(100, int(gb_rating * 12 + min(gb_reviews, 200) * 0.2))
-
-    apify = scraping_data.get("apify", {})
-    ig = apify.get("instagram", {})
-    fb = apify.get("facebook", {})
-    ig_found = 1 if ig.get("found") or ig.get("followers") else 0
-    fb_found = 1 if fb.get("found") or fb.get("followers") or fb.get("likes") else 0
-    ig_followers = ig.get("followers", 0) or 0
-    fb_followers = fb.get("followers", fb.get("likes", 0)) or 0
-    social_score = min(100, int((ig_found + fb_found) * 25 + min(ig_followers + fb_followers, 5000) * 0.01))
-
-    comp = scraping_data.get("competitors", [])
-    n_comp = len(comp) if isinstance(comp, list) else 0
-    comp_score = max(20, 100 - n_comp * 10)
-
-    total = int(gb_score * 0.30 + social_score * 0.25 + site_score * 0.20 + seo_calc * 0.15 + comp_score * 0.10)
-    return total
-
-
 def _split_free_sections(report_text: str) -> dict:
     """
     Divide il testo del report free in 5 sezioni basandosi su heading/pattern.
@@ -519,6 +426,25 @@ def _split_free_sections(report_text: str) -> dict:
     return sections
 
 
+def _build_free_dashboard(scores: dict) -> str:
+    """Genera le card della dashboard per il report free usando gli score pre-calcolati."""
+    cards = []
+    
+    # Mappa i nomi dei campi degli score verso le card della dashboard
+    card_defs = [
+        ("Sito Web", "🌐", scores.get("score_sito_web", scores.get("sito", 0))),
+        ("SEO", "🔍", scores.get("score_seo", scores.get("seo_score", 0))),
+        ("Google Business", "📍", scores.get("score_gmb", scores.get("google_business", 0))),
+        ("Social Media", "📱", scores.get("score_social", scores.get("facebook", 0))),
+        ("Competitività", "⚔", scores.get("score_competitivo", scores.get("competitivita", 0))),
+    ]
+    
+    for title, emoji, score in card_defs:
+        cards.append(_build_dashboard_card(title, emoji, score))
+
+    return "\n".join(cards)
+
+
 def generate_free_html(
     scraping_data: dict,
     report_markdown: str,
@@ -530,15 +456,6 @@ def generate_free_html(
 ) -> str:
     """
     Genera l'HTML completo del report free.
-
-    Args:
-        scraping_data: dati dallo scraping
-        report_markdown: testo del report generato da Claude/OpenAI
-        company_name: nome dell'attivita
-        contact_name: nome del contatto
-        sector: settore
-        city: citta
-        checkout_url: URL Stripe per upgrade premium
     """
     from datetime import datetime
 
@@ -548,15 +465,73 @@ def generate_free_html(
         raise FileNotFoundError(f"Template free non trovato: {template_path}")
     template = template_path.read_text(encoding="utf-8")
 
-    # Calcola punteggio
-    punteggio = _calc_free_total(scraping_data)
+    # Recupera score pre-calcolati (dal task)
+    scores = scraping_data.get("scores", {})
+    if not scores:
+        # Fallback se mancano (non dovrebbe succedere)
+        from execution.calculate_scores import compute_free_scores
+        scores = compute_free_scores(scraping_data)
+
+    punteggio = scores.get("punteggio_globale", 0)
     score_deg = round(punteggio / 100 * 360)
 
     # Verdict
     verdict_class, verdict_text, verdict_description = _verdict(punteggio)
 
     # Dashboard
-    dashboard_cards = _build_free_dashboard(scraping_data)
+    dashboard_cards = _build_free_dashboard(scores)
+
+    # Data
+    MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno",
+            "luglio","agosto","settembre","ottobre","novembre","dicembre"]
+    now = datetime.now()
+    data_odierna = f"{now.day} {MESI[now.month-1]} {now.year}"
+
+    # Split report in sezioni
+    free_sections = _split_free_sections(report_markdown)
+
+    # Converti in HTML
+    sez_01 = _markdown_to_html(free_sections.get('sezione_01', ''))
+    sez_02 = _markdown_to_html(free_sections.get('sezione_02', ''))
+    sez_03 = _markdown_to_html(free_sections.get('sezione_03', ''))
+    sez_04 = _markdown_to_html(free_sections.get('sezione_04', ''))
+    sez_05 = _markdown_to_html(free_sections.get('sezione_05', ''))
+
+    # Score map per JS
+    score_map = {
+        "mainScore": punteggio,
+        "dashScore": punteggio,
+        "finalScore": punteggio,
+    }
+
+    # Sostituzioni
+    replacements = {
+        "{nome_attivita}": company_name,
+        "{settore}": sector or "Attivita Locale",
+        "{citta}": city or "",
+        "{punteggio_globale}": str(punteggio),
+        "{score_deg}": str(score_deg),
+        "{data_odierna}": data_odierna,
+        "{dashboard_cards}": dashboard_cards,
+        "{verdict_class}": verdict_class,
+        "{verdict_text}": verdict_text,
+        "{verdict_description}": verdict_description,
+        "{checkout_url}": checkout_url or "#",
+        "{sezione_01}": sez_01,
+        "{sezione_02}": sez_02,
+        "{sezione_03}": sez_03,
+        "{sezione_04}": sez_04,
+        "{sezione_05}": sez_05,
+        "{score_map_json}": json.dumps(score_map),
+    }
+
+    html = template
+    for placeholder, value in replacements.items():
+        html = html.replace(placeholder, str(value))
+
+    logger.info(f"HTML free generato: {len(html)} caratteri per {company_name}")
+    return html
+
 
     # Data
     MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno",

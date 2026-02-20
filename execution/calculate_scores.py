@@ -1,214 +1,93 @@
 ﻿"""
-DigIdentity Engine - Score Calculator
-Calcola score 0-100 per ogni area di analisi + score totale.
+DigIdentity Engine — Canonical Scoring Logic for FREE Report.
+Ensures consistency between Database, PDF and HTML Report.
 """
+import logging
+from typing import Dict, Any
 
-from typing import Dict, Any, Optional
+logger = logging.getLogger(__name__)
 
+def compute_free_scores(scraping_data: Dict[str, Any]) -> Dict[str, int]:
+    """
+    Calculates all scores (0-100) based on scraping data.
+    This is the SINGLE SOURCE OF TRUTH for scores.
+    """
+    try:
+        # 1. Google Business Score
+        gb = scraping_data.get("google_business", {})
+        gb_rating = gb.get("rating", 0) or 0
+        
+        # Gestione flessibile reviews count (può essere int o list di testi)
+        gb_reviews_raw = gb.get("reviews_count", gb.get("total_reviews", 0))
+        if isinstance(gb_reviews_raw, list):
+            gb_reviews = len(gb_reviews_raw)
+        else:
+            gb_reviews = int(gb_reviews_raw or 0)
+            
+        score_gmb = min(100, int(gb_rating * 12 + min(gb_reviews, 200) * 0.2))
 
-def calculate_scores(
-    pagespeed_data: Optional[Dict[str, Any]],
-    serp_data: Optional[Dict[str, Any]],
-    gmb_data: Optional[Dict[str, Any]],
-    social_data: Optional[Dict[str, Any]],
-    competitors_data: Optional[Dict[str, Any]]
-) -> Dict[str, int]:
-    print(f"Score calculation...")
+        # 2. Social Media Score
+        apify_data = scraping_data.get("apify", {})
+        ig = apify_data.get("instagram", {})
+        fb = apify_data.get("facebook", {})
+        
+        ig_followers = int(ig.get("followers", 0) or 0)
+        fb_followers = int(fb.get("followers", fb.get("likes", 0)) or 0)
+        
+        # Considerato "trovato" se Apify dice found=True o se abbiamo estratto follower/link
+        ig_found = 1 if ig.get("found") or ig_followers > 0 or ig.get("url") else 0
+        fb_found = 1 if fb.get("found") or fb_followers > 0 or fb.get("url") else 0
+        
+        score_social = min(100, int((ig_found + fb_found) * 25 + min(ig_followers + fb_followers, 5000) * 0.01))
 
-    # Normalizza None in dict vuoti
-    pagespeed_data = pagespeed_data or {}
-    serp_data = serp_data or {}
-    gmb_data = gmb_data or {}
-    social_data = social_data or {}
-    competitors_data = competitors_data or {}
+        # 3. Sito Web Score
+        ps = scraping_data.get("pagespeed", {})
+        # Tenta di prendere performance mobile (prioritaria) o desktop
+        perf_mobile = ps.get("mobile", {}).get("scores", {}).get("performance", 0)
+        perf_desktop = ps.get("desktop", {}).get("scores", {}).get("performance", 0)
+        perf = max(perf_mobile or 0, perf_desktop or 0)
+        
+        has_site = 1 if scraping_data.get("website", {}).get("reachable") or scraping_data.get("website_url") else 0
+        score_sito = min(100, int(has_site * 40 + (perf or 0) * 0.6))
 
-    scores = {
-        "score_sito_web": calculate_website_score(pagespeed_data),
-        "score_seo": calculate_seo_score(serp_data, pagespeed_data),
-        "score_gmb": calculate_gmb_score(gmb_data),
-        "score_social": calculate_social_score(social_data),
-        "score_competitivo": calculate_competitive_score(competitors_data, gmb_data)
-    }
+        # 4. SEO Score
+        seo = scraping_data.get("seo", {})
+        indexed = seo.get("indexed_pages", {}).get("total", 0) or 0
+        citations_count = len(scraping_data.get("citations", []))
+        score_seo = min(100, int(min(int(indexed), 100) * 0.3 + min(citations_count, 20) * 3))
 
-    weights = {
-        "score_sito_web": 0.25,
-        "score_seo": 0.25,
-        "score_gmb": 0.20,
-        "score_social": 0.15,
-        "score_competitivo": 0.15
-    }
+        # 5. Competitività Score
+        comp = scraping_data.get("competitors", [])
+        n_comp = len(comp) if isinstance(comp, list) else 0
+        score_comp = max(20, 100 - n_comp * 10)
 
-    scores["score_totale"] = int(sum(
-        scores[key] * weights[key] for key in weights.keys()
-    ))
+        # 6. Score Totale (Pesato)
+        score_totale = int(
+            score_gmb * 0.30 + 
+            score_social * 0.25 + 
+            score_sito * 0.20 + 
+            score_seo * 0.15 + 
+            score_comp * 0.10
+        )
 
-    print(f"Score calcolati:")
-    for key, value in scores.items():
-        print(f"   {key}: {value}/100")
-
-    return scores
-
-
-def calculate_website_score(pagespeed_data: Dict[str, Any]) -> int:
-    if not pagespeed_data or not pagespeed_data.get("success"):
-        return 0
-
-    desktop = pagespeed_data.get("desktop", {}) or {}
-    mobile = pagespeed_data.get("mobile", {}) or {}
-
-    desktop_avg = (
-        desktop.get("performance", 0) +
-        desktop.get("accessibility", 0) +
-        desktop.get("best_practices", 0) +
-        desktop.get("seo", 0)
-    ) / 4
-
-    mobile_avg = (
-        mobile.get("performance", 0) +
-        mobile.get("accessibility", 0) +
-        mobile.get("best_practices", 0) +
-        mobile.get("seo", 0)
-    ) / 4
-
-    final_score = int(mobile_avg * 0.6 + desktop_avg * 0.4)
-    return max(0, min(100, final_score))
-
-
-def calculate_seo_score(serp_data: Dict[str, Any], pagespeed_data: Dict[str, Any]) -> int:
-    if not serp_data or not serp_data.get("success"):
-        return 0
-
-    pagespeed_data = pagespeed_data or {}
-    score = 0
-
-    brand_query = serp_data.get("brand_query", {}) or {}
-    if brand_query.get("found"):
-        position = brand_query.get("position", 11)
-        if position == 1:
-            score += 40
-        elif position <= 3:
-            score += 30
-        elif position <= 5:
-            score += 20
-        elif position <= 10:
-            score += 10
-
-    sector_query = serp_data.get("sector_query", {}) or {}
-    if sector_query.get("found"):
-        position = sector_query.get("position", 11)
-        if position <= 3:
-            score += 30
-        elif position <= 5:
-            score += 20
-        elif position <= 10:
-            score += 10
-
-    if pagespeed_data.get("success"):
-        mobile = pagespeed_data.get("mobile", {}) or {}
-        desktop = pagespeed_data.get("desktop", {}) or {}
-        mobile_seo = mobile.get("seo", 0)
-        desktop_seo = desktop.get("seo", 0)
-        avg_seo = (mobile_seo + desktop_seo) / 2
-        score += int(avg_seo * 0.3)
-
-    return max(0, min(100, score))
-
-
-def calculate_gmb_score(gmb_data: Dict[str, Any]) -> int:
-    if not gmb_data or not gmb_data.get("found"):
-        return 0
-
-    data = gmb_data.get("data", {}) or {}
-    score = 0
-
-    score += 20
-
-    completeness = data.get("completeness", 0) or 0
-    score += int(completeness * 0.3)
-
-    rating = data.get("rating", 0) or 0
-    if rating >= 4.5:
-        score += 25
-    elif rating >= 4.0:
-        score += 20
-    elif rating >= 3.5:
-        score += 15
-    elif rating >= 3.0:
-        score += 10
-    elif rating > 0:
-        score += 5
-
-    reviews = data.get("reviews_count", 0) or 0
-    if reviews >= 100:
-        score += 25
-    elif reviews >= 50:
-        score += 20
-    elif reviews >= 20:
-        score += 15
-    elif reviews >= 10:
-        score += 10
-    elif reviews >= 5:
-        score += 5
-
-    return max(0, min(100, score))
-
-
-def calculate_social_score(social_data: Dict[str, Any]) -> int:
-    if not social_data or not social_data.get("success"):
-        return 0
-
-    platforms_declared = social_data.get("platforms_declared", []) or []
-    analysis = social_data.get("analysis", {}) or {}
-
-    if not platforms_declared:
-        return 0
-
-    score = 0
-
-    num_platforms = min(len(platforms_declared), 4)
-    score += num_platforms * 10
-
-    verified_count = sum(1 for p in analysis.values() if isinstance(p, dict) and p.get("verified"))
-    if verified_count > 0:
-        verification_rate = verified_count / len(platforms_declared)
-        score += int(verification_rate * 60)
-
-    return max(0, min(100, score))
-
-
-def calculate_competitive_score(
-    competitors_data: Dict[str, Any],
-    gmb_data: Dict[str, Any]
-) -> int:
-    if not competitors_data or not gmb_data:
-        return 50
-
-    if not competitors_data.get("success") or not gmb_data.get("found"):
-        return 50
-
-    position = competitors_data.get("competitive_position", "average")
-
-    position_scores = {
-        "leader": 90,
-        "strong": 75,
-        "average": 50,
-        "weak": 30,
-        "new": 10
-    }
-
-    base_score = position_scores.get(position, 50)
-
-    benchmarks = competitors_data.get("benchmarks", {}) or {}
-    rating_gap = benchmarks.get("rating_gap")
-    reviews_gap = benchmarks.get("reviews_gap")
-
-    if rating_gap is not None:
-        base_score += int(rating_gap * 10)
-
-    if reviews_gap is not None:
-        avg_reviews = benchmarks.get("avg_competitor_reviews", 1) or 1
-        if avg_reviews > 0:
-            reviews_ratio = reviews_gap / avg_reviews
-            base_score += int(reviews_ratio * 5)
-
-    return max(0, min(100, base_score))
+        return {
+            "punteggio_globale": score_totale,
+            "score_gmb": score_gmb,
+            "score_social": score_social,
+            "score_sito_web": score_sito,
+            "score_seo": score_seo,
+            "score_competitivo": score_comp,
+            # Compatibilità con html_generator card_defs
+            "sito": score_sito,
+            "seo_score": score_seo,
+            "google_business": score_gmb,
+            "facebook": score_social if fb_found else 0, # Placeholder raffinato
+            "instagram": score_social if ig_found else 0,
+            "reputazione_ai": score_gmb # Placeholder per card dashboard
+        }
+    except Exception as e:
+        logger.error(f"Errore calcolo score: {e}")
+        return {
+            "punteggio_globale": 0, "score_gmb": 0, "score_social": 0,
+            "score_sito_web": 0, "score_seo": 0, "score_competitivo": 0
+        }

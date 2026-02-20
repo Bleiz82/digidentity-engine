@@ -5,9 +5,9 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-from app.core.supabase_client import get_supabase
-from app.models.lead import LeadCreate, LeadStatus
-from app.tasks.free_report_task import task_free_report
+from backend.app.core.supabase_client import get_supabase
+from backend.app.models.lead import LeadCreate, LeadStatus
+from backend.app.tasks.free_report_task import task_free_report
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/leads", tags=["leads"])

@@ -7,7 +7,7 @@ from celery import Celery
 try:
     from backend.app.core.config import settings
 except ImportError:
-    from app.core.config import settings
+    from backend.app.core.config import settings
 
 celery_app = Celery(
     "digidentity",

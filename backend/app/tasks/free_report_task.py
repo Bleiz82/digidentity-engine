@@ -18,9 +18,9 @@ from pathlib import Path
 import time
 import os
 
-from app.core.celery_app import celery_app
-from app.core.config import settings
-from app.core.supabase_client import get_supabase
+from backend.app.core.celery_app import celery_app
+from backend.app.core.config import settings
+from backend.app.core.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
 

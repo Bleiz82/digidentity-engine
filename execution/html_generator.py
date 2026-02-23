@@ -218,6 +218,7 @@ def generate_premium_html(
     ctx: dict,
     sections: list,
     consulenza_url: str = "https://buy.stripe.com/3cI3cx3WUaTheOieMgdMI00",
+    lead_id: str = "",
 ) -> str:
     """
     Genera l'HTML completo del report premium.
@@ -306,6 +307,7 @@ def generate_premium_html(
         "{verdict_text}": verdict_text,
         "{verdict_description}": verdict_description,
         "{consulenza_url}": consulenza_url,
+        "{pdf_download_url}": f"/api/reports/diagnosi/premium/{lead_id}/pdf" if lead_id else "#",
         # Sezioni
         "{sezione_01}": sez_01,
         "{sezione_02}": sez_02,
@@ -453,6 +455,7 @@ def generate_free_html(
     sector: str = "",
     city: str = "",
     checkout_url: str = "",
+    lead_id: str = "",
 ) -> str:
     """
     Genera l'HTML completo del report free.
@@ -588,6 +591,9 @@ def generate_free_html(
     else:
         nav_html = '<a href="#dashboard" class="nav-link active">Dashboard</a>'
     nav_html += '\n    <a href="#upgrade" class="nav-link" style="color:#FFD700;border-color:rgba(255,215,0,0.4);">Premium</a>'
+    # Pulsante download PDF
+    pdf_url = f"/api/reports/diagnosi/free/{lead_id}/pdf" if lead_id else "#"
+    nav_html += f'\n    <a href="{pdf_url}" class="nav-link" style="color:#fff;background:#F90100;border-color:#F90100;padding:6px 14px;border-radius:6px;" download>⬇ Scarica PDF</a>'
 
     # Score map per JS
     score_map = {
@@ -609,6 +615,7 @@ def generate_free_html(
         "{verdict_text}": verdict_text,
         "{verdict_description}": verdict_description,
         "{checkout_url}": checkout_url or "#",
+        "{pdf_download_url}": f"/api/reports/diagnosi/free/{lead_id}/pdf" if lead_id else "#",
         "{sezione_01}": report_html,
         "{nav_links}": nav_html,
         "{sezione_02}": "",
@@ -662,6 +669,7 @@ def generate_free_html(
         "{verdict_text}": verdict_text,
         "{verdict_description}": verdict_description,
         "{checkout_url}": checkout_url or "#",
+        "{pdf_download_url}": f"/api/reports/diagnosi/free/{lead_id}/pdf" if lead_id else "#",
         "{sezione_01}": sez_01,
         "{sezione_02}": sez_02,
         "{sezione_03}": sez_03,

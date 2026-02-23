@@ -235,6 +235,7 @@ def task_free_report(self, lead_id: str):
             sector=sector,
             city=city,
             checkout_url=checkout_url,
+            lead_id=lead_id,
         )
         html_path = save_free_html(html_content, lead_id)
         html_url = f"{base_url}/api/reports/diagnosi/free/{lead_id}"

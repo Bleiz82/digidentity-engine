@@ -118,5 +118,34 @@ async def download_report_pdf(report_id: str):
         raise HTTPException(status_code=500, detail="Errore interno")
 
 
+
+
+@router.get("/diagnosi/free/{lead_id}/pdf")
+async def download_free_pdf(lead_id: str):
+    """Scarica il PDF della diagnosi free tramite lead_id."""
+    pdf_path = REPORTS_DIR / "free" / f"free_{lead_id}.pdf"
+    if pdf_path.exists():
+        return FileResponse(
+            path=str(pdf_path),
+            filename=f"Diagnosi_Digitale_Free.pdf",
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=Diagnosi_Digitale_Free.pdf"}
+        )
+    raise HTTPException(status_code=404, detail="PDF non trovato")
+
+
+@router.get("/diagnosi/premium/{lead_id}/pdf")
+async def download_premium_pdf(lead_id: str):
+    """Scarica il PDF della diagnosi premium tramite lead_id."""
+    pdf_path = REPORTS_DIR / "premium" / f"premium_{lead_id}.pdf"
+    if pdf_path.exists():
+        return FileResponse(
+            path=str(pdf_path),
+            filename=f"Diagnosi_Digitale_Premium.pdf",
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=Diagnosi_Digitale_Premium.pdf"}
+        )
+    raise HTTPException(status_code=404, detail="PDF non trovato")
+
 # ── NUOVI ENDPOINT: Pagine HTML interattive ──
 

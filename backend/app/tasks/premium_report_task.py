@@ -201,6 +201,7 @@ def task_premium_report(self, lead_id: str):
             ctx=ctx,
             sections=sections,
             consulenza_url=_consulenza_url,
+            lead_id=lead_id,
         )
         html_path = save_premium_html(html_content, lead_id)
         html_url = f"{base_url}/api/reports/diagnosi/premium/{lead_id}"

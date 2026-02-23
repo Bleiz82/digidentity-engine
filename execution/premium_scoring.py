@@ -27,19 +27,19 @@ def calculate_scores(data: dict) -> dict:
     elif lt > 2000:
         site_score -= 10
 
-    imgs = site.get("images_total", 0) or 0
+    imgs = site.get("images_count", 0) or 0
     imgs_no_alt = site.get("images_without_alt", 0) or 0
     if imgs > 0 and imgs_no_alt == 0:
         site_score += 5
     elif imgs > 0 and (imgs_no_alt / imgs) > 0.5:
         site_score -= 10
 
-    if site.get("ssl"):
+    if site.get("has_ssl"):
         site_score += 5
     else:
         site_score -= 15
 
-    if site.get("favicon"):
+    if site.get("has_favicon"):
         site_score += 2
     if site.get("meta_description"):
         site_score += 5
@@ -60,11 +60,13 @@ def calculate_scores(data: dict) -> dict:
     ps = data.get("pagespeed", {})
     mob = ps.get("mobile", {})
     desk = ps.get("desktop", {})
-    scores["velocita_mobile"] = int((mob.get("performance", 0) or 0) * 100)
-    scores["velocita_desktop"] = int((desk.get("performance", 0) or 0) * 100)
-    scores["seo_score"] = int((mob.get("seo", 0) or 0) * 100)
-    scores["accessibilita"] = int((mob.get("accessibility", 0) or 0) * 100)
-    scores["best_practices"] = int((mob.get("best_practices", 0) or 0) * 100)
+    mob_scores = mob.get("scores", {})
+    desk_scores = desk.get("scores", {})
+    scores["velocita_mobile"] = int(mob_scores.get("performance", 0) or 0)
+    scores["velocita_desktop"] = int(desk_scores.get("performance", 0) or 0)
+    scores["seo_score"] = int(mob_scores.get("seo", 0) or 0)
+    scores["accessibilita"] = int(mob_scores.get("accessibility", 0) or 0)
+    scores["best_practices"] = int(mob_scores.get("best-practices", 0) or 0)
 
     # ── GOOGLE BUSINESS ──
     gb = data.get("google_business", {})

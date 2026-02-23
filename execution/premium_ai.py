@@ -123,8 +123,8 @@ def call_claude(system_prompt: str, user_prompt: str, max_tokens: int, model_typ
                 }
 
 
-def generate_section(section: dict, system_prompt: str, ctx: dict, data_map: dict) -> dict:
-    """Genera una singola sezione del report."""
+def generate_section(section: dict, system_prompt: str, ctx: dict, data_map: dict, prev_context: str = "") -> dict:
+    """Genera una singola sezione del report con contesto delle sezioni precedenti."""
     section_id = section["id"]
     logger.info(f"Generazione sezione: {section_id}")
 
@@ -141,6 +141,12 @@ def generate_section(section: dict, system_prompt: str, ctx: dict, data_map: dic
     # Sostituisci il placeholder con i dati reali
     user_prompt = prompt_template.replace("{dati_sezione}", section_data)
 
+    # Aggiungi contesto sezioni precedenti se disponibile
+    if prev_context:
+        user_prompt = prev_context + "
+
+" + user_prompt
+
     # Chiama Claude
     result = call_claude(
         system_prompt=system_prompt,
@@ -150,26 +156,57 @@ def generate_section(section: dict, system_prompt: str, ctx: dict, data_map: dic
     )
     if isinstance(result, dict):
         text = result["text"]
-        _tokens = {"input": result.get("input_tokens", 0), "output": result.get("output_tokens", 0), "model": result.get("model", "")}
+        _tokens = {
+            "input": result.get("input_tokens", 0),
+            "output": result.get("output_tokens", 0),
+            "cache_read": result.get("cache_read_tokens", 0),
+            "cache_write": result.get("cache_write_tokens", 0),
+            "model": result.get("model", ""),
+            "cost_usd": result.get("cost_usd", 0)
+        }
     else:
         text = result
-        _tokens = {"input": 0, "output": 0, "model": ""}
+        _tokens = {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "model": "", "cost_usd": 0}
 
     return {"id": section_id, "text": text, "_tokens": _tokens}
 
 
 def generate_all_sections(ctx: dict, data_map: dict) -> list:
-    """Genera tutte le sezioni del report in sequenza."""
+    """Genera tutte le sezioni con contesto progressivo delle precedenti."""
     system_prompt = _load_system_prompt()
     results = []
+    running_summary = []
 
     for section in SECTIONS:
-        result = generate_section(section, system_prompt, ctx, data_map)
+        # Costruisci contesto dalle ultime 2 sezioni generate
+        prev_context = ""
+        if running_summary:
+            prev_context = "---
+RIFERIMENTO SEZIONI PRECEDENTI (non ripetere, usa per coerenza):
+"
+            prev_context += "
+".join(running_summary[-2:])
+            prev_context += "
+---
+"
+
+        result = generate_section(section, system_prompt, ctx, data_map, prev_context)
         results.append(result)
-        logger.info(f"Sezione {result['id']} completata ({len(result['text'])} chars)")
-        # Pausa tra le chiamate per evitare rate limiting
+
+        # Salva sintesi breve per le sezioni successive
+        summary_line = f"[{section['id']}]: {result['text'][:200].strip().replace(chr(10), ' ')}..."
+        running_summary.append(summary_line)
+
+        _tok = result["_tokens"]
+        logger.info(
+            f"✅ Sezione {result['id']} | {len(result['text'])} chars | "
+            f"in={_tok.get('input',0)} out={_tok.get('output',0)} "
+            f"cache_r={_tok.get('cache_read',0)} cost=${_tok.get('cost_usd',0):.4f}"
+        )
         time.sleep(1)
 
+    total_cost = sum(s["_tokens"].get("cost_usd", 0) for s in results)
+    logger.info(f"💰 Costo totale report premium: ${total_cost:.4f}")
     return results
 
 

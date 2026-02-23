@@ -54,8 +54,20 @@ def _load_system_prompt() -> str:
     return _load_prompt("00_system.md")
 
 
-def call_claude(system_prompt: str, user_prompt: str, max_tokens: int, model_type: str = "standard") -> str:
-    """Chiama Claude con retry e backoff."""
+def _calc_cost(input_tok: int, output_tok: int, cache_read: int, cache_write: int, model: str) -> float:
+    """Calcolo costo preciso con prompt caching."""
+    if "opus" in model:
+        p_in, p_out = 15.0/1_000_000, 75.0/1_000_000
+        p_cw, p_cr  = 18.75/1_000_000, 1.50/1_000_000
+    else:
+        p_in, p_out = 3.0/1_000_000, 15.0/1_000_000
+        p_cw, p_cr  = 3.75/1_000_000, 0.30/1_000_000
+    regular = max(0, input_tok - cache_read - cache_write)
+    return regular * p_in + cache_write * p_cw + cache_read * p_cr + output_tok * p_out
+
+
+def call_claude(system_prompt: str, user_prompt: str, max_tokens: int, model_type: str = "standard") -> dict:
+    """Chiama Claude con prompt caching sul system prompt e retry/backoff."""
     client = _get_client()
     model = CLAUDE_MODEL_PREMIUM if model_type == "premium" else CLAUDE_MODEL_STANDARD
 
@@ -65,14 +77,36 @@ def call_claude(system_prompt: str, user_prompt: str, max_tokens: int, model_typ
             response = client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
-                system=system_prompt,
+                system=[
+                    {
+                        "type": "text",
+                        "text": system_prompt,
+                        "cache_control": {"type": "ephemeral"}
+                    }
+                ],
                 messages=[{"role": "user", "content": user_prompt}],
+                extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"}
             )
             text = response.content[0].text
-            input_tok = getattr(response.usage, 'input_tokens', 0)
-            output_tok = getattr(response.usage, 'output_tokens', 0)
-            logger.info(f"Risposta ricevuta: {len(text)} car, tokens={input_tok+output_tok}")
-            return {"text": text, "input_tokens": input_tok, "output_tokens": output_tok, "model": model}
+            usage = response.usage
+            input_tok  = getattr(usage, "input_tokens", 0)
+            output_tok = getattr(usage, "output_tokens", 0)
+            cache_read  = getattr(usage, "cache_read_input_tokens", 0)
+            cache_write = getattr(usage, "cache_creation_input_tokens", 0)
+            cost = _calc_cost(input_tok, output_tok, cache_read, cache_write, model)
+            logger.info(
+                f"✅ Claude OK | in={input_tok} out={output_tok} "
+                f"cache_read={cache_read} cache_write={cache_write} cost=${cost:.4f}"
+            )
+            return {
+                "text": text,
+                "input_tokens": input_tok,
+                "output_tokens": output_tok,
+                "cache_read_tokens": cache_read,
+                "cache_write_tokens": cache_write,
+                "model": model,
+                "cost_usd": cost
+            }
         except Exception as e:
             logger.error(f"Errore tentativo {attempt}: {e}")
             if attempt < MAX_RETRIES:
@@ -81,7 +115,12 @@ def call_claude(system_prompt: str, user_prompt: str, max_tokens: int, model_typ
                 time.sleep(wait)
             else:
                 logger.error(f"Fallito dopo {MAX_RETRIES} tentativi")
-                return f"[ERRORE: Sezione non generata dopo {MAX_RETRIES} tentativi. Errore: {e}]"
+                return {
+                    "text": f"[ERRORE: Sezione non generata dopo {MAX_RETRIES} tentativi. Errore: {e}]",
+                    "input_tokens": 0, "output_tokens": 0,
+                    "cache_read_tokens": 0, "cache_write_tokens": 0,
+                    "model": model, "cost_usd": 0
+                }
 
 
 def generate_section(section: dict, system_prompt: str, ctx: dict, data_map: dict) -> dict:

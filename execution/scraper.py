@@ -751,8 +751,68 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
 
     # 4. QUERY 4: Settore + Capoluogo (Competitor Regionali)
     if sector:
-        capoluogo = "Cagliari" # Default per la Sardegna se non noto
-        # TODO: Implementare mappatura città-capoluogo più precisa se necessario
+        # Mappatura città → capoluogo di provincia/riferimento
+        _capoluogo_map = {
+            # Sardegna
+            "cagliari": "Cagliari", "sassari": "Sassari", "nuoro": "Nuoro",
+            "oristano": "Oristano", "olbia": "Sassari", "alghero": "Sassari",
+            "sestu": "Cagliari", "quartu sant elena": "Cagliari",
+            "selargius": "Cagliari", "assemini": "Cagliari", "carbonia": "Cagliari",
+            # Lombardia
+            "milano": "Milano", "brescia": "Brescia", "bergamo": "Bergamo",
+            "monza": "Milano", "como": "Como", "varese": "Varese",
+            "pavia": "Pavia", "cremona": "Cremona", "mantova": "Mantova",
+            # Lazio
+            "roma": "Roma", "frosinone": "Roma", "latina": "Roma",
+            "viterbo": "Roma", "rieti": "Roma",
+            # Campania
+            "napoli": "Napoli", "salerno": "Salerno", "caserta": "Napoli",
+            "avellino": "Napoli", "benevento": "Napoli",
+            # Sicilia
+            "palermo": "Palermo", "catania": "Catania", "messina": "Messina",
+            "agrigento": "Palermo", "siracusa": "Catania", "trapani": "Palermo",
+            "ragusa": "Catania", "caltanissetta": "Palermo", "enna": "Palermo",
+            # Piemonte
+            "torino": "Torino", "novara": "Torino", "alessandria": "Torino",
+            "asti": "Torino", "cuneo": "Torino", "vercelli": "Torino",
+            # Veneto
+            "venezia": "Venezia", "verona": "Verona", "padova": "Padova",
+            "vicenza": "Venezia", "treviso": "Venezia", "rovigo": "Venezia",
+            # Emilia-Romagna
+            "bologna": "Bologna", "modena": "Bologna", "parma": "Parma",
+            "reggio emilia": "Bologna", "ferrara": "Bologna", "ravenna": "Bologna",
+            "rimini": "Bologna", "forli": "Bologna", "piacenza": "Bologna",
+            # Toscana
+            "firenze": "Firenze", "pisa": "Firenze", "siena": "Firenze",
+            "livorno": "Firenze", "arezzo": "Firenze", "grosseto": "Firenze",
+            "lucca": "Firenze", "pistoia": "Firenze", "prato": "Firenze",
+            # Puglia
+            "bari": "Bari", "lecce": "Bari", "taranto": "Bari",
+            "foggia": "Bari", "brindisi": "Bari", "andria": "Bari",
+            # Calabria
+            "catanzaro": "Catanzaro", "reggio calabria": "Catanzaro",
+            "cosenza": "Catanzaro", "crotone": "Catanzaro", "vibo valentia": "Catanzaro",
+            # Liguria
+            "genova": "Genova", "la spezia": "Genova", "savona": "Genova", "imperia": "Genova",
+            # Marche
+            "ancona": "Ancona", "pesaro": "Ancona", "macerata": "Ancona",
+            # Abruzzo
+            "pescara": "Pescara", "chieti": "Pescara", "l aquila": "Pescara",
+            # Friuli
+            "trieste": "Trieste", "udine": "Trieste", "pordenone": "Trieste",
+            # Trentino
+            "trento": "Trento", "bolzano": "Trento",
+            # Umbria
+            "perugia": "Perugia", "terni": "Perugia",
+            # Basilicata
+            "potenza": "Potenza", "matera": "Potenza",
+            # Molise
+            "campobasso": "Campobasso",
+            # Valle d Aosta
+            "aosta": "Aosta",
+        }
+        city_key = city.lower().strip() if city else ""
+        capoluogo = _capoluogo_map.get(city_key, city or "Italia")
         if city and city.lower() != capoluogo.lower():
             try:
                 sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()

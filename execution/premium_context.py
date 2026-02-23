@@ -74,17 +74,17 @@ DATI SITO WEB:
 - Raggiungibile: {site.get('reachable', 'N/A')}
 - Tempo caricamento: {site.get('load_time_ms', 'N/A')} ms
 - Parole totali: {site.get('word_count', 'N/A')}
-- Immagini totali: {site.get('images_total', 'N/A')}
+- Immagini totali: {site.get('images_count', 'N/A')}
 - Immagini senza alt: {site.get('images_without_alt', 'N/A')}
-- Tecnologie: {site.get('technologies', 'N/A')}
+- Tecnologie: {', '.join(site.get('technologies_detected', []) or ['N/A'])}
 - Meta description: {site.get('meta_description', 'ASSENTE')}
 - Tag H1: {site.get('h1_tags', 'ASSENTE')}
 - Tag H2: {json.dumps(site.get('h2_tags', []), ensure_ascii=False)}
 - Favicon: {site.get('favicon', 'N/A')}
 - Google Analytics: {site.get('has_analytics', False)}
-- Dati strutturati: {site.get('has_structured_data', False)}
+- Dati strutturati: {site.get('structured_data', False)}
 - Cookie banner: {site.get('has_cookie_banner', False)}
-- Responsive: {site.get('is_responsive', 'N/A')}
+- Responsive: {site.get('has_responsive_meta', 'N/A')}
 
 PAGINE INDICIZZATE ({indexed.get('total', 0)} totali):
 {json.dumps(pages_list, indent=2, ensure_ascii=False) if pages_list else 'Nessun dato disponibile'}

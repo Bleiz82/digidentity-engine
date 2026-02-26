@@ -253,6 +253,7 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         "pagespeed": {},
         "apify": {},
         "perplexity": {},
+        "geo": {},
         "errors": [],
     }
 
@@ -424,6 +425,24 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         results["errors"].append(f"Perplexity: {str(e)}")
         results["perplexity"] = {"error": str(e)}
 
+
+    # 7. Analisi GEO / AI Visibility
+    try:
+        from execution.scrape_geo import scrape_geo
+        html_cached = results.get("website", {}).get("_raw_html")
+        results["geo"] = scrape_geo(
+            website_url=website_url,
+            company_name=company_name,
+            html_content=html_cached,
+        )
+        logger.info(
+            f"[GEO] Score: {results['geo']['geo_score'].get('score', 'N/D')}/100"
+        )
+    except Exception as e:
+        logger.warning(f"Errore analisi GEO per {company_name}: {e}")
+        results["errors"].append(f"GEO: {str(e)}")
+        results["geo"] = {"analyzed": False, "error": str(e)}
+
     logger.info(
         f"Scraping completato per {company_name}: "
         f"{len(results['errors'])} errori"
@@ -569,6 +588,9 @@ def _scrape_website(url: str) -> dict:
             if label and len(label) < 50:
                 nav_links.append({"label": label, "href": href})
     data["pages_found"] = nav_links[:20]
+
+    # Salva HTML grezzo per GEO (evita doppio fetch)
+    data["_raw_html"] = resp.text[:500000]
 
     return data
 

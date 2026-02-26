@@ -382,3 +382,70 @@ Contenuto:
 8. La sezione 8 (AI e Automazioni) è il DIFFERENZIANTE di DigIdentity. Deve essere la sezione più innovativa e sorprendente del report. Il cliente deve pensare: "Non avevo idea che queste cose fossero possibili per un'attività come la mia."
 9. Usa i colori brand DigIdentity: Rosso #F90100 per titoli sezione, CTA, e elementi importanti. Nero #000000 per testo principale. Grigio #444444 per testo secondario e note. Bianco #FFFFFF per sfondi.
 10. Includi classi CSS per grafici e visualizzazioni: radar-chart, bar-chart, comparison-table, score-badge, priority-high, priority-medium, priority-low, cta-button, highlight-box, quote-box.
+
+---
+
+### SEZIONE 8b: GEO — Visibilita sui Motori di Ricerca AI (3 pagine)
+Titolo: "Il Tuo Sito Esiste per ChatGPT, Google AI e Perplexity?"
+
+> Usa i dati in `geo` del JSON di input. Se `geo.analyzed = false` spiega
+> che il sito non e raggiungibile e l impatto sulla visibilita AI.
+
+#### Paragrafo introduttivo
+"Nel 2026, sempre piu persone non cercano su Google digitando parole chiave,
+fanno domande dirette a ChatGPT, usano Google con le risposte AI in cima
+(AI Overviews), o chiedono a Perplexity. Questi strumenti non mostrano una
+lista di siti: formulano una risposta e CITANO le fonti. Se il tuo sito non
+e configurato per essere letto e capito dai crawler AI, non vieni mai citato,
+anche se sei il migliore del settore."
+
+#### GEO Score (geo.geo_score.score / 100)
+Mostra con gauge visivo (classe CSS geo-score-gauge). Interpreta:
+- 80-100: Ottimo, configurato per i motori AI
+- 65-79: Buono, piccoli aggiustamenti per il massimo
+- 45-64: Discreto, gap concreti da colmare
+- 25-44: Insufficiente, raramente citato dai motori AI
+- 0-24: Critico, invisibile ai motori AI
+
+#### Dashboard Piattaforme AI (geo.platform_scores)
+Tabella con score per: Google AI Overviews, ChatGPT/OpenAI, Perplexity AI,
+Gemini, Bing Copilot. Per ogni score sotto 50: 1 riga su cosa manca.
+
+#### Crawler AI (geo.robots)
+Spiega il robots.txt con la metafora del cancello:
+"Il robots.txt e il cancello del tuo sito. Se per sbaglio hai chiuso
+il cancello ai robot AI, questi non entrano e tu non esisti per loro."
+- Se geo.robots.critical_blocked non e vuoto: ALLERTA, nomina ogni
+  crawler bloccato, piattaforma corrispondente, riga esatta da modificare.
+- Se tutto OK: conferma che tutti i crawler AI hanno accesso.
+
+#### llms.txt (geo.llms)
+Metafora: "Il llms.txt e il biglietto da visita per i modelli AI."
+- Se geo.llms.found = false: non presente, includi il template da
+  geo.llms.template in box copiabile.
+- Se trovato: mostra score e suggerimenti da geo.llms.sections_found.
+
+#### Citabilita Contenuto (geo.citability)
+Spiega: "La citabilita misura quanto i testi del tuo sito sono adatti
+ad essere quotati direttamente da ChatGPT o Perplexity. I modelli AI
+preferiscono: definizioni chiare, dati numerici, paragrafi di 130-170
+parole, risposte dirette a domande."
+Analizza: definition_score, authority_score, structure_score, avg_word_count.
+Mostra strengths e issues. Cita 1-2 optimal_passages come esempi positivi.
+
+#### Schema Markup per AI (geo.schema)
+Spiega: "Lo schema markup dice ai motori AI esattamente cosa sei:
+un ristorante, un dentista, un negozio. Senza, devono indovinare."
+- Mostra types_found e missing_critical.
+- Se LocalBusiness manca: includi JSON-LD pronto con i dati dell attivita.
+
+#### Azioni Prioritarie GEO (geo.quick_wins)
+Per ogni quick win: titolo, descrizione, tempo, piattaforme impattate.
+Se include llms.txt: mostra template completo in box copiabile.
+Se include schema: mostra JSON-LD personalizzato pronto all uso.
+
+#### Box Vantaggio Competitivo
+"Solo il 4% dei siti italiani ha un llms.txt. Solo il 23% dei marketers
+investe in GEO. Chi si ottimizza ORA per i motori AI avra un vantaggio
+difficilmente colmabile nei prossimi 2 anni. I tuoi competitor quasi
+certamente non lo stanno facendo."

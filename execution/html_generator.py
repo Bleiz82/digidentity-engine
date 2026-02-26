@@ -439,6 +439,7 @@ def _build_free_dashboard(scores: dict) -> str:
         ("Google Business", "📍", scores.get("score_gmb", scores.get("google_business", 0))),
         ("Social Media", "📱", scores.get("score_social", scores.get("facebook", 0))),
         ("Competitività", "⚔", scores.get("score_competitivo", scores.get("competitivita", 0))),
+        ("Visibilità AI", "🤖", scores.get("score_geo", scores.get("geo", 0))),
     ]
     
     for title, emoji, score in card_defs:

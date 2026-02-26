@@ -61,13 +61,19 @@ def compute_free_scores(scraping_data: Dict[str, Any]) -> Dict[str, int]:
         n_comp = len(comp) if isinstance(comp, list) else 0
         score_comp = max(20, 100 - n_comp * 10)
 
-        # 6. Score Totale (Pesato)
+        # 6. GEO Score (AI Visibility)
+        geo = scraping_data.get("geo", {})
+        geo_score_raw = geo.get("geo_score", {}).get("score", 0) or 0
+        score_geo = int(geo_score_raw)
+
+        # 7. Score Totale (Pesato)
         score_totale = int(
-            score_gmb * 0.30 + 
-            score_social * 0.25 + 
-            score_sito * 0.20 + 
-            score_seo * 0.15 + 
-            score_comp * 0.10
+            score_gmb * 0.25 +
+            score_social * 0.20 +
+            score_sito * 0.20 +
+            score_seo * 0.15 +
+            score_comp * 0.10 +
+            score_geo * 0.10
         )
 
         return {
@@ -77,13 +83,15 @@ def compute_free_scores(scraping_data: Dict[str, Any]) -> Dict[str, int]:
             "score_sito_web": score_sito,
             "score_seo": score_seo,
             "score_competitivo": score_comp,
+            "score_geo": score_geo,
             # Compatibilità con html_generator card_defs
             "sito": score_sito,
             "seo_score": score_seo,
             "google_business": score_gmb,
-            "facebook": score_social if fb_found else 0, # Placeholder raffinato
+            "facebook": score_social if fb_found else 0,
             "instagram": score_social if ig_found else 0,
-            "reputazione_ai": score_gmb # Placeholder per card dashboard
+            "reputazione_ai": score_gmb,
+            "geo": score_geo
         }
     except Exception as e:
         logger.error(f"Errore calcolo score: {e}")

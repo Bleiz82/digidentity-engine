@@ -199,31 +199,9 @@ def task_free_report(self, lead_id: str):
     
     logger.info(f"[FREE] Score calcolati: {scores['punteggio_globale']}/100")
 
-    # ── 6. Generazione PDF ──
-    try:
-        pdf_dir = Path("/app/reports/free")
-        pdf_dir.mkdir(parents=True, exist_ok=True)
-        pdf_path = str(pdf_dir / f"free_{lead_id}.pdf")
-
-        generate_pdf(
-            report_markdown,
-            pdf_path,
-            scraping_data=scraping_data,
-            company_name=company_name,
-            date_str="",
-            location=f"{city}" if lead.get('provincia', '') in ('', 'ND', None) else f"{city}, {lead.get('provincia', '')}"
-        )
-        logger.info(f"[FREE] PDF generato: {pdf_path}")
-    except Exception as e:
-        logger.error(f"[FREE] Errore PDF per {company_name}: {e}")
-        db.table("leads").update({
-            "status": "error",
-            "error_message": f"Errore PDF: {str(e)}",
-        }).eq("id", lead_id).execute()
-        raise self.retry(exc=e)
-
-    # ── 7. Generazione HTML interattivo ──
+    # ── 6. Generazione HTML interattivo ──
     html_url = ""
+    html_content = ""
     try:
         base_url = settings.APP_BASE_URL.rstrip("/")
 
@@ -242,8 +220,36 @@ def task_free_report(self, lead_id: str):
 
         logger.info(f"[FREE] HTML generato: {html_url}")
     except Exception as e:
-        # L'HTML è un bonus — se fallisce, il PDF è già pronto
         logger.warning(f"[FREE] Errore generazione HTML (non bloccante): {e}")
+
+    # ── 7. Generazione PDF dall'HTML (unica fonte di verità) ──
+    try:
+        pdf_dir = Path("/app/reports/free")
+        pdf_dir.mkdir(parents=True, exist_ok=True)
+        pdf_path = str(pdf_dir / f"free_{lead_id}.pdf")
+
+        if html_content:
+            # PDF generato dall'HTML interattivo — punteggi e layout identici
+            from weasyprint import HTML as WP_HTML
+            WP_HTML(string=html_content, base_url="/app/").write_pdf(pdf_path)
+        else:
+            # Fallback: vecchio sistema da markdown
+            generate_pdf(
+                report_markdown,
+                pdf_path,
+                scraping_data=scraping_data,
+                company_name=company_name,
+                date_str="",
+                location=f"{city}" if lead.get('provincia', '') in ('', 'ND', None) else f"{city}, {lead.get('provincia', '')}"
+            )
+        logger.info(f"[FREE] PDF generato: {pdf_path}")
+    except Exception as e:
+        logger.error(f"[FREE] Errore PDF per {company_name}: {e}")
+        db.table("leads").update({
+            "status": "error",
+            "error_message": f"Errore PDF: {str(e)}",
+        }).eq("id", lead_id).execute()
+        raise self.retry(exc=e)
 
     # ── 8. Invio email ──
     try:

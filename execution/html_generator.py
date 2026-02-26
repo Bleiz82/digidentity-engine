@@ -51,6 +51,71 @@ def _dashoffset(score: int) -> int:
     return max(0, 226 - int(226 * score / 100))
 
 
+def _ps_ring_svg(value: int, label: str) -> str:
+    """Genera un mini-ring SVG per i punteggi PageSpeed."""
+    if value is None:
+        value = 0
+    v = int(value)
+    if v >= 70:
+        color = "#4caf50"
+    elif v >= 50:
+        color = "#ffc107"
+    else:
+        color = "#f44336"
+    r = 28
+    circ = round(2 * 3.14159 * r, 1)
+    offset = round(circ - (v / 100) * circ, 1)
+    return f'''<div class="ps-ring-wrap">
+      <svg width="70" height="70" viewBox="0 0 70 70">
+        <circle cx="35" cy="35" r="{r}" fill="none" stroke="#222" stroke-width="5"/>
+        <circle cx="35" cy="35" r="{r}" fill="none" stroke="{color}" stroke-width="5"
+          stroke-dasharray="{circ}" stroke-dashoffset="{offset}"
+          transform="rotate(-90 35 35)" stroke-linecap="round"/>
+        <text x="35" y="35" text-anchor="middle" dominant-baseline="middle"
+          font-size="14" font-weight="800" fill="{color}" font-family="monospace">{v}</text>
+      </svg>
+      <div class="ps-ring-label">{label}</div>
+    </div>'''
+
+
+def _geo_gauge_svg(score: int) -> str:
+    """Genera il gauge SVG per il GEO score."""
+    if score is None:
+        score = 0
+    v = int(score)
+    if v >= 70:
+        color = "#4caf50"
+    elif v >= 50:
+        color = "#ffc107"
+    else:
+        color = "#f44336"
+    r = 45
+    circ = round(2 * 3.14159 * r, 1)
+    offset = round(circ - (v / 100) * circ, 1)
+    return f'''<svg width="110" height="110" viewBox="0 0 110 110">
+      <circle cx="55" cy="55" r="{r}" fill="none" stroke="#222" stroke-width="7"/>
+      <circle cx="55" cy="55" r="{r}" fill="none" stroke="{color}" stroke-width="7"
+        stroke-dasharray="{circ}" stroke-dashoffset="{offset}"
+        transform="rotate(-90 55 55)" stroke-linecap="round"/>
+      <text x="55" y="50" text-anchor="middle" dominant-baseline="middle"
+        font-size="22" font-weight="800" fill="{color}" font-family="monospace">{v}</text>
+      <text x="55" y="68" text-anchor="middle"
+        font-size="9" fill="#999">/100</text>
+    </svg>'''
+
+
+def _geo_level_desc(score: int) -> tuple:
+    """Ritorna (level, description) per il GEO score."""
+    if score >= 80:
+        return ("Ottimo", "La tua attività è ben strutturata per apparire anche su ChatGPT, Gemini e Perplexity.")
+    elif score >= 60:
+        return ("Discreto", "La tua attività è parzialmente visibile sui motori AI. Con pochi interventi puoi migliorare significativamente.")
+    elif score >= 40:
+        return ("Insufficiente", "La tua attività è quasi invisibile su ChatGPT e Gemini. I clienti che usano questi strumenti non ti trovano.")
+    else:
+        return ("Critico", "La tua attività è invisibile sui nuovi motori di ricerca AI. Ogni giorno perdi clienti che cercano i tuoi servizi su ChatGPT.")
+
+
 def _verdict(score: int) -> tuple:
     """Ritorna (css_class, testo, descrizione) per il punteggio globale."""
     if score >= 80:
@@ -603,6 +668,41 @@ def generate_free_html(
         "finalScore": punteggio,
     }
 
+    # PageSpeed rings
+    ps = scraping_data.get("pagespeed", {})
+    ps_mobile = ps.get("mobile", {}).get("scores", {})
+    ps_desktop = ps.get("desktop", {}).get("scores", {})
+    ps_labels = [
+        ("performance", "Performance"),
+        ("accessibility", "Accessibilità"),
+        ("best-practices", "Best Practices"),
+        ("seo", "SEO"),
+    ]
+    def _norm(v):
+        if v is None: return 0
+        v = float(v)
+        return int(v * 100) if v <= 1 else int(v)
+
+    ps_mobile_rings = "".join(
+        _ps_ring_svg(_norm(ps_mobile.get(k, 0)), lbl)
+        for k, lbl in ps_labels
+    )
+    ps_desktop_rings = "".join(
+        _ps_ring_svg(_norm(ps_desktop.get(k, 0)), lbl)
+        for k, lbl in ps_labels
+    )
+
+    # GEO gauge
+    geo = scraping_data.get("geo", {})
+    geo_score_val = int(geo.get("geo_score", {}).get("score", 0) or 0)
+    geo_level, geo_desc = _geo_level_desc(geo_score_val)
+    geo_gauge = _geo_gauge_svg(geo_score_val)
+    quick_wins = geo.get("quick_wins", [])
+    geo_wins_html = "".join(
+        f'<div class="geo-win-item"><div class="geo-win-dot"></div><span>{w.get("action", w) if isinstance(w, dict) else w}</span></div>'
+        for w in quick_wins[:3]
+    ) if quick_wins else '<div class="geo-win-item"><div class="geo-win-dot"></div><span>Analisi GEO non disponibile per questa attività.</span></div>'
+
     # Sostituzioni
     replacements = {
         "{nome_attivita}": company_name,
@@ -624,6 +724,12 @@ def generate_free_html(
         "{sezione_04}": "",
         "{sezione_05}": "",
         "{score_map_json}": json.dumps(score_map),
+        "{ps_mobile_rings}": ps_mobile_rings,
+        "{ps_desktop_rings}": ps_desktop_rings,
+        "{geo_gauge_svg}": geo_gauge,
+        "{geo_level}": geo_level,
+        "{geo_desc}": geo_desc,
+        "{geo_wins_html}": geo_wins_html,
     }
 
     html = template

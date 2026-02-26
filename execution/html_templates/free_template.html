@@ -560,6 +560,101 @@ strong { color: var(--di-white); font-weight: 600; }
   }
 }
 
+/* PAGESPEED RINGS */
+.ps-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+.ps-device {
+  background: var(--di-card);
+  border: 1px solid var(--di-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+.ps-device-label {
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--di-gray-600);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+.ps-rings-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.ps-ring-wrap {
+  text-align: center;
+}
+.ps-ring-wrap svg { display: block; margin: 0 auto; }
+.ps-ring-label {
+  font-size: 0.6rem;
+  color: var(--di-gray-600);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* GEO GAUGE */
+.geo-box {
+  background: var(--di-card);
+  border: 1px solid var(--di-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+.geo-gauge { flex-shrink: 0; text-align: center; }
+.geo-gauge svg { display: block; margin: 0 auto; }
+.geo-info { flex: 1; }
+.geo-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--di-gray-600);
+  margin-bottom: 0.4rem;
+}
+.geo-level {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--di-white);
+  margin-bottom: 0.5rem;
+}
+.geo-desc {
+  font-size: 0.85rem;
+  color: var(--di-gray-400);
+  line-height: 1.6;
+}
+.geo-wins { margin-top: 1rem; }
+.geo-win-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--di-gray-400);
+}
+.geo-win-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+@media (max-width: 700px) {
+  .ps-grid { grid-template-columns: 1fr; }
+  .geo-box { flex-direction: column; }
+}
+
 .section-content table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
 .section-content th { background: var(--di-card); color: var(--accent); text-align: left; padding: 0.8rem 1rem; border-bottom: 2px solid var(--accent); font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
 .section-content td { padding: 0.7rem 1rem; border-bottom: 1px solid var(--di-border); color: var(--di-gray-200); }
@@ -618,6 +713,42 @@ strong { color: var(--di-white); font-weight: 600; }
       <div class="global-score-verdict {verdict_class}">{verdict_text}</div>
       <div class="global-score-text">{verdict_description}</div>
     </div>
+  </div>
+</section>
+
+<!-- PAGESPEED + GEO -->
+<section class="section" id="performance">
+  <div class="container">
+    <div class="section-number">Velocità e visibilità</div>
+    <h2>Performance e Visibilità AI</h2>
+
+    <div class="ps-grid">
+      <div class="ps-device">
+        <div class="ps-device-label">📱 Mobile</div>
+        <div class="ps-rings-row">
+          {ps_mobile_rings}
+        </div>
+      </div>
+      <div class="ps-device">
+        <div class="ps-device-label">🖥 Desktop</div>
+        <div class="ps-rings-row">
+          {ps_desktop_rings}
+        </div>
+      </div>
+    </div>
+
+    <div class="geo-box">
+      <div class="geo-gauge">
+        {geo_gauge_svg}
+      </div>
+      <div class="geo-info">
+        <div class="geo-title">Visibilità sui Motori AI</div>
+        <div class="geo-level">{geo_level}</div>
+        <div class="geo-desc">{geo_desc}</div>
+        <div class="geo-wins">{geo_wins_html}</div>
+      </div>
+    </div>
+
   </div>
 </section>
 

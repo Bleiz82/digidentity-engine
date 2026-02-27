@@ -127,8 +127,8 @@ def send_free_report_email(
         to_email=to_email,
         subject=subject,
         html_body=html_body,
-        attachment_path=pdf_path,
-        attachment_name=f"Diagnosi_Digitale_{company_name.replace(' ', '_')}.pdf",
+        attachment_path=None,
+        attachment_name=None,
     )
 
 
@@ -236,8 +236,8 @@ def send_premium_report_email(
         to_email=to_email,
         subject=subject,
         html_body=html_body,
-        attachment_path=pdf_path,
-        attachment_name=f"Piano_Strategico_{company_name.replace(' ', '_')}.pdf",
+        attachment_path=None,
+        attachment_name=None,
     )
 
 

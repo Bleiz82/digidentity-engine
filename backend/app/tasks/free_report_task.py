@@ -218,6 +218,14 @@ def task_free_report(self, lead_id: str):
         html_path = save_free_html(html_content, lead_id)
         html_url = f"{base_url}/api/reports/diagnosi/free/{lead_id}"
 
+        # Salva html_url su Supabase
+        try:
+            db.table("leads").update({
+                "free_html_url": html_url,
+            }).eq("id", lead_id).execute()
+        except Exception as _e:
+            logger.warning(f"[FREE] Errore salvataggio free_html_url: {_e}")
+
         logger.info(f"[FREE] HTML generato: {html_url}")
     except Exception as e:
         logger.warning(f"[FREE] Errore generazione HTML (non bloccante): {e}")

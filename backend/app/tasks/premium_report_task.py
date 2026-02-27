@@ -167,34 +167,13 @@ def task_premium_report(self, lead_id: str):
         }).eq("id", lead_id).execute()
         raise self.retry(exc=e)
 
-    # ── 6. Generazione PDF premium ──
-    try:
-        pdf_dir = Path("/app/reports/premium")
-        pdf_dir.mkdir(parents=True, exist_ok=True)
-        pdf_path = str(pdf_dir / f"premium_{lead_id}.pdf")
-
-        markdown_to_pdf(
-            markdown_text=report_markdown,
-            output_path=pdf_path,
-            report_type="premium",
-            company_name=company_name,
-        )
-        logger.info(f"[PREMIUM] PDF generato: {pdf_path}")
-    except Exception as e:
-        logger.error(f"[PREMIUM] Errore PDF per {company_name}: {e}")
-        db.table("leads").update({
-            "status": "error",
-            "error_message": f"Errore PDF premium: {str(e)}",
-        }).eq("id", lead_id).execute()
-        raise self.retry(exc=e)
-
-    # ── 6b. Generazione HTML interattivo ──
+    # ── 6. Generazione HTML interattivo (prima del PDF) ──
     html_url = ""
+    html_content = ""
+    pdf_path = str(Path("/app/reports/premium") / f"premium_{lead_id}.pdf")
     try:
         from app.core.config import settings as _app_settings
         base_url = _app_settings.APP_BASE_URL.rstrip("/")
-
-        # Crea URL consulenza per il CTA nell'HTML
         _consulenza_url = "https://buy.stripe.com/3cI3cx3WUaTheOieMgdMI00"
 
         html_content = generate_premium_html(
@@ -213,8 +192,32 @@ def task_premium_report(self, lead_id: str):
 
         logger.info(f"[PREMIUM] HTML generato: {html_url}")
     except Exception as e:
-        # L'HTML è un bonus — se fallisce, il PDF è già pronto
         logger.warning(f"[PREMIUM] Errore generazione HTML (non bloccante): {e}")
+
+    # ── 6b. Generazione PDF dall'HTML (unica fonte di verita) ──
+    try:
+        pdf_dir = Path("/app/reports/premium")
+        pdf_dir.mkdir(parents=True, exist_ok=True)
+
+        if html_content:
+            from weasyprint import HTML as WP_HTML
+            WP_HTML(string=html_content, base_url="/app/").write_pdf(pdf_path)
+            logger.info(f"[PREMIUM] PDF generato dall'HTML: {pdf_path}")
+        else:
+            markdown_to_pdf(
+                markdown_text=report_markdown,
+                output_path=pdf_path,
+                report_type="premium",
+                company_name=company_name,
+            )
+            logger.info(f"[PREMIUM] PDF generato da markdown (fallback): {pdf_path}")
+    except Exception as e:
+        logger.error(f"[PREMIUM] Errore PDF per {company_name}: {e}")
+        db.table("leads").update({
+            "status": "error",
+            "error_message": f"Errore PDF premium: {str(e)}",
+        }).eq("id", lead_id).execute()
+        raise self.retry(exc=e)
 
     # ── 7. Invio email premium ──
     try:

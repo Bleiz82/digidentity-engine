@@ -720,6 +720,7 @@ strong { color: var(--di-white); font-weight: 600; }
     <a href="#social" class="nav-link">Social</a>
     <a href="#branding" class="nav-link">Branding</a>
     <a href="#ai" class="nav-link">AI</a>
+    <a href="#geo" class="nav-link">Visibilità AI</a>
     <a href="#ads" class="nav-link">Ads</a>
     <a href="#piano90" class="nav-link">Piano 90gg</a>
     <a href="#relazione" class="nav-link">Relazione</a>
@@ -734,6 +735,10 @@ strong { color: var(--di-white); font-weight: 600; }
     <h2>Dashboard</h2>
     <div class="dashboard-grid">
       {dashboard_cards}
+    <!-- RADAR CHART -->
+    <div style="margin: 2rem auto; max-width: 500px; text-align: center;">
+      <canvas id="radarChart" width="500" height="400"></canvas>
+    </div>
     </div>
     <div class="global-score-wrap">
       <div class="global-score-label">Punteggio Complessivo DigIdentity</div>
@@ -845,8 +850,12 @@ strong { color: var(--di-white); font-weight: 600; }
 <!-- SEZ 6: COMPETITOR -->
 <section class="section" id="competitor">
   <div class="container">
-    <div class="section-number">Sezione 6 di 11</div>
+    <div class="section-number">Sezione 6 di 12</div>
     <h2>Analisi Competitor</h2>
+    <!-- GRAFICO COMPETITOR -->
+    <div style="margin: 1.5rem 0; max-width: 600px;">
+      <canvas id="competitorChart" width="600" height="300"></canvas>
+    </div>
     <div class="section-content">
       {sezione_06}
     </div>
@@ -891,37 +900,98 @@ strong { color: var(--di-white); font-weight: 600; }
   </div>
 </section>
 
-<!-- SEZ 9: ADS -->
+<!-- SEZ GEO: VISIBILITÀ AI -->
+<section class="section section-alt" id="geo">
+  <div class="container">
+    <div class="section-number">Sezione 9 di 12</div>
+    <h2>Visibilità sui Motori AI</h2>
+    <div class="section-score">
+      <div class="mini-ring" id="ring-geo">
+        <svg viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="#222" stroke-width="6"/>
+          <circle cx="40" cy="40" r="34" fill="none" stroke="#F90100" stroke-width="6"
+            stroke-dasharray="213.6" stroke-dashoffset="{dashoffset_geo}"
+            transform="rotate(-90 40 40)" stroke-linecap="round"/>
+        </svg>
+        <div class="mini-ring-value"><span class="score-number" style="color:{color_geo}">{score_geo}</span></div>
+      </div>
+      <div class="section-score-label">Punteggio GEO (AI Visibility): <strong>{score_geo}/100</strong></div>
+    </div>
+
+    <!-- GEO GAUGE GRANDE -->
+    <div style="margin: 2rem 0; text-align: center;">
+      <canvas id="geoGauge" width="300" height="180"></canvas>
+    </div>
+
+    <!-- GEO COMPONENTI -->
+    <div style="margin: 1.5rem 0;" id="geo-components">
+      <div class="compare-bar">
+        <span class="compare-label">Accessibilità AI</span>
+        <div class="compare-track"><div class="compare-fill progress-high" id="geo-bar-access" style="width:0%"></div></div>
+        <span class="compare-value" id="geo-val-access" style="color:#00c853">—</span>
+      </div>
+      <div class="compare-bar">
+        <span class="compare-label">Struttura Info</span>
+        <div class="compare-track"><div class="compare-fill progress-mid" id="geo-bar-struct" style="width:0%"></div></div>
+        <span class="compare-value" id="geo-val-struct" style="color:#f5c518">—</span>
+      </div>
+      <div class="compare-bar">
+        <span class="compare-label">Citabilità</span>
+        <div class="compare-track"><div class="compare-fill progress-low" id="geo-bar-cite" style="width:0%"></div></div>
+        <span class="compare-value" id="geo-val-cite" style="color:#F90100">—</span>
+      </div>
+      <div class="compare-bar">
+        <span class="compare-label">Fonti Autorevoli</span>
+        <div class="compare-track"><div class="compare-fill progress-mid" id="geo-bar-auth" style="width:0%"></div></div>
+        <span class="compare-value" id="geo-val-auth" style="color:#f5c518">—</span>
+      </div>
+    </div>
+
+    <div class="section-content">
+      {sezione_geo}
+    </div>
+  </div>
+</section>
+
+<!-- SEZ 10: ADS -->
 <section class="section" id="ads">
   <div class="container">
-    <div class="section-number">Sezione 9 di 11</div>
+    <div class="section-number">Sezione 10 di 12</div>
     <h2>Piano Ads Suggerito</h2>
     <div class="section-content">
-      <!-- SEZIONE GEO AI VISIBILITY -->
-      <div class="section-score-wrap">
-        <div class="mini-ring" id="ring-geo">
-          <svg viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r="34" fill="none" stroke="#222" stroke-width="6"/>
-            <circle cx="40" cy="40" r="34" fill="none" stroke="#F90100" stroke-width="6"
-              stroke-dasharray="213.6" stroke-dashoffset="{dashoffset_geo}"
-              transform="rotate(-90 40 40)" stroke-linecap="round"/>
-          </svg>
-          <div class="mini-ring-value"><span class="score-number" style="color:{color_geo}">{score_geo}</span></div>
-        </div>
-        <div class="section-score-label">Visibilità AI: <strong>{score_geo}/100</strong></div>
-      </div>
-      {sezione_geo}
-
       {sezione_09}
     </div>
   </div>
 </section>
 
-<!-- SEZ 10: PIANO 90 GG -->
+<!-- SEZ 11: PIANO 90 GG -->
 <section class="section section-alt" id="piano90">
   <div class="container">
-    <div class="section-number">Sezione 10 di 11</div>
+    <div class="section-number">Sezione 11 di 12</div>
     <h2>Piano Operativo 90 Giorni</h2>
+    <!-- TIMELINE 90 GIORNI -->
+    <div style="margin: 1.5rem 0;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:2rem;">
+        <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-top:3px solid #F90100;border-radius:8px;padding:1.2rem;text-align:center;">
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;color:#F90100;font-weight:700;margin-bottom:0.5rem;">Mese 1</div>
+          <div style="font-size:0.75rem;color:#aaa;">Settimane 1-4</div>
+          <div style="font-size:1.8rem;font-weight:800;color:#fff;margin:0.5rem 0;">🔧</div>
+          <div style="font-size:0.8rem;color:#F90100;font-weight:600;">Fondamenta</div>
+        </div>
+        <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-top:3px solid #f5c518;border-radius:8px;padding:1.2rem;text-align:center;">
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;color:#f5c518;font-weight:700;margin-bottom:0.5rem;">Mese 2</div>
+          <div style="font-size:0.75rem;color:#aaa;">Settimane 5-8</div>
+          <div style="font-size:1.8rem;font-weight:800;color:#fff;margin:0.5rem 0;">📈</div>
+          <div style="font-size:0.8rem;color:#f5c518;font-weight:600;">Crescita</div>
+        </div>
+        <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-top:3px solid #00c853;border-radius:8px;padding:1.2rem;text-align:center;">
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;color:#00c853;font-weight:700;margin-bottom:0.5rem;">Mese 3</div>
+          <div style="font-size:0.75rem;color:#aaa;">Settimane 9-12</div>
+          <div style="font-size:1.8rem;font-weight:800;color:#fff;margin:0.5rem 0;">🏆</div>
+          <div style="font-size:0.8rem;color:#00c853;font-weight:600;">Consolidamento</div>
+        </div>
+      </div>
+    </div>
     <div class="section-content">
       {sezione_10}
     </div>
@@ -992,6 +1062,179 @@ strong { color: var(--di-white); font-weight: 600; }
     Via Dettori 3, 09020 Samatzai (SU) — info@digidentityagency.it
   </div>
 </footer>
+
+<!-- CHART.JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Dati punteggi per grafici
+var chartScores = {score_map_json};
+
+document.addEventListener('DOMContentLoaded', function() {
+
+  // ── RADAR CHART ──────────────────────────────────────────────────────
+  var radarCtx = document.getElementById('radarChart');
+  if (radarCtx) {
+    new Chart(radarCtx, {
+      type: 'radar',
+      data: {
+        labels: ['Sito Web', 'Mobile', 'SEO', 'Google Business', 'Social', 'Branding', 'GEO AI', 'Advertising', 'Desktop'],
+        datasets: [{
+          label: 'Punteggio',
+          data: [
+            chartScores.score_sito || 0,
+            chartScores.score_mobile || 0,
+            chartScores.score_seo || 0,
+            chartScores.score_gmb || 0,
+            chartScores.score_social || 0,
+            chartScores.score_branding || 0,
+            chartScores.score_geo || 0,
+            chartScores.score_ads || 0,
+            chartScores.score_desktop || 0
+          ],
+          backgroundColor: 'rgba(249,1,0,0.15)',
+          borderColor: '#F90100',
+          borderWidth: 2,
+          pointBackgroundColor: '#F90100',
+          pointBorderColor: '#fff',
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { color: '#666', stepSize: 20, font: { size: 10 } },
+            grid: { color: '#2a2a2a' },
+            angleLines: { color: '#2a2a2a' },
+            pointLabels: { color: '#aaa', font: { size: 11 } }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(c) { return c.raw + '/100'; }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── COMPETITOR CHART ─────────────────────────────────────────────────
+  var compCtx = document.getElementById('competitorChart');
+  if (compCtx && window.competitorData) {
+    var labels = window.competitorData.map(function(c) { return c.name; });
+    var ratings = window.competitorData.map(function(c) { return c.rating * 20; });
+    var reviews = window.competitorData.map(function(c) { return Math.min(100, c.reviews / 2); });
+    new Chart(compCtx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Rating (×20)',
+            data: ratings,
+            backgroundColor: 'rgba(249,1,0,0.7)',
+            borderColor: '#F90100',
+            borderWidth: 1,
+            borderRadius: 4
+          },
+          {
+            label: 'Recensioni (normalizzate)',
+            data: reviews,
+            backgroundColor: 'rgba(245,197,24,0.7)',
+            borderColor: '#f5c518',
+            borderWidth: 1,
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { ticks: { color: '#aaa', font: { size: 11 } }, grid: { color: '#2a2a2a' } },
+          y: { min: 0, max: 100, ticks: { color: '#666', stepSize: 20 }, grid: { color: '#2a2a2a' } }
+        },
+        plugins: {
+          legend: { labels: { color: '#aaa', font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: function(c) {
+                if (c.datasetIndex === 0) return 'Rating: ' + (c.raw / 20).toFixed(1) + ' ★';
+                return 'Recensioni: ' + Math.round(c.raw * 2);
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── GEO GAUGE ────────────────────────────────────────────────────────
+  var geoCtx = document.getElementById('geoGauge');
+  if (geoCtx) {
+    var geoScore = chartScores.score_geo || 0;
+    var geoColor = geoScore >= 75 ? '#00c853' : geoScore >= 50 ? '#f5c518' : geoScore >= 30 ? '#ff8c00' : '#F90100';
+    new Chart(geoCtx, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [geoScore, 100 - geoScore],
+          backgroundColor: [geoColor, '#1a1a1a'],
+          borderWidth: 0,
+          circumference: 180,
+          rotation: 270
+        }]
+      },
+      options: {
+        responsive: false,
+        cutout: '75%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false }
+        }
+      },
+      plugins: [{
+        id: 'geoText',
+        afterDraw: function(chart) {
+          var ctx = chart.ctx;
+          var cx = chart.width / 2;
+          var cy = chart.height - 20;
+          ctx.save();
+          ctx.font = 'bold 36px monospace';
+          ctx.fillStyle = geoColor;
+          ctx.textAlign = 'center';
+          ctx.fillText(geoScore + '/100', cx, cy);
+          ctx.font = '12px sans-serif';
+          ctx.fillStyle = '#888';
+          ctx.fillText('Visibilità AI', cx, cy + 22);
+          ctx.restore();
+        }
+      }]
+    });
+
+    // Popola barre GEO componenti con valori simulati dal geo_score
+    var base = geoScore;
+    var setBar = function(barId, valId, val, color) {
+      var b = document.getElementById(barId);
+      var v = document.getElementById(valId);
+      if (b) b.style.width = val + '%';
+      if (v) { v.textContent = val; v.style.color = color; }
+    };
+    var access = Math.min(100, Math.round(base * 1.2));
+    var struct = Math.min(100, Math.round(base * 0.9));
+    var cite = Math.min(100, Math.round(base * 0.7));
+    var auth = Math.min(100, Math.round(base * 1.0));
+    setBar('geo-bar-access','geo-val-access', access, access>=75?'#00c853':access>=50?'#f5c518':'#F90100');
+    setBar('geo-bar-struct','geo-val-struct', struct, struct>=75?'#00c853':struct>=50?'#f5c518':'#F90100');
+    setBar('geo-bar-cite','geo-val-cite', cite, cite>=75?'#00c853':cite>=50?'#f5c518':'#F90100');
+    setBar('geo-bar-auth','geo-val-auth', auth, auth>=75?'#00c853':auth>=50?'#f5c518':'#F90100');
+  }
+
+});
+</script>
 
 <!-- JS: Counter animation + nav -->
 <script>

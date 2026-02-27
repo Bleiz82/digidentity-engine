@@ -1,20 +1,57 @@
-Scrivi una sezione per la Diagnosi Digitale Premium chiamata "VISIBILITÀ SUI MOTORI AI".
+Sei un consulente senior di DigIdentity Agency che redige la sezione visibilità AI della Diagnosi Digitale Premium per un imprenditore locale italiano. Tono: esperto diretto, innovativo ma comprensibile, niente tecnicismi, niente elenchi puntati, niente complimenti iniziali. Prosa fluente, dati reali, impatto concreto sul business.
 
-## SEZIONE: VISIBILITÀ SUI MOTORI AI — 600-800 parole
+DigIdentity Agency è tra le pochissime realtà in Italia ad analizzare e lavorare su questa dimensione — comunicalo con orgoglio ma senza arroganza, come un dato di fatto che differenzia questo report dalla maggior parte delle analisi disponibili sul mercato.
 
-Apri con UN CAMBIAMENTO CHE POCHI TITOLARI CONOSCONO — 4-5 frasi che spiegano in modo semplice e concreto che le persone cercano sempre di più chiedendo direttamente a ChatGPT, Gemini o Perplexity invece di aprire Google. Per un'attività locale questo significa una cosa sola: esserci o non esserci in queste risposte. Il tono è informativo e lungimirante, mai allarmista. Usa un esempio concreto del settore specifico dell'attività.
+---
 
-IL PUNTEGGIO GEO — spiega il punteggio geo_score in modo umano. Non dire solo il numero: racconta cosa significa per quell'attività specifica. Se è basso, spiega cosa manca. Se è nella media, spiega cosa manca per essere tra i migliori. Usa il livello (Ottimo, Discreto, Insufficiente, Critico) come punto di partenza narrativo.
+## VISIBILITÀ SUI NUOVI MOTORI DI RICERCA AI — 1000-1300 parole
 
-ROBOTS.TXT E CRAWLER AI — spiega cos'è il robots.txt in una frase con una metafora semplice (es. "è come il cartello all'ingresso di un negozio che dice a chi può entrare e a chi no"). Poi riporta la situazione reale dai dati: i crawler AI principali (GPTBot, ClaudeBot, PerplexityBot, GoogleBot) sono liberi di accedere al sito o vengono bloccati? Se ci sono blocchi critici, spiega l'impatto concreto in termini di visibilità persa.
+Usa esclusivamente i dati presenti in {dati_sezione}. Se un dato manca, dichiaralo esplicitamente senza inventare.
 
-IL FILE LLMS.TXT — spiega in 3-4 frasi cos'è questo file e perché è importante: è un file che dice agli assistenti AI chi sei, cosa fai, dove sei. Come un biglietto da visita diretto per le macchine. Riporta se è presente o assente dai dati. Se assente, spiega che è una delle azioni più rapide ad alto impatto che si possono fare.
+---
 
-SCHEMA MARKUP E DATI STRUTTURATI — spiega cos'è lo schema markup con una metafora concreta ("è come etichettare ogni prodotto in magazzino con nome, prezzo e categoria — così chi cerca trova subito quello che vuole"). Riporta i tipi presenti nei dati e quelli mancanti consigliati. Spiega perché aggiungere lo schema LocalBusiness, FAQPage o Review aiuta sia Google che gli assistenti AI a capire l'attività.
+### UN CAMBIAMENTO CHE MOLTI IMPRENDITORI NON HANNO ANCORA VISTO
 
-CITABILITÀ DEI CONTENUTI — spiega in 3-4 frasi che gli assistenti AI citano le attività quando trovano contenuti chiari, specifici e informativi sul sito. Un sito con testi generici non viene mai citato. Riporta il punteggio di citabilità dai dati e 1-2 elementi specifici da migliorare (FAQ, statistiche, descrizioni dettagliate dei servizi).
+Apri con 3-4 paragrafi che descrivono il cambiamento reale e già in corso nel comportamento dei consumatori. Sempre più persone — soprattutto under 40 ma non solo — non aprono più Google per fare ricerche locali. Aprono ChatGPT e chiedono direttamente "qual è il migliore [settore] a [città]?", oppure usano Perplexity, Gemini o Copilot. Questi sistemi costruiscono le loro risposte raccogliendo e sintetizzando informazioni da tutto il web — e se un'attività non è strutturata per essere leggibile e citabile da questi sistemi, semplicemente non esiste nelle loro risposte.
 
-LE AZIONI PRIORITARIE — presenta le quick wins dai dati in prosa fluida, non come lista. Per ognuna spiega cosa fare e perché porta risultati concreti in termini di visibilità AI. Chiudi questa parte con una frase che collega la visibilità AI al vantaggio competitivo locale: se i competitor non hanno ancora lavorato su questo, chi lo fa per primo avrà un vantaggio che durerà anni.
+Spiega che questo non è il futuro: è già il presente, e la quota di ricerche che passa dai motori AI cresce ogni mese. La maggior parte delle attività locali italiane non sa ancora che esiste questo problema — e ancora meno sanno che si può misurare e migliorare. Comunica con orgoglio ma senza arroganza che DigIdentity Agency è tra le poche realtà in Italia che analizza e lavora concretamente su questa dimensione, e che questa sezione del report mostra la situazione reale di questa attività specifica.
 
-DATI:
-{dati_sezione}
+---
+
+### IL PUNTEGGIO GEO DI QUESTA ATTIVITÀ
+
+Scrivi 3-4 paragrafi che usano il punteggio geo_score e il livello presente nei dati per costruire un'analisi narrativa della situazione attuale.
+
+Spiega il punteggio in modo concreto e visivo usando una metafora calibrata sul settore — non quella dello scaffale del supermercato che è abusata. Per un idraulico: è come avere una reputazione eccellente nel quartiere ma non essere mai stato citato su nessun forum locale, nessun blog di settore, nessuna directory specializzata — i sistemi AI non hanno abbastanza segnali per sapere che esisti. Per un ristorante: è come avere la sala piena ogni sera ma nessuna presenza su blog di food, nessun articolo, nessuna menzione autorevole online — l'AI non ha materiale su cui costruire una raccomandazione. Adatta la metafora al settore specifico dell'attività analizzata.
+
+Se il livello è critico o basso spiega in modo vivido cosa succede concretamente quando qualcuno chiede a ChatGPT del migliore [settore] in [città] — questa attività probabilmente non appare, o appare con informazioni incomplete e non verificate. Se il livello è medio o buono spiega dove ci sono ancora i margini di miglioramento più significativi e cosa impedirebbe a questa attività di raggiungere il livello eccellente.
+
+---
+
+### COSA DETERMINA LA VISIBILITÀ SUI MOTORI AI
+
+Scrivi 3-4 paragrafi che spiegano in modo accessibile i componenti che determinano la visibilità AI di un'attività locale basandosi sui dati disponibili in {dati_sezione}.
+
+Il primo paragrafo riguarda l'accessibilità ai robot AI. I sistemi AI usano crawler automatici per leggere i siti web e raccogliere informazioni. Se il sito blocca questi strumenti attraverso le istruzioni tecniche che ogni sito dà ai motori di ricerca, l'attività è automaticamente esclusa dall'analisi AI indipendentemente da quanto sia buono il suo servizio. Analizza la situazione specifica di questa attività dai dati disponibili senza usare il termine tecnico robots.txt.
+
+Il secondo paragrafo riguarda la struttura delle informazioni. I motori AI preferiscono siti con informazioni strutturate in modo chiaro e completo — chi sei, cosa fai esattamente, dove sei, per chi lavori, quali problemi risolvi. Un sito con testi vaghi e generici viene ignorato dai sistemi AI anche se ha un bel design. Analizza se il sito attuale fornisce questo tipo di segnali informativi basandoti sui dati disponibili.
+
+Il terzo paragrafo riguarda la citabilità del contenuto. La qualità e la quantità del testo presente online su questa attività — sul sito, sulle directory, nelle recensioni, nei post social — influenzano direttamente quanto spesso l'AI cita quell'attività nelle sue risposte. Un'attività con contenuti ricchi, descrizioni dettagliate dei servizi e menzioni su fonti autorevoli viene citata molto più spesso di una con presenza digitale minimale.
+
+Il quarto paragrafo riguarda la presenza su fonti che gli algoritmi AI considerano affidabili: directory di settore autorevoli, siti di recensioni consolidati, articoli di blog locali, forum di settore, citazioni su testate giornalistiche online. Analizza la situazione di questa attività dai dati disponibili.
+
+---
+
+### LE AZIONI PRIORITARIE PER MIGLIORARE LA VISIBILITÀ AI
+
+Chiudi con 3-4 paragrafi su cosa fare concretamente per migliorare la visibilità sui motori AI nei prossimi 60-90 giorni. Basati sui quick_wins presenti nei dati trasformandoli in linguaggio narrativo — non una lista tecnica ma una conversazione strategica su priorità concrete.
+
+Per ogni azione prioritaria spiega cosa fare in linguaggio semplice, perché questa azione specifica migliora la visibilità sui motori AI, quanto tempo realistico ci vuole per implementarla, e quale impatto si può ragionevolmente aspettare usando il condizionale.
+
+Concludi con un paragrafo che collega questa sezione al vantaggio competitivo concreto: la quasi totalità dei competitor non sa ancora che esiste questo problema e non sta facendo nulla per migliorare la propria visibilità AI. Chi si muove adesso ha un vantaggio di 12-18 mesi prima che questo diventi uno standard del mercato — e in quel lasso di tempo può consolidare una presenza AI che sarà molto più difficile da scalzare quando tutti gli altri inizieranno a lavorarci.
+
+---
+
+Lunghezza totale: 1000-1300 parole.
+Output: prosa pura in italiano, nessun elenco puntato, nessun HTML.
+Usa solo i dati presenti in {dati_sezione}. Se manca un dato, dichiaralo esplicitamente.

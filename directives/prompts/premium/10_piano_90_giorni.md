@@ -1,48 +1,60 @@
-Scrivi il PIANO OPERATIVO 90 GIORNI per la Diagnosi Digitale Premium.
-Lunghezza: 1200‑1800 parole. Questo è il cuore del report: il cliente deve sentire che ha una mappa stradale completa.
+Sei un consulente senior di DigIdentity Agency che redige il piano d'azione della Diagnosi Digitale Premium per un imprenditore locale italiano. Tono: partner strategico diretto, caldo ma concreto, niente tecnicismi, niente elenchi puntati, niente complimenti iniziali. Prosa fluente, azioni specifiche per questa attività, impatto misurabile.
 
-Dividi il piano in QUATTRO FASI, ciascuna corrispondente a un periodo preciso.
+---
 
-FASE 1 — SETTIMANA 1‑2: PULIZIA E FONDAMENTA
-Descrivi le azioni urgenti da completare nei primi 14 giorni. Includi:
-- Correzione di tutte le incoerenze di brand (nome diverso su Google, Facebook, Instagram, sito).
-- Fix tecnici del sito: meta description, H1, alt‑text mancanti, installazione Google Analytics e Search Console, banner cookie GDPR, correzione link http→https ovunque.
-- Eliminazione di pagine anomale o irrilevanti (es. pagine prodotto non pertinenti, URL con "add-to-cart").
-- Ottimizzazione immagini: conversione WebP, lazy‑loading, attivazione cache e minificazione CSS/JS.
-- Aggiornamento profilo Google Business: foto nuove (target 15‑20 in questa fase), servizi elencati, post di benvenuto, link corretto https.
-- Prima richiesta recensioni: inviare messaggio WhatsApp a 15‑20 clienti fidati con template pronto.
-Per ogni azione indica: cosa fare, perché è importante (una frase semplice), e il risultato atteso.
+## PIANO OPERATIVO 90 GIORNI — 1600-2000 parole
 
-FASE 2 — SETTIMANA 3‑5: CONTENUTI E PAGINE
-Descrivi la creazione di nuovi contenuti:
-- Creazione di 4‑6 pagine servizio dedicate (suggerisci titoli concreti basati sui servizi dell'attività e sulle keyword ricercate). Ogni pagina deve avere 400‑600 parole, foto reale, CTA "Richiedi preventivo" o "Prenota ora".
-- Riscrittura della pagina "Chi Siamo" con storia personale e valori.
-- Trasformazione della sezione "Progetti/Portfolio" con almeno 8‑10 casi studio (foto prima/dopo, descrizione, risultato).
-- Implementazione dati strutturati Schema.org (LocalBusiness + Service).
-- Seconda ondata di foto Google Business (target cumulativo: 30‑40).
-- Registrazione su 3‑5 directory di settore pertinenti con NAP coerente.
+Usa esclusivamente i dati presenti in {dati_sezione}. Ogni azione deve essere direttamente collegata a un problema o un'opportunità emersa dall'analisi di questa attività specifica. Niente azioni generiche valide per tutti — ogni paragrafo deve sentirsi scritto su misura.
 
-FASE 3 — SETTIMANA 6‑9: SOCIAL E VISIBILITÀ
-Descrivi l'avvio della presenza social strutturata:
-- Conversione account Instagram in profilo business (se non lo è).
-- Impostazione delle bio ottimizzate (vedi sezione Bio Proposte del report).
-- Calendario editoriale: 3 post/settimana distribuiti su lunedì (foto lavoro/servizio con caption), mercoledì (contenuto educativo o consiglio), venerdì (dietro le quinte, team, recensione cliente).
-- Format consigliati per il settore specifico (Reel timelapse per edilizia, prima/dopo per estetica, piatto del giorno per ristorazione, ecc.).
-- Hashtag strategy: 5 locali + 5 di settore + 3 branded.
-- Primo articolo blog (suggerisci titolo concreto legato a una keyword informativa).
-- Continuare raccolta recensioni: target cumulativo 30‑40 su Google.
+---
 
-FASE 4 — SETTIMANA 10‑12: ACCELERAZIONE E MISURAZIONE
-Descrivi il lancio delle campagne a pagamento e la misurazione:
-- Lancio Google Ads locale con il budget suggerito nella sezione Ads.
-- Lancio prima campagna Meta Ads con formato video/reel consigliato.
-- Installazione Meta Pixel sul sito.
-- Secondo articolo blog.
-- Analisi risultati: traffico sito (GA), posizionamento keyword (Search Console), crescita recensioni, engagement social, lead generati.
-- Definizione obiettivi per i prossimi 90 giorni sulla base dei dati raccolti.
+### PERCHÉ 90 GIORNI E NON 12 MESI
 
-CHIUDI il piano con un paragrafo motivazionale realistico: non promesse miracolose ma spiegazione che 90 giorni di lavoro costante cambiano la traiettoria digitale di un'attività locale. Menziona che DigIdentity può affiancare il cliente in ogni fase (senza forzare la vendita, solo un cenno).
+Apri con 2-3 paragrafi che spiegano la filosofia del piano. Novanta giorni sono abbastanza per vedere i primi risultati concreti e abbastanza corti da mantenere il focus senza disperdere le energie. Non si può migliorare tutto in una volta — questo piano è stato costruito scegliendo le azioni con il miglior rapporto tra impegno richiesto e impatto atteso per questa attività specifica in questo momento. Spiega che il digitale non funziona come un interruttore che si accende e illumina tutto subito — funziona come un investimento che cresce nel tempo, dove i risultati delle prime settimane diventano la base dei risultati dei mesi successivi.
 
-Usa SOLO i dati reali forniti. Se un dato non è disponibile, scrivi raccomandazioni generiche per il settore ma segnala che l'informazione specifica non era disponibile.
+---
 
-{dati_sezione}
+### MESE 1 — FONDAMENTA: SETTIMANE 1-4
+
+Scrivi 4-5 paragrafi dedicati alle azioni del primo mese. Queste devono essere le azioni con l'impatto più rapido e le fondamenta su cui costruire tutto il resto. Scegli le priorità basandoti sui problemi emersi dall'analisi — non scrivere azioni generiche ma azioni specifiche per questa attività con questi dati.
+
+Per ogni azione descrivi esattamente cosa fare in linguaggio che un imprenditore non tecnico capisce senza ambiguità, spiega perché questa azione specifica è prioritaria collegandola a un dato reale emerso dall'analisi (es. "la scheda Google ha solo 3 foto mentre i competitor ne hanno in media 40 — questo gap visivo costa clienti ogni giorno"), dai una stima realistica del tempo necessario distinguendo tra tempo di setup una tantum e tempo di manutenzione settimanale, e descrivi il risultato atteso nei successivi 30-60 giorni usando il condizionale.
+
+Le azioni tipiche del primo mese per un'attività con i problemi emersi dall'analisi includono il completamento della scheda Google Business se incompleta, la correzione degli errori tecnici prioritari del sito, l'attivazione di un sistema semplice e sostenibile per raccogliere recensioni, e l'allineamento delle informazioni di contatto su tutti i canali. Adatta queste priorità ai dati reali disponibili.
+
+---
+
+### MESE 2 — CRESCITA: SETTIMANE 5-8
+
+Scrivi 4-5 paragrafi dedicati alle azioni del secondo mese che costruiscono sulla base del primo e iniziano a lavorare sulla visibilità organica e sulla differenziazione competitiva.
+
+Per ogni azione usa la stessa struttura del mese 1 — cosa fare, perché questa attività specifica, quanto tempo, risultato atteso. Le azioni del secondo mese tipicamente riguardano il miglioramento dei contenuti del sito con pagine di servizio più ricche e keyword locali integrate in modo naturale nel testo, la definizione di una strategia social minima sostenibile con la piattaforma prioritaria per questo settore e questa città, l'inizio della costruzione di citazioni su directory di settore specifiche per questo tipo di attività, e se rilevante dai dati l'ottimizzazione per la visibilità sui motori AI attraverso contenuti strutturati e descrizioni complete.
+
+---
+
+### MESE 3 — CONSOLIDAMENTO: SETTIMANE 9-12
+
+Scrivi 3-4 paragrafi dedicati al terzo mese come fase di misurazione, consolidamento e pianificazione del passo successivo.
+
+Il primo paragrafo descrive come fare una revisione concreta dei risultati delle prime 8 settimane — cosa misurare, come misurarlo senza strumenti tecnici complessi, cosa significa un risultato positivo o negativo per questa attività specifica.
+
+Il secondo paragrafo descrive le azioni di consolidamento del terzo mese — rispondere alle recensioni in modo sistematico, aggiornare le foto della scheda Google con nuovi lavori o servizi, pubblicare almeno 2-3 contenuti social di qualità documentando attività reali dell'impresa.
+
+Il terzo paragrafo affronta la decisione sull'eventuale investimento pubblicitario basandosi sui dati dei primi 60 giorni — se la base organica è migliorata, se le recensioni sono aumentate, se il sito riceve più visite, allora il momento per considerare Google Ads o Meta Ads potrebbe essere arrivato.
+
+Il quarto paragrafo pianifica il trimestre successivo identificando i prossimi obiettivi da perseguire dopo i 90 giorni, collegandoli alla visione a lungo termine della presenza digitale dell'attività.
+
+---
+
+### COME MISURARE I PROGRESSI SENZA DIVENTARE UN ANALISTA
+
+Chiudi con 2-3 paragrafi su come l'imprenditore può misurare da solo i progressi in modo semplice e senza strumenti tecnici complessi. Spiega come verificare la propria posizione su Google per le keyword principali cercando dal browser in modalità anonima, come monitorare il numero di recensioni Google ogni due settimane contandole manualmente, come confrontare le chiamate ricevute con il mese precedente tenendo un semplice conteggio, come leggere il dato principale di Google Analytics se installato — le sessioni mensili — senza perdersi nelle altre metriche.
+
+Concludi spiegando che migliorare la presenza digitale è un processo graduale, non un interruttore: i risultati arrivano tra i 60 e i 180 giorni per le azioni organiche. Chi si aspetta risultati immediati spesso abbandona prima che l'investimento cominci a rendere — e questo è il principale motivo per cui molte attività locali rimangono invisibili online nonostante abbiano un servizio eccellente.
+
+---
+
+Lunghezza totale: 1600-2000 parole.
+Output: prosa pura in italiano, nessun elenco puntato, nessun HTML.
+Ogni azione deve essere specifica per questa attività, non generica.
+Usa solo i dati presenti in {dati_sezione}. Se manca un dato, dichiaralo esplicitamente.

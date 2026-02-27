@@ -113,3 +113,7 @@ __pycache__/
 # Reports generati
 reports/
 *.pdf
+*.bak
+test_*.html
+*.bak*
+test_*.html

@@ -1,6 +1,7 @@
 """DigIdentity Engine — API per download PDF e visualizzazione HTML report."""
 
 import logging
+import uuid
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
@@ -26,6 +27,12 @@ async def view_premium_report(lead_id: str):
             return HTMLResponse(content=html_content)
 
     # Se non esiste l'HTML, verifica che il lead esista
+    # Valida UUID prima di interrogare Supabase
+    try:
+        uuid.UUID(lead_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Report non trovato")
+
     db = get_supabase()
     try:
         result = db.table("leads").select("id,nome_azienda,status").eq("id", lead_id).execute()
@@ -58,6 +65,12 @@ async def view_free_report(lead_id: str):
         if html_path.exists():
             html_content = html_path.read_text(encoding="utf-8")
             return HTMLResponse(content=html_content)
+
+    # Valida UUID prima di interrogare Supabase
+    try:
+        uuid.UUID(lead_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Report non trovato")
 
     db = get_supabase()
     try:

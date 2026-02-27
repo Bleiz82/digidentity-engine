@@ -13,18 +13,18 @@ CLAUDE_MODEL_PREMIUM = "claude-opus-4-6"
 PROMPTS_DIR = Path(__file__).parent.parent / "directives" / "prompts" / "premium"
 
 SECTIONS = [
-    {"id": "01_apertura_dashboard", "max_tokens": 3500, "model": "standard"},
-    {"id": "02_sito_web", "max_tokens": 5000, "model": "standard"},
+    {"id": "01_apertura_dashboard", "max_tokens": 4000, "model": "standard"},
+    {"id": "02_sito_web", "max_tokens": 6000, "model": "standard"},
     {"id": "03_pagespeed_seo", "max_tokens": 6000, "model": "standard"},
     {"id": "04_keyword", "max_tokens": 5000, "model": "standard"},
-    {"id": "05_google_business_reputazione", "max_tokens": 6000, "model": "standard"},
-    {"id": "06_competitor", "max_tokens": 6000, "model": "standard"},
+    {"id": "05_google_business_reputazione", "max_tokens": 7000, "model": "standard"},
+    {"id": "06_competitor", "max_tokens": 7000, "model": "standard"},
     {"id": "07_social_bio", "max_tokens": 6000, "model": "standard"},
     {"id": "08_branding_ai", "max_tokens": 6000, "model": "standard"},
-    {"id": "geo_ai_visibility", "max_tokens": 4000, "model": "standard"},
-    {"id": "09_ads", "max_tokens": 4500, "model": "standard"},
-    {"id": "10_piano_90_giorni", "max_tokens": 8000, "model": "premium"},
-    {"id": "11_relazione_punteggio", "max_tokens": 6000, "model": "premium"},
+    {"id": "geo_ai_visibility", "max_tokens": 4500, "model": "standard"},
+    {"id": "09_ads", "max_tokens": 5000, "model": "standard"},
+    {"id": "10_piano_90_giorni", "max_tokens": 9000, "model": "standard"},
+    {"id": "11_relazione_punteggio", "max_tokens": 6000, "model": "standard"},
 ]
 
 MAX_RETRIES = 3

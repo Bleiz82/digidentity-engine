@@ -795,6 +795,17 @@ strong { color: var(--di-white); font-weight: 600; }
       </div>
       <div class="section-score-label">Punteggio SEO: <strong>{score_seo}/100</strong></div>
     </div>
+    <!-- PageSpeed Rings -->
+    <div class="ps-grid" style="margin:1.5rem 0;">
+      <div class="ps-device">
+        <div class="ps-device-label">Mobile</div>
+        <div class="ps-rings-row">{ps_mobile_rings}</div>
+      </div>
+      <div class="ps-device">
+        <div class="ps-device-label">Desktop</div>
+        <div class="ps-rings-row">{ps_desktop_rings}</div>
+      </div>
+    </div>
     <div class="section-content">
       {sezione_03}
     </div>
@@ -850,7 +861,7 @@ strong { color: var(--di-white); font-weight: 600; }
 <!-- SEZ 6: COMPETITOR -->
 <section class="section" id="competitor">
   <div class="container">
-    <div class="section-number">Sezione 6 di 12</div>
+    <div class="section-number">Sezione 6 di 11</div>
     <h2>Analisi Competitor</h2>
     <!-- GRAFICO COMPETITOR -->
     <div style="margin: 1.5rem 0; max-width: 600px;">
@@ -903,7 +914,7 @@ strong { color: var(--di-white); font-weight: 600; }
 <!-- SEZ GEO: VISIBILITÀ AI -->
 <section class="section section-alt" id="geo">
   <div class="container">
-    <div class="section-number">Sezione 9 di 12</div>
+    <div class="section-number">Sezione 9 di 11</div>
     <h2>Visibilità sui Motori AI</h2>
     <div class="section-score">
       <div class="mini-ring" id="ring-geo">
@@ -925,26 +936,7 @@ strong { color: var(--di-white); font-weight: 600; }
 
     <!-- GEO COMPONENTI -->
     <div style="margin: 1.5rem 0;" id="geo-components">
-      <div class="compare-bar">
-        <span class="compare-label">Accessibilità AI</span>
-        <div class="compare-track"><div class="compare-fill progress-high" id="geo-bar-access" style="width:0%"></div></div>
-        <span class="compare-value" id="geo-val-access" style="color:#00c853">—</span>
-      </div>
-      <div class="compare-bar">
-        <span class="compare-label">Struttura Info</span>
-        <div class="compare-track"><div class="compare-fill progress-mid" id="geo-bar-struct" style="width:0%"></div></div>
-        <span class="compare-value" id="geo-val-struct" style="color:#f5c518">—</span>
-      </div>
-      <div class="compare-bar">
-        <span class="compare-label">Citabilità</span>
-        <div class="compare-track"><div class="compare-fill progress-low" id="geo-bar-cite" style="width:0%"></div></div>
-        <span class="compare-value" id="geo-val-cite" style="color:#F90100">—</span>
-      </div>
-      <div class="compare-bar">
-        <span class="compare-label">Fonti Autorevoli</span>
-        <div class="compare-track"><div class="compare-fill progress-mid" id="geo-bar-auth" style="width:0%"></div></div>
-        <span class="compare-value" id="geo-val-auth" style="color:#f5c518">—</span>
-      </div>
+      {geo_sub_bars}
     </div>
 
     <div class="section-content">
@@ -956,7 +948,7 @@ strong { color: var(--di-white); font-weight: 600; }
 <!-- SEZ 10: ADS -->
 <section class="section" id="ads">
   <div class="container">
-    <div class="section-number">Sezione 10 di 12</div>
+    <div class="section-number">Sezione 10 di 11</div>
     <h2>Piano Ads Suggerito</h2>
     <div class="section-content">
       {sezione_09}
@@ -967,7 +959,7 @@ strong { color: var(--di-white); font-weight: 600; }
 <!-- SEZ 11: PIANO 90 GG -->
 <section class="section section-alt" id="piano90">
   <div class="container">
-    <div class="section-number">Sezione 11 di 12</div>
+    <div class="section-number">Sezione 11 di 11</div>
     <h2>Piano Operativo 90 Giorni</h2>
     <!-- TIMELINE 90 GIORNI -->
     <div style="margin: 1.5rem 0;">
@@ -1057,7 +1049,7 @@ strong { color: var(--di-white); font-weight: 600; }
   <img src="https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_dark_removebg.png" alt="DigIdentity Agency" style="height: 40px; margin-bottom: 1rem; opacity: 0.7;">
   <div class="footer-text">
     Diagnosi generata da DigIdentity Engine&trade;<br>
-    Copyright 2026 DigIdentity Agency — Proprieta di Stefano Ferrante<br>
+    Copyright 2026 DigIdentity Agency — Stefano Corda<br>
     <a href="https://www.digidentityagency.it" style="color: var(--di-gray-600);">www.digidentityagency.it</a><br>
     Via Dettori 3, 09020 Samatzai (SU) — info@digidentityagency.it
   </div>

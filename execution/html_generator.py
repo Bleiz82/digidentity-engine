@@ -279,6 +279,61 @@ def _split_section_08(text: str) -> tuple:
     return text, ""
 
 
+
+
+def _build_geo_sub_bars(scraping_data: dict) -> str:
+    """Costruisce le barre GEO sub-indicatori con dati reali o fallback stimato."""
+    geo = scraping_data.get("geo", {})
+    geo_score_obj = geo.get("geo_score", {})
+    total = int(geo_score_obj.get("score", 0) or 0)
+
+    # Prova a leggere sub-scores se presenti (scraper avanzato)
+    sub = geo_score_obj.get("breakdown", {})
+    accessibility = int(sub.get("accessibility", 0) or 0)
+    structure     = int(sub.get("structure", 0) or 0)
+    citability    = int(sub.get("citability", 0) or 0)
+    authority     = int(sub.get("authority", 0) or 0)
+
+    # Fallback: stima proporzionale dal total se breakdown mancante
+    if not any([accessibility, structure, citability, authority]) and total > 0:
+        accessibility = min(100, int(total * 1.2))
+        structure     = min(100, int(total * 1.0))
+        citability    = min(100, int(total * 0.7))
+        authority     = min(100, int(total * 0.9))
+
+    def _bar_color(v):
+        if v >= 70: return ("#00c853", "progress-high")
+        if v >= 40: return ("#f5c518", "progress-mid")
+        return ("#F90100", "progress-low")
+
+    def _bar(label, val, bar_id, val_id):
+        color, cls = _bar_color(val)
+        display = f"{val}%" if val > 0 else "—"
+        return f'''      <div class="compare-bar">
+        <span class="compare-label">{label}</span>
+        <div class="compare-track"><div class="compare-fill {cls}" id="{bar_id}" style="width:{val}%"></div></div>
+        <span class="compare-value" id="{val_id}" style="color:{color}">{display}</span>
+      </div>'''
+
+    return "\n".join([
+        _bar("Accessibilita AI", accessibility, "geo-bar-access", "geo-val-access"),
+        _bar("Struttura Info",   structure,     "geo-bar-struct", "geo-val-struct"),
+        _bar("Citabilita",       citability,    "geo-bar-cite",   "geo-val-cite"),
+        _bar("Fonti Autorevoli", authority,     "geo-bar-auth",   "geo-val-auth"),
+    ])
+
+
+def _build_competitor_js(scraping_data: dict) -> str:
+    """Costruisce la stringa JS con i dati competitor per il grafico premium."""
+    competitors = scraping_data.get("competitors", [])
+    if not competitors:
+        return "const compLabels=[]; const compReviews=[]; const compRatings=[];"
+    labels = json.dumps([str(c.get("name", "N/D"))[:20] for c in competitors[:5]])
+    reviews = json.dumps([int(c.get("reviews_count", 0) or 0) for c in competitors[:5]])
+    ratings = json.dumps([float(c.get("rating", 0) or 0) for c in competitors[:5]])
+    return f"const compLabels={labels}; const compReviews={reviews}; const compRatings={ratings};"
+
+
 def generate_premium_html(
     ctx: dict,
     sections: list,
@@ -359,6 +414,30 @@ def generate_premium_html(
         "finalScore": punteggio,
     }
 
+    # PageSpeed rings (stessa logica del FREE)
+    ps = ctx.get("scraping_data", {}).get("pagespeed", {})
+    ps_mobile = ps.get("mobile", {}).get("scores", {})
+    ps_desktop = ps.get("desktop", {}).get("scores", {})
+    ps_labels = [
+        ("performance", "Performance"),
+        ("accessibility", "Accessibilita"),
+        ("best-practices", "Best Practices"),
+        ("seo", "SEO"),
+    ]
+    def _norm_ps(v):
+        if v is None: return 0
+        v = float(v)
+        return int(v * 100) if v <= 1 else int(v)
+
+    ps_mobile_rings = "".join(
+        _ps_ring_svg(_norm_ps(ps_mobile.get(k, 0)), lbl)
+        for k, lbl in ps_labels
+    )
+    ps_desktop_rings = "".join(
+        _ps_ring_svg(_norm_ps(ps_desktop.get(k, 0)), lbl)
+        for k, lbl in ps_labels
+    )
+
     # Costruisci il dict di sostituzione
     replacements = {
         "{nome_attivita}": ctx.get("nome_attivita", ""),
@@ -400,6 +479,9 @@ def generate_premium_html(
         "{score_facebook}": str(score_facebook),
         "{color_facebook}": _score_color(score_facebook),
         "{dashoffset_facebook}": str(_dashoffset(score_facebook)),
+        "{score_instagram}": str(score_instagram),
+        "{color_instagram}": _score_color(score_instagram),
+        "{dashoffset_instagram}": str(_dashoffset(score_instagram)),
         "{score_reputazione}": str(score_reputazione),
         "{color_reputazione}": _score_color(score_reputazione),
         "{dashoffset_reputazione}": str(_dashoffset(score_reputazione)),
@@ -408,6 +490,12 @@ def generate_premium_html(
         "{color_geo}": _score_color(scores.get("score_geo", scores.get("geo", 0))),
         "{dashoffset_geo}": str(_dashoffset(scores.get("score_geo", scores.get("geo", 0)))),
         "{sezione_geo}": _markdown_to_html(section_map.get("geo_ai_visibility", "")),
+        # Competitor data per grafico JS
+        "{competitor_data_js}": _build_competitor_js(ctx.get("scraping_data", {})),
+        "{geo_sub_bars}": _build_geo_sub_bars(ctx.get("scraping_data", {})),
+        # PageSpeed rings
+        "{ps_mobile_rings}": ps_mobile_rings,
+        "{ps_desktop_rings}": ps_desktop_rings,
         # JS score map
         "{score_map_json}": json.dumps(score_map),
     }
@@ -735,59 +823,6 @@ def generate_free_html(
         "{geo_level}": geo_level,
         "{geo_desc}": geo_desc,
         "{geo_wins_html}": geo_wins_html,
-    }
-
-    html = template
-    for placeholder, value in replacements.items():
-        html = html.replace(placeholder, str(value))
-
-    logger.info(f"HTML free generato: {len(html)} caratteri per {company_name}")
-    return html
-
-
-    # Data
-    MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno",
-            "luglio","agosto","settembre","ottobre","novembre","dicembre"]
-    now = datetime.now()
-    data_odierna = f"{now.day} {MESI[now.month-1]} {now.year}"
-
-    # Split report in sezioni
-    free_sections = _split_free_sections(report_markdown)
-
-    # Converti in HTML
-    sez_01 = _markdown_to_html(free_sections.get('sezione_01', ''))
-    sez_02 = _markdown_to_html(free_sections.get('sezione_02', ''))
-    sez_03 = _markdown_to_html(free_sections.get('sezione_03', ''))
-    sez_04 = _markdown_to_html(free_sections.get('sezione_04', ''))
-    sez_05 = _markdown_to_html(free_sections.get('sezione_05', ''))
-
-    # Score map per JS
-    score_map = {
-        "mainScore": punteggio,
-        "dashScore": punteggio,
-        "finalScore": punteggio,
-    }
-
-    # Sostituzioni
-    replacements = {
-        "{nome_attivita}": company_name,
-        "{settore}": sector or "Attivita Locale",
-        "{citta}": city or "",
-        "{punteggio_globale}": str(punteggio),
-        "{score_deg}": str(score_deg),
-        "{data_odierna}": data_odierna,
-        "{dashboard_cards}": dashboard_cards,
-        "{verdict_class}": verdict_class,
-        "{verdict_text}": verdict_text,
-        "{verdict_description}": verdict_description,
-        "{checkout_url}": checkout_url or "#",
-        "{pdf_download_url}": f"/api/reports/diagnosi/free/{lead_id}/pdf" if lead_id else "#",
-        "{sezione_01}": sez_01,
-        "{sezione_02}": sez_02,
-        "{sezione_03}": sez_03,
-        "{sezione_04}": sez_04,
-        "{sezione_05}": sez_05,
-        "{score_map_json}": json.dumps(score_map),
     }
 
     html = template

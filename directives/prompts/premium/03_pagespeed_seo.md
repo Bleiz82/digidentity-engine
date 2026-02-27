@@ -1,33 +1,53 @@
 Scrivi DUE sezioni consecutive per la Diagnosi Digitale Premium.
 Separa le due sezioni con "---" su una riga a sé.
 
-## SEZIONE 1: PERFORMANCE E VELOCITÀ — 600-800 parole
+## SEZIONE 1: PERFORMANCE E VELOCITÀ — 700-900 parole
 
-Apri con una metafora sulla velocità legata al settore dell'attività (il tempo di attesa quando chiami per un appuntamento, il tempo di risposta quando chiedi un preventivo, l'attesa al bancone).
+Apri con una metafora sulla velocità specifica per il settore dell'attività. Non generica — concreta e memorabile. Per un'impresa edile: il tempo che passa tra quando un cliente chiama per un preventivo e quando riceve risposta. Per un ristorante: il tempo di attesa tra quando il cliente si siede e quando arriva il menu. La metafora deve spiegare perché la velocità del sito è esattamente lo stesso tipo di problema.
 
-Poi analizza ogni punteggio:
+### Mobile — il banco di prova più importante
+Analizza il punteggio performance mobile con questa scala di tono:
+- Sotto 30: emergenza critica — descrivi l'esperienza fisica di aprire un sito così lento da smartphone, i secondi che passano, il momento in cui il cliente chiude e apre il sito del competitor
+- 30-49: problema serio — spiega quanti clienti statisticamente abbandonano un sito che impiega più di 3 secondi (53% secondo Google) e traduci questa percentuale in clienti persi ogni mese stimati
+- 50-69: insufficiente — spiega che la soglia di Google per "buono" è 90 e cosa significa essere sotto
+- 70-89: sufficiente ma migliorabile — identifica i margini di ottimizzazione
+- 90+: ottimo — spiega come mantenerlo
 
-MOBILE — il punteggio performance. Calibra il tono sull'urgenza: sotto 40 è un'emergenza critica, 40-55 è un problema serio, 55-70 è insufficiente ma non grave, 70-85 è sufficiente, sopra 85 è buono. Spiega che oltre il 70% delle ricerche locali avviene da mobile e cosa significa un punteggio basso in termini di clienti persi.
+Cita i punteggi reali di accessibilità mobile, best practices mobile, SEO mobile con un commento breve per ognuno.
 
-DESKTOP — il punteggio performance. Confronta con mobile: una differenza grande (oltre 15 punti) indica problemi di ottimizzazione immagini e risorse.
+### Desktop — il confronto
+Analizza il punteggio performance desktop. Confronta sempre con mobile: se la differenza è maggiore di 20 punti, spiega che questo indica problemi di ottimizzazione delle risorse che penalizzano i dispositivi con connessioni più lente. Cita i punteggi reali di accessibilità desktop, best practices desktop, SEO desktop.
 
-SEO TECNICO, ACCESSIBILITÀ, BEST PRACTICES — un commento breve per ciascuno, spiegando cosa significa il punteggio nella pratica.
+### Le opportunità di miglioramento
+Basandoti sui dati delle opportunities di PageSpeed, elenca le 3-4 ottimizzazioni con il maggiore impatto stimato. Per ognuna:
+- Nome in linguaggio semplice (non "Eliminate render-blocking resources" ma "Rimuovere i file che bloccano il caricamento della pagina")
+- Spiegazione in una frase con metafora concreta
+- Impatto stimato sul punteggio performance
+- Difficoltà di implementazione: bassa, media, alta
 
-Chiudi con "Cosa fare — in ordine di priorità": 3-4 azioni concrete (immagini WebP, lazy loading, caching, minificazione CSS/JS). Per ogni azione spiega cos'è in parole semplici e stima l'impatto sul punteggio.
+---
 
-## SEZIONE 2: ANALISI SEO LOCALE E POSIZIONAMENTO — 500-700 parole
+## SEZIONE 2: POSIZIONAMENTO SU GOOGLE — 600-800 parole
 
-Apri spiegando cos'è la SEO locale in 2-3 frasi con una metafora ("far sì che Google ti mostri quando le persone cercano quello che fai").
+Apri spiegando cos'è il posizionamento locale su Google in 3 frasi con una metafora geografica concreta — come avere o non avere il proprio negozio sul corso principale della città versus in una via laterale senza insegna.
 
-Poi analizza:
+### Quando cercano il tuo nome
+Analizza la brand query position. Se è posizione 1: è il minimo sindacale, spiega che chiunque cerchi il nome esatto dell'attività la trova, ma questo non basta perché i clienti nuovi non conoscono ancora il nome. Se non è posizione 1: è un problema grave, spiega l'impatto.
 
-BRAND QUERY — la posizione quando qualcuno cerca il nome esatto dell'attività. Se è posizione 1: normale e positivo.
+### Quando cercano quello che fai
+Questa è la sezione più importante. Analizza la sector_local_query position con questa scala:
+- Posizione 1-3: ottimo — spiega che questi 3 risultati prendono circa l'80% dei click totali
+- Posizione 4-7: nella zona d'ombra — spiega che la maggior parte degli utenti non scorre oltre i primi 3-4 risultati su mobile
+- Posizione 8-20: quasi invisibile — traduci in clienti persi ogni mese con una stima realistica basata sul settore
+- Non trovato/null: assente — spiega cosa significa non apparire per la ricerca principale del settore nella propria città
 
-SECTOR LOCAL QUERY — la posizione per la ricerca generica di settore + città. Questa è LA PIÙ IMPORTANTE. Se la posizione è maggiore di 3, spiega che i primi 3 risultati prendono circa l'80% dei click. Rendi concreto il significato: "essere in nona posizione significa che otto aziende appaiono prima di te".
+Analizza anche la sector_regional_query position. Se null, quantifica il bacino di utenza perso a livello provinciale/regionale.
 
-SECTOR REGIONAL QUERY — se è null, spiega che l'attività non appare per ricerche regionali più ampie e quantifica il bacino di utenza perso.
+### Le pagine che Google ha trovato
+Analizza il numero di pagine indicizzate. Spiega che ogni pagina è una potenziale porta di ingresso per i clienti. Calcola quante pagine per servizio offerto ha mediamente l'attività. Se sono meno di 10 per un'attività con più servizi, spiega il problema con concretezza.
 
-PAGINE INDICIZZATE — quante sono, sono abbastanza? Ogni servizio offerto è un'opportunità di pagina che si posiziona su Google.
+### Le citazioni online
+Analizza le citations trovate. Spiega che la presenza su directory e portali di settore è un segnale di fiducia per Google. Per ogni directory trovata nei dati cita il nome. Suggerisci 4-5 directory specifiche per il settore dell'attività dove l'attività dovrebbe essere presente.
 
 DATI:
 {dati_sezione}

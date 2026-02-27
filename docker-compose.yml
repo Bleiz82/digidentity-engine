@@ -1,7 +1,6 @@
 # DigIdentity Engine — Docker Compose
 # Servizi: FastAPI backend, Celery worker, Redis
 
-version: "3.8"
 
 services:
   # ---- Redis (Message Broker + Cache) ----

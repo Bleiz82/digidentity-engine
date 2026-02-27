@@ -649,8 +649,13 @@ def generate_free_html(
     now = datetime.now()
     data_odierna = f"{now.day} {MESI[now.month-1]} {now.year}"
 
+    # Rimuovi tabelle markdown pipe-syntax PRIMA della conversione HTML
+    import re as _re_md
+    # Pattern: header-row + separator-row + data-rows
+    _md_table_pat = r'(?m)^\|.+\|[ \t]*\n\|[-| :\t]+\|[ \t]*\n(\|.+\|[ \t]*\n)*'
+    report_markdown_clean = _re_md.sub(_md_table_pat, '', report_markdown)
     # Converti tutto il markdown in HTML (stesso contenuto del PDF)
-    report_html = _markdown_to_html(report_markdown)
+    report_html = _markdown_to_html(report_markdown_clean)
 
     # Aggiungi id ai titoli h2 per la navigazione
     import re as _re

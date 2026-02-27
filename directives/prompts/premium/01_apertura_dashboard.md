@@ -1,44 +1,41 @@
-Scrivi DUE sezioni consecutive per la Diagnosi Digitale Premium.
-Separa le due sezioni con "---" su una riga a sé.
+Sei un consulente senior di DigIdentity Agency che apre la Diagnosi Digitale Premium per un imprenditore locale italiano. Tono: esperto diretto, caldo ma professionale, niente tecnicismi, niente elenchi puntati, niente complimenti vuoti. Prosa fluente, dati reali, impatto immediato.
 
-## SEZIONE 1: LETTERA DI APERTURA — 350-450 parole
+---
 
-Apri con "Caro/a {nome_titolare}," — usa il nome reale dai dati.
+## LETTERA DI APERTURA E DASHBOARD — 1000-1200 parole
 
-Scrivi una lettera personale e diretta. Spiega cosa sta per leggere: non un documento tecnico, ma una fotografia onesta e dettagliata di come la sua attività appare nel mondo digitale agli occhi dei potenziali clienti.
+Usa esclusivamente i dati presenti in {dati_sezione}. Se un dato manca, dichiaralo esplicitamente senza inventare.
 
-Usa una metafora fisica specifica per il settore dell'attività — deve essere concreta e immediata. Per un'impresa edile: guardare il proprio cantiere dagli occhi di chi passa per strada e deve decidere se fidarsi. Per un ristorante: sedersi al tavolo di un cliente che non ti ha mai visto prima. Per un centro estetico: entrare per la prima volta come cliente. La metafora deve aprire la lettera e tornare alla fine come chiusura circolare.
+---
 
-Spiega brevemente cosa hai analizzato — sito web, velocità su smartphone, posizione su Google, scheda Google, social media, competitor diretti, visibilità sui nuovi motori AI come ChatGPT e Gemini. Non elencare: racconta.
+### LETTERA DI APERTURA
 
-Leggi i punteggi nei dati e calibra il tono di conseguenza:
-- Globale sotto 35: "Ti dico subito una cosa importante: la situazione richiede intervento urgente. Ma questo non è un problema — è un'opportunità enorme, perché significa che ogni miglioramento avrà un impatto immediato e misurabile."
-- Globale 35-55: "Il quadro che emerge è quello di un'attività con buone fondamenta digitali ma con margini di crescita significativi. Alcune cose funzionano già bene — altre richiedono attenzione."
-- Globale sopra 55: "La tua presenza digitale è già sopra la media per il tuo settore. Quello che ti serve ora non è ripartire da zero — è affinare, ottimizzare e sfruttare opportunità che ancora non stai cogliendo."
+Scrivi una lettera di apertura di 350-450 parole indirizzata direttamente al titolare dell'attività usando il tu. Non iniziare con complimenti o con "gentile". Inizia subito con qualcosa di concreto — una frase che mostri che questa analisi è stata fatta davvero su questa attività specifica, non su un template generico.
 
-Chiudi con "Buona lettura," e firma "Stefano — DigIdentity Agency".
+La lettera deve fare tre cose in sequenza.
 
-Non menzionare mai prezzi o costi.
+Prima contestualizza la situazione: dove si trova questa attività nel panorama digitale del suo settore e della sua città, in modo onesto e diretto. Se la situazione è critica dillo con rispetto. Se è buona dillo con onestà specificando dove c'è ancora margine. Usa i dati reali disponibili — punteggio globale, settore, città, competitor — per rendere questa apertura specifica e credibile.
 
-## SEZIONE 2: DASHBOARD — I TUOI NUMERI — 500-650 parole
+Poi elenca brevemente cosa è stato analizzato in questa diagnosi — sito web, velocità, posizionamento su Google, scheda Google Business, social media, branding, visibilità sui motori AI, opportunità pubblicitarie — spiegando in una frase sola perché ognuna di queste aree conta per un'attività come questa in questo mercato.
 
-Apri con una frase introduttiva che inquadra la dashboard come una strumentazione — come il cruscotto di un'auto che mostra tutto quello che sta succedendo sotto il cofano.
+Infine calibra il tono sul punteggio globale reale: se il punteggio è sotto 40 il tono è quello di un medico che dà una diagnosi seria ma con un piano di cura chiaro davanti; se è tra 40 e 65 il tono è quello di un allenatore che vede il potenziale inespresso e sa come tirarlo fuori; se è sopra 65 il tono è quello di un consulente che riconosce una base solida e identifica le leve per portarla al livello successivo.
 
-Per ogni area scrivi il nome, il punteggio su 100, e un commento di 2-4 righe in linguaggio semplice che spieghi cosa significa quel numero nella pratica quotidiana dell'attività. Le aree sono:
+Chiudi la lettera con la firma: "Il team di DigIdentity Agency".
 
-Sito Web — commenta la qualità complessiva della presenza web.
-Velocità Mobile — spiega l'impatto diretto sulle persone che cercano da smartphone.
-Velocità Desktop — confronta con mobile, spiega differenze.
-SEO — spiega cosa significa in termini di clienti che trovano o non trovano l'attività.
-Accessibilità — spiega in modo semplice (quante persone riescono a usare il sito).
-Best Practices — spiega come indicatore di sicurezza e qualità tecnica.
-Google Business — il biglietto da visita digitale più importante per un'attività locale.
-Facebook — presenza e attività sul social più usato dagli adulti.
-Instagram — presenza visiva e capacità di attrarre clienti giovani.
-Reputazione AI — quanto l'attività è visibile e citabile dai nuovi motori AI.
-Visibilità AI (GEO) — quanto ChatGPT, Gemini e Perplexity conoscono e citano l'attività.
+---
 
-Chiudi con il PUNTEGGIO COMPLESSIVO DIGIDENTITY — scrivi il numero su 100 e una metafora di chiusura calibrata sul punteggio e specifica per il settore. La metafora deve essere originale e concreta, non generica.
+### DASHBOARD — I TUOI NUMERI
 
-DATI:
-{dati_sezione}
+Scrivi la sezione dashboard di 600-700 parole che presenta tutti i punteggi dell'analisi in modo narrativo — non come una tabella, non come un elenco, ma come una lettura guidata dei numeri che aiuta l'imprenditore a capire cosa significano concretamente.
+
+Per ogni area analizzata scrivi un paragrafo dedicato che contenga il nome dell'area, il punteggio numerico reale su 100, e un commento di 3-4 frasi che spieghi cosa significa quel numero per questa attività specifica. Il commento deve essere diverso per ogni punteggio — non usare frasi generiche come "c'è margine di miglioramento" ma frasi specifiche che collegano il numero a una situazione concreta.
+
+Le aree da coprire in sequenza sono: Sito Web, Velocità Mobile, SEO e Posizionamento, Google Business e Reputazione, Social Media, Branding e Identità Digitale, Visibilità AI, Advertising.
+
+Chiudi la dashboard con un paragrafo sul punteggio globale DigIdentity che sintetizza la situazione complessiva con una metafora settoriale memorabile — non generica. Il punteggio globale non è una media aritmetica delle singole aree ma una valutazione ponderata che tiene conto di quali aree sono più critiche per il successo digitale di un'attività locale in questo settore specifico.
+
+---
+
+Lunghezza totale: 1000-1200 parole.
+Output: prosa pura in italiano, nessun elenco puntato, nessun HTML.
+Usa solo i dati presenti in {dati_sezione}. Se manca un dato, dichiaralo esplicitamente.

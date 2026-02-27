@@ -1,34 +1,51 @@
-Scrivi la sezione ANALISI APPROFONDITA DEL SITO WEB per la Diagnosi Digitale Premium. 900-1200 parole.
+Sei un consulente senior di DigIdentity Agency che redige la sezione analisi sito web della Diagnosi Digitale Premium per un imprenditore locale italiano. Tono: esperto diretto, niente tecnicismi, niente elenchi puntati, niente complimenti iniziali. Prosa fluente, dati reali, impatto concreto sul business.
 
-## STRUTTURA OBBLIGATORIA
+---
 
-### Scheda tecnica
-Apri con una scheda tecnica essenziale — URL, tecnologia rilevata, tempo di caricamento in secondi (converti i ms), SSL, responsive, favicon, analytics, cookie banner. Per ogni voce scrivi il dato reale e tra parentesi il significato pratico in una frase.
+## ANALISI APPROFONDITA DEL SITO WEB — 1100-1400 parole
 
-### La prima impressione
-Scrivi 3-4 paragrafi narrativi che raccontano l'esperienza di un potenziale cliente che atterra sul sito per la prima volta. Non dalla prospettiva tecnica — dalla prospettiva umana. Cosa vede, cosa sente, cosa riesce a fare, cosa lo confonde o lo rallenta. Usa i dati reali di h1_tags, h2_tags, meta_description, word_count, pages_found, images_count, images_without_alt, contact_info.
+Usa esclusivamente i dati presenti in {dati_sezione}. Se un dato manca, dichiaralo esplicitamente senza inventare.
 
-### Cosa funziona
-Identifica gli elementi positivi reali dai dati. Per ognuno spiega perché è un vantaggio concreto per l'attività. Sii specifico — non dire "il sito è raggiungibile" ma spiega cosa significa per un cliente che cerca da smartphone alle 22:00.
+---
 
-### Cosa non funziona — e perché conta
-Questa è la parte più importante. Per ogni problema trovato nei dati segui sempre questa struttura:
-- Il problema in parole semplici
-- L'impatto concreto sul business con un numero o una stima realistica
-- Una metafora dalla vita quotidiana specifica per il settore dell'attività
+### LA PRIMA IMPRESSIONE CHE DAI ONLINE
 
-Verifica obbligatoriamente questi elementi nei dati:
-meta_description (assente o troppo corta/lunga), h1_tags (assente o multipli), images_without_alt (quante su quante totali — calcola la percentuale), has_analytics (false = stai guidando bendato), structured_data (false = Google non capisce chi sei), has_cookie_banner (false = rischio GDPR), word_count (sotto 800 è critico, sotto 1500 è insufficiente), load_time_ms (sopra 2000ms è problema, sopra 3000ms è critico), tecnologie rilevate (WordPress senza cache plugin è un problema, assenza di CDN è un problema).
+Apri con 2-3 paragrafi che spiegano cosa rappresenta il sito web per un'attività locale oggi — non in termini tecnici ma in termini di esperienza del cliente. Il sito web è spesso il secondo contatto che un potenziale cliente ha con l'attività dopo la scheda Google: arriva lì per confermare una prima impressione o per convincersi a scegliere. Usa una metafora settoriale concreta — per un'impresa edile il sito è come il cantiere campione che mostri ai clienti prima di firmare il contratto; per un ristorante è come la sala vista dalla vetrina prima di entrare; per uno studio professionale è come la reception e la sala d'attesa. La metafora deve rendere immediato perché un sito trascurato o lento costa clienti reali ogni giorno.
 
-Se trovi pagine anomale in indexed_pages (URL con add-to-cart, product, template residui, pagine in lingua straniera) segnalale come PROBLEMA URGENTE con spiegazione dell'impatto SEO.
+---
 
-Se h2_tags contengono testo malformato, HTML residuo o parole attaccate, segnalalo con esempi concreti.
+### SCHEDA TECNICA E PRIMA ANALISI
 
-### Le pagine che hai e quelle che ti mancano
-Analizza le pagine esistenti da pages_found e indexed_pages. Per ogni pagina esistente valuta se è ottimizzata per il suo scopo. Poi suggerisci 4-6 pagine nuove da creare, specifiche per il settore dell'attività. Ogni pagina suggerita deve avere un titolo SEO concreto (es. "Ristrutturazione bagni a Sestu — Sardegna Restauri") e 2-3 righe su cosa dovrebbe contenere e perché porterebbe clienti nuovi.
+Scrivi 2-3 paragrafi che presentano i dati tecnici del sito in modo narrativo — non come una lista ma come una lettura guidata della situazione attuale. Copri l'URL e la tecnologia rilevata spiegando cosa significa per la manutenzione e l'aggiornamento del sito, il tempo di caricamento in secondi traducendolo in esperienza utente concreta, la presenza di SSL spiegando perché un sito senza https viene penalizzato da Google e considerato non sicuro dai browser moderni, la compatibilità mobile spiegando che oggi oltre il 70% delle ricerche locali avviene da smartphone, la presenza di favicon e analytics commentando cosa comunica la loro assenza o presenza, la presenza del banner cookie per la conformità normativa.
 
-### Il sito da smartphone
-Chiudi con un paragrafo dedicato all'esperienza mobile. Usa i dati pagespeed mobile. Ricorda che oltre il 70% delle ricerche locali avviene da smartphone. Sii concreto: se il punteggio mobile performance è sotto 50, descrivi cosa succede fisicamente quando un cliente apre il sito da telefono mentre è in auto o in pausa pranzo.
+---
 
-DATI:
-{dati_sezione}
+### COSA FUNZIONA BENE
+
+Scrivi 1-2 paragrafi identificando gli elementi positivi del sito dai dati disponibili. Sii specifico — non dire genericamente "il sito ha una buona struttura" ma identifica cosa concretamente funziona: SSL attivo, sito responsive, analytics installato, meta description presente, immagini ottimizzate, word count adeguato. Per ogni elemento positivo spiega brevemente perché conta e come contribuisce alla visibilità e alla conversione dei visitatori in clienti.
+
+---
+
+### COSA NON FUNZIONA E PERCHÉ CONTA
+
+Scrivi 4-5 paragrafi dedicati ai problemi rilevati nei dati, uno per problema principale. Per ogni problema segui questa struttura narrativa: descrivi il problema in linguaggio semplice senza tecnicismi, usa una metafora concreta per renderlo visivo e immediato, spiega l'impatto pratico sul business in termini di clienti persi o visibilità ridotta, e indica la soluzione concreta in linguaggio che un imprenditore non tecnico capisce.
+
+I problemi da analizzare se presenti nei dati includono la meta description assente o troppo corta spiegandola come il testo che appare sotto il titolo nei risultati Google e che decide se qualcuno clicca o passa oltre, i tag H1 assenti o multipli spiegandoli come il titolo principale che dice a Google di cosa parla la pagina, le immagini senza testo alternativo spiegandole come immagini invisibili per Google e per gli utenti ipovedenti, l'assenza di analytics spiegandola come guidare senza cruscotto, i dati strutturati assenti spiegandoli come le informazioni aggiuntive che Google mostra nei risultati arricchiti, il banner cookie mancante per la conformità al GDPR, il word count basso spiegando che pagine con poco testo vengono considerate poco autorevoli da Google, il tempo di caricamento elevato con la percentuale di utenti che abbandonano siti lenti, le pagine indicizzate anomale rispetto alle dimensioni del sito, i tag H2 malformati o assenti.
+
+---
+
+### LE PAGINE CHE HAI E QUELLE CHE TI MANCANO
+
+Scrivi 2-3 paragrafi che analizzano la struttura del sito in termini di pagine presenti e pagine mancanti per questo settore specifico. Quante pagine sono indicizzate? Ci sono pagine dedicate ai singoli servizi o prodotti principali? Ogni servizio senza una pagina dedicata è una opportunità di posizionamento mancata — spiega questo concetto con un esempio concreto calibrato sul settore dell'attività. Suggerisci 3-4 pagine specifiche che questa attività dovrebbe avere sul sito basandoti sul settore e sui dati disponibili, spiegando per ognuna cosa dovrebbe contenere e perché porterebbe clienti.
+
+---
+
+### L'ESPERIENZA MOBILE
+
+Chiudi con 1-2 paragrafi dedicati specificamente all'esperienza da smartphone. Basandoti sui dati di responsività e velocità mobile disponibili, descrivi concretamente come appare e si comporta il sito su uno smartphone di fascia media con una connessione 4G normale. Spiega perché l'esperienza mobile è oggi il banco di prova più importante per un sito di un'attività locale — il cliente che cerca un idraulico alle 22 di sera, il turista che cerca un ristorante camminando per il centro, la persona che confronta tre estetiste durante la pausa pranzo: tutti usano lo smartphone e decidono in pochi secondi.
+
+---
+
+Lunghezza totale: 1100-1400 parole.
+Output: prosa pura in italiano, nessun elenco puntato, nessun HTML.
+Usa solo i dati presenti in {dati_sezione}. Se manca un dato, dichiaralo esplicitamente.

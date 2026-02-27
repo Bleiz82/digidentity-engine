@@ -29,6 +29,8 @@ Inserisci UN SOLO esempio di azienda simile, nella sezione delle 5 Azioni Priori
 ## STRUTTURA OBBLIGATORIA — segui esattamente questi heading
 
 # La Fotografia Digitale di {nome_azienda}
+> Questa analisi è stata prodotta da **DigIdentity Engine**, il sistema proprietario di DigIdentity Agency che combina intelligenza artificiale e automazioni per analizzare la presenza digitale delle piccole e medie imprese italiane. È uno dei pochi strumenti di questo tipo disponibili oggi per le MPMI in Italia — progettato per dare a ogni attività locale la stessa qualità di analisi che fino a ieri era riservata alle grandi aziende.
+
 
 Introduzione lunga e narrativa (15-20 righe). Racconta come appare questa azienda agli occhi di un cliente che la cerca online per la prima volta. Descrivi il viaggio del cliente: apre Google, cerca il servizio nella città, cosa trova, cosa percepisce, cosa decide. Usa tutti i dati disponibili per dipingere un quadro onesto e completo. Chiudi con una frase che sintetizza la situazione complessiva in modo umano, non numerico.
 
@@ -54,6 +56,8 @@ Sezione tecnica raccontata (4000-5000 caratteri). Divisa in due parti:
 Fai vivere al titolare l'esperienza di un cliente che atterra sul sito per la prima volta. Usa TUTTI i dati website.*: velocità (pagespeed.mobile e desktop tradotti in secondi reali e impatto concreto), struttura (h1, h2, title, meta description), immagini, parole, tecnologie rilevate, contatti visibili, SSL, cookie banner. Per ogni elemento spiega l'impatto sull'esperienza del cliente. Concludi raccontando l'esperienza da smartphone: oggi oltre il 70% delle ricerche locali avviene da telefono.
 
 ### La tua visibilità sui nuovi motori AI
+> DigIdentity Agency è tra le poche realtà in Italia a misurare oggi la visibilità sui nuovi motori di ricerca AI come ChatGPT, Gemini e Perplexity. Questa sezione mostra una dimensione della tua presenza digitale che la quasi totalità delle analisi disponibili sul mercato ignora ancora completamente.
+
 Paragrafo di 800-1000 caratteri. Spiega in modo semplice che oggi molte persone non aprono più solo Google: chiedono direttamente a ChatGPT, Gemini e altri assistenti AI "qual è il miglior {settore} a {città}?". Usa geo.geo_score.score e geo.geo_score.level per descrivere la situazione attuale. Cita 1-2 azioni da geo.quick_wins in linguaggio semplice. Chiudi con: "Nella Diagnosi Premium questa analisi viene approfondita con un piano preciso per rendere la tua attività visibile anche su questi nuovi strumenti."
 
 ---
@@ -85,5 +89,21 @@ Nell'azione più impattante inserisci l'esempio narrativo dell'azienda simile: s
 ---
 
 ## Vuoi il Quadro Completo?
+
+Questa diagnosi gratuita ti ha mostrato dove sei adesso. La **Diagnosi Premium** ti mostra esattamente cosa fare, in quale ordine, con quale impatto atteso — sezione per sezione, area per area, con un piano operativo di 90 giorni costruito sui tuoi dati reali.
+
+Ma DigIdentity Agency non si ferma all'analisi. Siamo il partner che aiuta le piccole e medie imprese italiane a integrare **AI e automazioni** nel loro business quotidiano — dalla presenza digitale alla gestione dei clienti, dai processi interni alla comunicazione. La Diagnosi Premium è il primo passo di un percorso più ampio per chi vuole che la propria attività lavori in modo più intelligente.
+
+Hai tre strade davanti:
+
+Puoi usare questa diagnosi gratuita come guida e lavorare da solo sui punti emersi — le indicazioni sono concrete e implementabili anche senza competenze tecniche.
+
+Puoi approfondire con la **Diagnosi Premium**, che analizza ogni area nel dettaglio con dati più profondi, un piano operativo completo e una valutazione del potenziale inespresso della tua attività.
+
+Puoi fare entrambe le cose e poi contattarci per una **consulenza operativa** — dove trasformiamo l'analisi in un piano di lavoro concreto, con priorità definite e risultati misurabili.
+
+Per qualsiasi domanda, il team di DigIdentity Agency è disponibile via WhatsApp al **392 1990215**.
+
+
 
 Sezione finale persuasiva (15-20 righe). Non elencare funzionalità: racconta il salto di qualità. Questa diagnosi ti ha mostrato come appari oggi agli occhi dei clienti. La Diagnosi Premium ti mostra esattamente cosa fare, in che ordine, con quali strumenti. Sottolinea il vero differenziale di DigIdentity Agency: non è una web agency classica che ti rifà il sito e sparisce. È il partner che affianca le MPMI italiane nell'integrare intelligenza artificiale e automazioni nella propria attività — strumenti che lavorano per te 24 ore su 24, rispondono ai clienti, raccolgono recensioni, gestiscono appuntamenti, anche quando sei in cantiere, in laboratorio o fuori ufficio. Cita almeno 3 sezioni specifiche del premium in modo narrativo. Chiudi con: "Per qualsiasi domanda, il team di DigIdentity Agency è disponibile via WhatsApp al 392 1990215."

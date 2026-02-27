@@ -94,25 +94,55 @@ PAGINE INDICIZZATE ({indexed.get('total', 0)} totali):
 def get_pagespeed_seo_data(ctx: dict) -> str:
     """Dati per sezione 03: PageSpeed + SEO."""
     ps = ctx["scraping_data"].get("pagespeed", {})
-    mob = ps.get("mobile", {})
-    desk = ps.get("desktop", {})
+    mob_scores = ps.get("mobile", {}).get("scores", ps.get("mobile", {}))
+    desk_scores = ps.get("desktop", {}).get("scores", ps.get("desktop", {}))
     seo = ctx["scraping_data"].get("seo", {})
     positions = seo.get("positions", [])
+    organic = seo.get("organic_position", {})
+    indexed = ctx["scraping_data"].get("indexed_pages", {})
+    citations = ctx["scraping_data"].get("citations", [])
+
+    def _norm(v):
+        if v is None: return "N/A"
+        v = float(v)
+        return int(v * 100) if v <= 1 else int(v)
+
+    # Opportunità PageSpeed
+    mob_opps = ps.get("mobile", {}).get("opportunities", [])
+    desk_opps = ps.get("desktop", {}).get("opportunities", [])
+
+    opps_text = ""
+    if mob_opps:
+        opps_text += "OPPORTUNITA MOBILE:\n"
+        for o in mob_opps[:5]:
+            opps_text += f"  - {o.get('title', o)}: risparmio stimato {o.get('displayValue', 'N/A')}\n"
+    if desk_opps:
+        opps_text += "OPPORTUNITA DESKTOP:\n"
+        for o in desk_opps[:5]:
+            opps_text += f"  - {o.get('title', o)}: risparmio stimato {o.get('displayValue', 'N/A')}\n"
+
     return f"""
 PAGESPEED MOBILE:
-- Performance: {mob.get('performance', 'N/A')}
-- SEO: {mob.get('seo', 'N/A')}
-- Accessibilita: {mob.get('accessibility', 'N/A')}
-- Best Practices: {mob.get('best_practices', 'N/A')}
+- Performance: {_norm(mob_scores.get('performance'))}/100
+- SEO: {_norm(mob_scores.get('seo'))}/100
+- Accessibilita: {_norm(mob_scores.get('accessibility'))}/100
+- Best Practices: {_norm(mob_scores.get('best-practices'))}/100
 
 PAGESPEED DESKTOP:
-- Performance: {desk.get('performance', 'N/A')}
-- SEO: {desk.get('seo', 'N/A')}
-- Accessibilita: {desk.get('accessibility', 'N/A')}
-- Best Practices: {desk.get('best_practices', 'N/A')}
+- Performance: {_norm(desk_scores.get('performance'))}/100
+- SEO: {_norm(desk_scores.get('seo'))}/100
+- Accessibilita: {_norm(desk_scores.get('accessibility'))}/100
+- Best Practices: {_norm(desk_scores.get('best-practices'))}/100
 
-POSIZIONAMENTO SEO:
-{json.dumps(positions, indent=2, ensure_ascii=False) if positions else 'Nessun dato disponibile'}
+{opps_text}
+
+POSIZIONAMENTO ORGANICO:
+- Brand query: posizione {organic.get('brand_query', {}).get('position', 'N/A')} per "{organic.get('brand_query', {}).get('query', 'N/A')}"
+- Settore locale: posizione {organic.get('sector_local_query', {}).get('position', 'N/A')} per "{organic.get('sector_local_query', {}).get('query', 'N/A')}"
+- Settore regionale: posizione {organic.get('sector_regional_query', {}).get('position', 'N/A')} per "{organic.get('sector_regional_query', {}).get('query', 'N/A')}"
+
+PAGINE INDICIZZATE: {indexed.get('total', 0) if isinstance(indexed, dict) else 0}
+CITAZIONI ONLINE: {len(citations)}
 
 PUNTEGGI CALCOLATI:
 - Velocita Mobile: {ctx['scores'].get('velocita_mobile', 0)}/100
@@ -154,13 +184,16 @@ GOOGLE BUSINESS PROFILE:
 - Orari: {gb.get('hours', 'N/A')}
 - Categoria: {gb.get('category', 'N/A')}
 - Rating: {gb.get('rating', 'N/A')}
-- Recensioni: {gb.get('reviews_count', 'N/A')}
-- Foto: {gb.get('photos_count', 'N/A')}
+- Recensioni totali: {gb.get('reviews_count', 'N/A')}
+- Foto: {gb.get('photos_count', gb.get('photos', 'N/A'))}
 - Sito web: {gb.get('website', 'N/A')}
 - Stato: {gb.get('status', 'N/A')}
 - Servizi elencati: {gb.get('services', 'N/A')}
 - Post pubblicati: {gb.get('posts_count', 'N/A')}
 - Link Maps: {gb.get('maps_url', 'N/A')}
+
+TESTO RECENSIONI REALI (analizza sentiment, keyword ricorrenti, problemi):
+{json.dumps(gb.get('reviews', []), indent=2, ensure_ascii=False) if gb.get('reviews') else 'Nessuna recensione disponibile'}
 
 COERENZA DATI CONTATTO:
 - Google Business: tel {gb.get('phone', 'N/A')}, sito {gb.get('website', 'N/A')}
@@ -413,6 +446,84 @@ def _calc_target(globale: int) -> str:
         return "85-90/100"
 
 
+def get_geo_data(ctx: dict) -> str:
+    """Dati per sezione GEO: visibilità AI e motori di ricerca."""
+    geo = ctx["scraping_data"].get("geo", {})
+    site = ctx["scraping_data"].get("website", {})
+    geo_score = geo.get("geo_score", {})
+    robots = geo.get("robots", {})
+    llms = geo.get("llms", {})
+    schema = geo.get("schema", {})
+    citability = geo.get("citability", {})
+    platforms = geo.get("platforms", {})
+    quick_wins = geo.get("quick_wins", [])
+    critical_issues = geo.get("critical_issues", [])
+
+    quick_wins_text = ""
+    for w in quick_wins:
+        if isinstance(w, dict):
+            quick_wins_text += f"  - {w.get('action', w)} (impatto: {w.get('impact', 'N/A')}, tempo: {w.get('time', 'N/A')})\n"
+        else:
+            quick_wins_text += f"  - {w}\n"
+
+    critical_text = ""
+    for c in critical_issues:
+        if isinstance(c, dict):
+            critical_text += f"  - {c.get('issue', c)}\n"
+        else:
+            critical_text += f"  - {c}\n"
+
+    platform_text = ""
+    for k, v in platforms.items() if isinstance(platforms, dict) else []:
+        if isinstance(v, dict):
+            platform_text += f"  - {k}: {v.get('score', 'N/A')}/100 — {v.get('status', 'N/A')}\n"
+
+    return f"""
+ATTIVITA: {ctx['nome_attivita']}
+SETTORE: {ctx['settore']}
+CITTA: {ctx['citta']}
+SITO: {ctx['website_url']}
+
+GEO SCORE COMPLESSIVO: {geo_score.get('score', 0)}/100
+LIVELLO: {geo_score.get('level', 'N/A')}
+SOMMARIO: {geo.get('summary', 'N/A')}
+
+ROBOTS.TXT:
+- Crawler AI bloccati criticamente: {robots.get('critical_blocked', False)}
+- Crawler bloccati: {robots.get('blocked_crawlers', [])}
+- Crawler permessi: {robots.get('allowed_crawlers', [])}
+- Problemi rilevati: {robots.get('issues', [])}
+
+LLMS.TXT:
+- Presente: {llms.get('found', False)}
+- URL: {llms.get('url', 'N/A')}
+- Contenuto: {llms.get('content_preview', 'N/A')}
+
+SCHEMA MARKUP:
+- Presente: {schema.get('found', False)}
+- Tipi rilevati: {schema.get('types', [])}
+- Schema mancanti consigliati: {schema.get('missing_recommended', [])}
+
+CITABILITA CONTENUTO:
+- Score: {citability.get('score', 'N/A')}/100
+- Parole per blocco: {citability.get('avg_words_per_block', 'N/A')}
+- Presenza FAQ: {citability.get('has_faq', False)}
+- Presenza statistiche: {citability.get('has_statistics', False)}
+- Definizioni chiare: {citability.get('has_definitions', False)}
+
+PUNTEGGI PER PIATTAFORMA AI:
+{platform_text if platform_text else 'Nessun dato disponibile'}
+
+QUICK WINS (azioni prioritarie GEO):
+{quick_wins_text if quick_wins_text else 'Nessun dato disponibile'}
+
+PROBLEMI CRITICI:
+{critical_text if critical_text else 'Nessuno rilevato'}
+
+GEO SCORE NEI PUNTEGGI: {ctx['scores'].get('score_geo', ctx['scores'].get('geo', 0))}/100
+"""
+
+
 # Mapping sezione -> funzione dati
 SECTION_DATA_MAP = {
     "01_apertura_dashboard": get_apertura_dashboard_data,
@@ -426,4 +537,5 @@ SECTION_DATA_MAP = {
     "09_ads": get_ads_data,
     "10_piano_90_giorni": get_piano_90_giorni_data,
     "11_relazione_punteggio": get_relazione_punteggio_data,
+    "geo_ai_visibility": get_geo_data,
 }

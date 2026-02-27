@@ -403,6 +403,11 @@ def generate_premium_html(
         "{score_reputazione}": str(score_reputazione),
         "{color_reputazione}": _score_color(score_reputazione),
         "{dashoffset_reputazione}": str(_dashoffset(score_reputazione)),
+        # GEO score
+        "{score_geo}": str(scores.get("score_geo", scores.get("geo", 0))),
+        "{color_geo}": _score_color(scores.get("score_geo", scores.get("geo", 0))),
+        "{dashoffset_geo}": str(_dashoffset(scores.get("score_geo", scores.get("geo", 0)))),
+        "{sezione_geo}": _markdown_to_html(section_map.get("geo_ai_visibility", "")),
         # JS score map
         "{score_map_json}": json.dumps(score_map),
     }

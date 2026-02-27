@@ -1,7 +1,4 @@
-"""
-DigIdentity Premium — AI Report Generator
-Genera il report premium chiamando Claude sezione per sezione.
-"""
+"""\nDigIdentity Premium — AI Report Generator\nGenera il report premium chiamando Claude sezione per sezione.\n"""
 import os
 import time
 import logging
@@ -24,6 +21,7 @@ SECTIONS = [
     {"id": "06_competitor", "max_tokens": 6000, "model": "standard"},
     {"id": "07_social_bio", "max_tokens": 6000, "model": "standard"},
     {"id": "08_branding_ai", "max_tokens": 6000, "model": "standard"},
+    {"id": "geo_ai_visibility", "max_tokens": 4000, "model": "standard"},
     {"id": "09_ads", "max_tokens": 4500, "model": "standard"},
     {"id": "10_piano_90_giorni", "max_tokens": 8000, "model": "premium"},
     {"id": "11_relazione_punteggio", "max_tokens": 6000, "model": "premium"},
@@ -143,9 +141,7 @@ def generate_section(section: dict, system_prompt: str, ctx: dict, data_map: dic
 
     # Aggiungi contesto sezioni precedenti se disponibile
     if prev_context:
-        user_prompt = prev_context + "
-
-" + user_prompt
+        user_prompt = prev_context + "\n\n" + user_prompt
 
     # Chiama Claude
     result = call_claude(
@@ -181,14 +177,9 @@ def generate_all_sections(ctx: dict, data_map: dict) -> list:
         # Costruisci contesto dalle ultime 2 sezioni generate
         prev_context = ""
         if running_summary:
-            prev_context = "---
-RIFERIMENTO SEZIONI PRECEDENTI (non ripetere, usa per coerenza):
-"
-            prev_context += "
-".join(running_summary[-2:])
-            prev_context += "
----
-"
+            prev_context = "---\nRIFERIMENTO SEZIONI PRECEDENTI (non ripetere, usa per coerenza):\n"
+            prev_context += "\n".join(running_summary[-2:])
+            prev_context += "\n---\n"
 
         result = generate_section(section, system_prompt, ctx, data_map, prev_context)
         results.append(result)

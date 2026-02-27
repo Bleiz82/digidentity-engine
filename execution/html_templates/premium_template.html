@@ -897,6 +897,21 @@ strong { color: var(--di-white); font-weight: 600; }
     <div class="section-number">Sezione 9 di 11</div>
     <h2>Piano Ads Suggerito</h2>
     <div class="section-content">
+      <!-- SEZIONE GEO AI VISIBILITY -->
+      <div class="section-score-wrap">
+        <div class="mini-ring" id="ring-geo">
+          <svg viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#222" stroke-width="6"/>
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#F90100" stroke-width="6"
+              stroke-dasharray="213.6" stroke-dashoffset="{dashoffset_geo}"
+              transform="rotate(-90 40 40)" stroke-linecap="round"/>
+          </svg>
+          <div class="mini-ring-value"><span class="score-number" style="color:{color_geo}">{score_geo}</span></div>
+        </div>
+        <div class="section-score-label">Visibilità AI: <strong>{score_geo}/100</strong></div>
+      </div>
+      {sezione_geo}
+
       {sezione_09}
     </div>
   </div>

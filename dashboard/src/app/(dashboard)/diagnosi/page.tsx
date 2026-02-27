@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { FileText, RefreshCw, Cpu, FileOutput, Clock, Globe } from 'lucide-react'
+import { FileText, RefreshCw, Cpu, Clock, Globe } from 'lucide-react'
 
 interface DiagnosiRow {
     report_id: string
@@ -14,8 +14,6 @@ interface DiagnosiRow {
     ai_model: string | null
     ai_total_tokens: number | null
     ai_cost_usd: number | null
-    pdf_filename: string | null
-    pdf_size_bytes: number | null
     generation_time_seconds: number | null
     html_url: string | null
     report_status: string
@@ -55,12 +53,7 @@ export default function DiagnosiPage() {
         ? diagnosi.reduce((sum, d) => sum + (d.generation_time_seconds || 0), 0) / diagnosi.length
         : 0
 
-    const formatBytes = (bytes: number | null) => {
-        if (!bytes) return '—'
-        if (bytes < 1024) return `${bytes} B`
-        if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
-        return `${(bytes / 1048576).toFixed(2)} MB`
-    }
+
 
     return (
         <div className="space-y-6">
@@ -83,7 +76,7 @@ export default function DiagnosiPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
                     <div className="flex items-center gap-3 mb-2">
-                        <FileOutput className="w-5 h-5 text-orange-500" />
+                        <FileText className="w-5 h-5 text-orange-500" />
                         <span className="text-sm text-slate-400">Report Totali</span>
                     </div>
                     <p className="text-2xl font-bold text-white">{diagnosi.length}</p>
@@ -141,8 +134,7 @@ export default function DiagnosiPage() {
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Modello AI</th>
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Token</th>
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Costo</th>
-                                <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">PDF</th>
-                                <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">HTML</th>
+                                <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Report</th>
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Tempo</th>
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Stato</th>
                                 <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-6 py-4">Data</th>
@@ -166,18 +158,6 @@ export default function DiagnosiPage() {
                                     <td className="px-6 py-4 text-sm text-slate-400">{d.ai_model || '—'}</td>
                                     <td className="px-6 py-4 text-sm text-slate-300">{d.ai_total_tokens?.toLocaleString('it-IT') || '—'}</td>
                                     <td className="px-6 py-4 text-sm text-emerald-400">${d.ai_cost_usd?.toFixed(4) || '—'}</td>
-                                    <td className="px-6 py-4 text-sm text-slate-300">
-                                        {d.pdf_size_bytes ? (
-                                            <a
-                                                href={`https://api.digidentityagency.it/api/reports/${d.report_id}/pdf`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-orange-400 hover:text-orange-300 underline"
-                                            >
-                                                {formatBytes(d.pdf_size_bytes)}
-                                            </a>
-                                        ) : "—"}
-                                    </td>
                                     <td className="px-6 py-4 text-sm">
                                         {d.html_url ? (
                                             <a
@@ -187,7 +167,7 @@ export default function DiagnosiPage() {
                                                 className="inline-flex items-center gap-1.5 text-red-400 hover:text-red-300 underline"
                                             >
                                                 <Globe className="w-3.5 h-3.5" />
-                                                Apri
+                                                Apri Report
                                             </a>
                                         ) : (
                                             <span className="text-slate-600">—</span>

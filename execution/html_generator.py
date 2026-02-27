@@ -698,8 +698,9 @@ def generate_free_html(
             comp_html += f'<td style="padding:0.7rem 1rem;border-bottom:1px solid var(--di-border);text-align:center;">{reviews}</td>'
             comp_html += f'<td style="padding:0.7rem 1rem;border-bottom:1px solid var(--di-border);">{site_link}</td></tr>'
         comp_html += '</tbody></table></div>'
-        # Sostituisci la tabella markdown dei competitor con quella stilizzata
-        report_html = _re.sub(r'<table>.*?</table>', '', report_html, count=1, flags=_re.DOTALL)
+        # Rimuovi TUTTE le tabelle esistenti nel report (sia <table> che <table style=...>)
+        # prima di iniettare quella stilizzata
+        report_html = _re.sub(r'<table[^>]*>.*?</table>', '', report_html, flags=_re.DOTALL)
         # Inserisci dopo il titolo competitor
         for slug, title in _nav_links:
             if 'competitor' in slug.lower():

@@ -33,15 +33,25 @@ class Settings:
     # --- Anthropic ---
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
 
-    # --- SerpAPI ---
+    # --- SerpAPI (legacy, mantenuto per compatibilità) ---
     SERPAPI_KEY: str = os.getenv("SERPAPI_KEY", os.getenv("SERP_API_KEY", ""))
+
+    # --- Serper.dev (sostituto SerpAPI) ---
+    SERPER_KEY: str = os.getenv("SERPER_KEY", "")
+
+    # --- Google Custom Search (fallback) ---
+    GOOGLE_CSE_KEY: str = os.getenv("GOOGLE_CSE_KEY", "")
+    GOOGLE_CX: str = os.getenv("GOOGLE_CX", "")
 
     # --- Perplexity ---
     PERPLEXITY_API_KEY: str = os.getenv("PERPLEXITY_API_KEY", "")
     PERPLEXITY_MODEL: str = os.getenv("PERPLEXITY_MODEL", "sonar-pro")
 
-    # --- Apify ---
+    # --- Apify (legacy, mantenuto per compatibilità) ---
     APIFY_API_KEY: str = os.getenv("APIFY_API_KEY", "")
+
+    # --- RapidAPI (sostituto Apify per social) ---
+    RAPIDAPI_KEY: str = os.getenv("RAPIDAPI_KEY", "")
 
     # --- Google APIs ---
     GOOGLE_PAGESPEED_API_KEY: str = os.getenv("GOOGLE_PAGESPEED_API_KEY", "")

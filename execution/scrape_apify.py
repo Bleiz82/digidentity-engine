@@ -375,6 +375,9 @@ def scrape_facebook(page_url: str = "", company_name: str = "") -> dict[str, Any
     Actors: facebook-pages-scraper (4Hv5RhChiaDk6iwad) + facebook-posts-scraper (KoJrdxJCTtpon81KY)
     """
     if not page_url:
+        if company_name:
+            logger.info(f"[APIFY] Facebook URL mancante, provo fallback per '{company_name}'")
+            return _scrape_facebook_serp_fallback(company_name, "")
         return {"source": "facebook", "found": False, "error": "URL pagina mancante"}
 
     # Fix: Profili personali (profile.php?id=...) non supportati da Apify page-scraper

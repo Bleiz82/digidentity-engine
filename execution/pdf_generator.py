@@ -191,6 +191,22 @@ def _calculate_social_score(scraping_data):
 
 
 def _calculate_all_scores(data: dict) -> dict:
+    """Calcola gli score o usa quelli pre-calcolati dal task."""
+    # Se gli score sono già stati calcolati dal modulo canonico, usali!
+    if "scores" in data:
+        s = data["scores"]
+        return {
+            "SITO WEB": int(s.get("score_sito_web", 0)),
+            "SEO": int(s.get("score_seo", 0)),
+            "SOCIAL": int(s.get("score_social", 0)),
+            "GOOGLE BUSINESS": int(s.get("score_gmb", 0)),
+            "DETAILS": {
+                "Mobile": int(s.get("details", {}).get("mobile", 0)),
+                "Desktop": int(s.get("details", {}).get("desktop", 0))
+            }
+        }
+
+    # Fallback (vecchia logica di ricalcolo se scores manca)
     ps = data.get("pagespeed", {})
     ps_d = ps.get("desktop", {})
     ps_d_scores = ps_d.get("scores", ps_d)

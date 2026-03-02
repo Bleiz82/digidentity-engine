@@ -32,25 +32,54 @@ HEADERS = {
 }
 
 
+def _deduce_sector(website_data: dict) -> str:
+    """Deduce il settore dai dati del sito web."""
+    # 1. Cerca nei meta tag e titoli
+    text_to_analyze = f"{website_data.get('title', '') or ''} {website_data.get('meta_description', '') or ''} "
+    text_to_analyze += " ".join(website_data.get('h1_tags', []) or []) + " "
+    text_to_analyze += " ".join(website_data.get('h2_tags', []) or [])
+    text_to_analyze = text_to_analyze.lower()
+
+    # Mappatura keyword -> Settore
+    sector_map = {
+        "Ristorante": ["ristorante", "pizzeria", "trattoria", "osteria", "cucina", "menu"],
+        "Hotel": ["hotel", "albergo", "b&b", "bed and breakfast", "resort", "ospitalità"],
+        "Edilizia": ["edilizia", "costruzioni", "ristrutturazioni", "impresa edile", "cartongesso", "serramenti"],
+        "Bellezza": ["parrucchiere", "estetica", "centro estetico", "salone", "beauty", "barbiere"],
+        "Salute": ["dentista", "studio medico", "poliambulatorio", "farmacia", "fisioterapia", "medico"],
+        "Commercio": ["negozio", "shop", "vendita", "articoli", "abbigliamento", "calzature"],
+        "Servizi Professionali": ["avvocato", "commercialista", "consulenza", "studio legale", "architetto", "ingegnere"],
+        "Automotive": ["auto", "concessionaria", "officina", "carrozzeria", "noleggio", "pneumatici"],
+        "Benessere": ["palestra", "fitness", "yoga", "piscina", "sport", "spa"],
+    }
+
+    for sector, keywords in sector_map.items():
+        if any(kw in text_to_analyze for kw in keywords):
+            return sector
+
+    return "Attività Locale"
+
+
 def scrape_lead(website_url: str, company_name: str, social_links_db: dict = None, city: str = "", sector: str = "", indirizzo: str = "") -> dict[str, Any]:
     """
     Esegue lo scraping completo di un'azienda.
     Restituisce un dizionario strutturato con tutti i dati raccolti.
-    
-    Args:
-        website_url: URL del sito aziendale
-        company_name: Nome dell'azienda
-        social_links_db: Dict di social links dal database {platform: url}
-        city: Città dell'azienda (se nota)
-        sector: Settore dell'azienda (se noto)
     """
+    # Pulizia città da CAP e sigla provincia (es. "09028 Sestu CA" -> "Sestu")
+    if city:
+        city = re.sub(r'\d{5}\s+', '', city) 
+        city = re.sub(r'\s+[A-Z]{2}$', '', city)
+        city = city.strip()
+
     # Se abbiamo indirizzo completo, estraiamo subito città e provincia
     if indirizzo and not city:
         parti = [p.strip() for p in indirizzo.split(",")]
         if len(parti) >= 3:
             city = parti[-2].strip()
+            city = re.sub(r'^\d{5}\s*', '', city).strip()
         elif len(parti) == 2:
             city = parti[-1].strip()
+            city = re.sub(r'^\d{5}\s*', '', city).strip()
         logger.info(f"Città estratta dall'indirizzo: {city}")
     logger.info(f"Inizio scraping per {company_name} — {website_url} ({city or 'città non fornita'})")
     results = {
@@ -75,6 +104,11 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
     # 1. Scraping sito web
     try:
         results["website"] = _scrape_website(website_url)
+        # Fallback settore dal sito se non fornito
+        if not sector or sector == "Da identificare":
+            sector = _deduce_sector(results["website"])
+            results["sector"] = sector
+            logger.info(f"Settore dedotto dal sito: {sector}")
     except Exception as e:
         logger.warning(f"Errore scraping sito {website_url}: {e}")
         results["errors"].append(f"Sito web: {str(e)}")

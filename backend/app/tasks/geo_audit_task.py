@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 from pathlib import Path
-from celery import shared_task
+from app.core.celery_app import celery_app
 
 from app.core.config import settings
 from app.core.supabase_client import get_supabase
@@ -12,7 +12,7 @@ from execution.send_email import send_geo_report_email
 
 logger = logging.getLogger(__name__)
 
-@shared_task(bind=True, max_retries=2, default_retry_delay=60)
+@celery_app.task(name="app.tasks.geo_audit_task.task_geo_audit", bind=True, max_retries=2, default_retry_delay=60, acks_late=True)
 def task_geo_audit(self, audit_id: str):
     """
     Task Celery per eseguire l'audit GEO completo.

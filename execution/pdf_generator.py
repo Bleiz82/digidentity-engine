@@ -86,22 +86,17 @@ def _generate_pagespeed_detail(scraping_data):
 
 
 def _generate_final_score(scraping_data):
-    # Usa score canonici pre-calcolati se disponibili
-    pre = scraping_data.get("scores", {})
-    if pre and pre.get("punteggio_globale") is not None:
-        avg = int(pre["punteggio_globale"])
-    else:
-        ps = scraping_data.get("pagespeed", {})
-        desktop = ps.get("desktop", {}).get("scores", {})
-        mobile = ps.get("mobile", {}).get("scores", {})
-        site_score = int((desktop.get("performance", 0) + desktop.get("seo", 0)) / 2) if desktop else 0
-        seo_score = desktop.get("seo", 0) if desktop else 0
-        social_score = scraping_data.get("social_score", 50)
-        gb = scraping_data.get("google_business", {})
-        gb_score = 10 if gb.get("found") and not gb.get("rating") else (70 if gb.get("found") and gb.get("rating") else 0)
-        scores = {"site": site_score, "seo": seo_score, "social": social_score, "google_business": gb_score}
-        vals = [v for v in scores.values() if isinstance(v, (int, float)) and v > 0]
-        avg = int(sum(vals) / len(vals)) if vals else 0
+    ps = scraping_data.get("pagespeed", {})
+    desktop = ps.get("desktop", {}).get("scores", {})
+    mobile = ps.get("mobile", {}).get("scores", {})
+    site_score = int((desktop.get("performance", 0) + desktop.get("seo", 0)) / 2) if desktop else 0
+    seo_score = desktop.get("seo", 0) if desktop else 0
+    social_score = scraping_data.get("social_score", 50)
+    gb = scraping_data.get("google_business", {})
+    gb_score = 10 if gb.get("found") and not gb.get("rating") else (70 if gb.get("found") and gb.get("rating") else 0)
+    scores = {"site": site_score, "seo": seo_score, "social": social_score, "google_business": gb_score}
+    vals = [v for v in scores.values() if isinstance(v, (int, float)) and v > 0]
+    avg = int(sum(vals) / len(vals)) if vals else 0
     if avg < 40:
         color = "#e74c3c"
         giudizio = "Critica"
@@ -196,32 +191,22 @@ def _calculate_social_score(scraping_data):
 
 
 def _calculate_all_scores(data: dict) -> dict:
-    # Se gli score canonici sono già stati calcolati dal task, usali
-    pre = data.get("scores", {})
-    if pre and pre.get("score_sito_web") is not None:
-        # Estrai dettagli PageSpeed per i gauge
-        ps = data.get("pagespeed", {})
-        ps_d = ps.get("desktop", {})
-        ps_d_scores = ps_d.get("scores", ps_d)
-        desktop_perf = ps_d_scores.get("performance", 0) or 0
-        if 0 < desktop_perf < 1: desktop_perf *= 100
-        ps_m = ps.get("mobile", {})
-        ps_m_scores = ps_m.get("scores", ps_m)
-        mobile_perf = ps_m_scores.get("performance", 0) or 0
-        if 0 < mobile_perf < 1: mobile_perf *= 100
+    """Calcola gli score o usa quelli pre-calcolati dal task."""
+    # Se gli score sono già stati calcolati dal modulo canonico, usali!
+    if "scores" in data:
+        s = data["scores"]
         return {
-            "SITO WEB": int(pre.get("score_sito_web", 0)),
-            "SEO": int(pre.get("score_seo", 0)),
-            "SOCIAL": int(pre.get("score_social", 0)),
-            "GOOGLE BUSINESS": int(pre.get("score_gmb", 0)),
-            "COMPETITIVITA": int(pre.get("score_competitivo", 0)),
+            "SITO WEB": int(s.get("score_sito_web", 0)),
+            "SEO": int(s.get("score_seo", 0)),
+            "SOCIAL": int(s.get("score_social", 0)),
+            "GOOGLE BUSINESS": int(s.get("score_gmb", 0)),
             "DETAILS": {
-                "Mobile": int(mobile_perf),
-                "Desktop": int(desktop_perf)
+                "Mobile": int(s.get("details", {}).get("mobile", 0)),
+                "Desktop": int(s.get("details", {}).get("desktop", 0))
             }
         }
 
-    # Fallback: calcola da zero se scores non presenti
+    # Fallback (vecchia logica di ricalcolo se scores manca)
     ps = data.get("pagespeed", {})
     ps_d = ps.get("desktop", {})
     ps_d_scores = ps_d.get("scores", ps_d)

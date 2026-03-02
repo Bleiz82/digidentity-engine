@@ -23,22 +23,27 @@ async def lead_workflow(request: Request):
         website_url = f"https://{website_url}"
 
     # Estrai città e provincia dall'indirizzo completo
-    # Es. "Via Roma 15, Sestu, CA" → città="Sestu", provincia="CA"
+    # Es. "Via Roma 15, 09028 Sestu, CA" → città="Sestu", provincia="CA"
+    import re
     indirizzo = (data.get("indirizzo") or "").strip()
     citta = (data.get("citta") or "").strip()
-    provincia = (data.get("provincia") or "").strip()
-    if indirizzo and not citta:
+    provincia = (data.get("provincia") or "").strip() or "ND"
+    
+    if indirizzo and (not citta or citta == ""):
         parti = [p.strip() for p in indirizzo.split(",")]
         if len(parti) >= 3:
-            citta = parti[-2].strip()
+            raw_citta = parti[-2].strip()
+            # Rimuovere CAP numerico \d{5}
+            citta = re.sub(r'^\d{5}\s*', '', raw_citta).strip()
             provincia = parti[-1].strip().upper()[:2]
         elif len(parti) == 2:
-            citta = parti[-1].strip()
-        # Pulisci città: rimuovi CAP (5 cifre) e sigla provincia (2 lettere maiuscole)
-        import re
-        if citta:
-            citta = re.sub(r'\d{5}', '', citta).strip()
-            citta = re.sub(r'[A-Z]{2}$', '', citta).strip()
+            raw_citta = parti[-1].strip()
+            citta = re.sub(r'^\d{5}\s*', '', raw_citta).strip()
+            # Prova a estrarre provincia dopo la città se presente (es. "Sestu CA")
+            m_prov = re.search(r'([A-Z]{2})$', raw_citta)
+            if m_prov:
+                provincia = m_prov.group(1)
+                citta = citta.replace(provincia, "").strip()
 
     lead_data = {
         "id": lead_id,
@@ -50,7 +55,7 @@ async def lead_workflow(request: Request):
         "settore_attivita": data.get("settore_attivita") or None,
         "indirizzo": indirizzo or None,
         "citta": citta or None,
-        "provincia": provincia or "ND",
+        "provincia": provincia or None,
         "status": LeadStatus.NEW.value,
         "created_at": now,
     }

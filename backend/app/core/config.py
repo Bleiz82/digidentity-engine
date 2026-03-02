@@ -29,19 +29,35 @@ class Settings:
     STRIPE_PRICE_ID: str = os.getenv("STRIPE_PRICE_ID", "")
     STRIPE_PRICE_ID_PREMIUM: str = os.getenv("STRIPE_PRICE_ID_PREMIUM", os.getenv("STRIPE_PRICE_ID", ""))
     STRIPE_PRICE_ID_CONSULENZA: str = os.getenv("STRIPE_PRICE_ID_CONSULENZA", "")
+    
+    # --- GEO Audit ---
+    STRIPE_PRICE_ID_GEO_SINGOLO: str = os.getenv("STRIPE_PRICE_ID_GEO_SINGOLO", "")
+    STRIPE_PRICE_ID_GEO_AGENCY_MONTHLY: str = os.getenv("STRIPE_PRICE_ID_GEO_AGENCY_MONTHLY", "")
+    STRIPE_PRICE_ID_GEO_AGENCY_ANNUAL: str = os.getenv("STRIPE_PRICE_ID_GEO_AGENCY_ANNUAL", "")
+    GEO_REPORT_DIR: str = os.getenv("GEO_REPORT_DIR", "/app/reports/geo")
 
     # --- Anthropic ---
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
 
-    # --- SerpAPI ---
+    # --- SerpAPI (legacy, mantenuto per compatibilità) ---
     SERPAPI_KEY: str = os.getenv("SERPAPI_KEY", os.getenv("SERP_API_KEY", ""))
+
+    # --- Serper.dev (sostituto SerpAPI) ---
+    SERPER_KEY: str = os.getenv("SERPER_KEY", "")
+
+    # --- Google Custom Search (fallback) ---
+    GOOGLE_CSE_KEY: str = os.getenv("GOOGLE_CSE_KEY", "")
+    GOOGLE_CX: str = os.getenv("GOOGLE_CX", "")
 
     # --- Perplexity ---
     PERPLEXITY_API_KEY: str = os.getenv("PERPLEXITY_API_KEY", "")
     PERPLEXITY_MODEL: str = os.getenv("PERPLEXITY_MODEL", "sonar-pro")
 
-    # --- Apify ---
+    # --- Apify (legacy, mantenuto per compatibilità) ---
     APIFY_API_KEY: str = os.getenv("APIFY_API_KEY", "")
+
+    # --- RapidAPI (sostituto Apify per social) ---
+    RAPIDAPI_KEY: str = os.getenv("RAPIDAPI_KEY", "")
 
     # --- Google APIs ---
     GOOGLE_PAGESPEED_API_KEY: str = os.getenv("GOOGLE_PAGESPEED_API_KEY", "")

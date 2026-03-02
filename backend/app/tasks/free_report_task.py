@@ -65,7 +65,13 @@ def task_free_report(self, lead_id: str):
     logger.info(f"[FREE] Lead: {company_name} — {website_url} — {email}")
 
     # Estrazione città e settore
+    import re
     city = lead.get("citta") or lead.get("city", "")
+    if city:
+        city = re.sub(r'\d{5}\s+', '', city)
+        city = re.sub(r'\s+[A-Z]{2}$', '', city)
+        city = city.strip()
+    
     sector = lead.get("settore_attivita") or ""
     if not sector:
         # Prova anche il campo scraping_data se già presente
@@ -322,16 +328,27 @@ def task_free_report(self, lead_id: str):
             except Exception:
                 pass
             ai_cost = round((ai_input / 1000) * 0.003 + (ai_output / 1000) * 0.015, 4)
-            db.table("reports").insert({
-                "lead_id": lead_id, "report_type": "free", "ai_model": ai_model,
-                "ai_tokens_input": ai_input, "ai_tokens_output": ai_output,
-                "ai_total_tokens": ai_total, "ai_cost_usd": ai_cost,
-                "pdf_path": pdf_path, "pdf_filename": os.path.basename(pdf_path),
-                "pdf_size_bytes": pdf_size, "generation_time_seconds": _gen_time,
-                "html_url": html_url,
-                "status": "generated",
-            }).execute()
-            logger.info(f"[FREE] Report in DB: model={ai_model}, tokens={ai_total}, cost=${ai_cost}")
+            
+            # Fix 5: Retry su INSERT per FK constraint
+            for attempt in range(max_retries):
+                try:
+                    db.table("reports").insert({
+                        "lead_id": lead_id, "report_type": "free", "ai_model": ai_model,
+                        "ai_tokens_input": ai_input, "ai_tokens_output": ai_output,
+                        "ai_total_tokens": ai_total, "ai_cost_usd": ai_cost,
+                        "pdf_path": pdf_path, "pdf_filename": os.path.basename(pdf_path),
+                        "pdf_size_bytes": pdf_size, "generation_time_seconds": _gen_time,
+                        "html_url": html_url,
+                        "status": "generated",
+                    }).execute()
+                    logger.info(f"[FREE] Report in DB: model={ai_model}, cost=${ai_cost}")
+                    break
+                except Exception as e:
+                    logger.warning(f"[FREE] Errore INSERT report (tentativo {attempt+1}): {e}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2)
+                    else:
+                        logger.error(f"[FREE] INSERT report fallita definitivamente: {e}")
     except Exception as e:
         logger.warning(f"[FREE] Errore insert reports: {e}")
 

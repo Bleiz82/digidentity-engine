@@ -3,9 +3,9 @@ DigIdentity Engine — Modulo di scraping per analisi presenza digitale PMI.
 
 Esegue scraping multi-sorgente:
 1. Sito web aziendale (HTML, meta tag, performance)
-2. Google Search (posizionamento, SERP)
-3. Social media (pagine pubbliche)
-4. Google Business Profile (via SerpAPI)
+2. Google Search (posizionamento, SERP) — via Serper.dev / Google CSE / scraping diretto
+3. Social media (pagine pubbliche) — senza Apify
+4. Google Business Profile (via Google Places API)
 """
 
 import logging
@@ -18,10 +18,10 @@ import requests
 from bs4 import BeautifulSoup
 
 from backend.app.core.config import settings
+from execution.serp_engine import smart_search
 
 logger = logging.getLogger(__name__)
 
-# Timeout per le richieste HTTP
 REQUEST_TIMEOUT = 15
 HEADERS = {
     "User-Agent": (
@@ -31,212 +31,52 @@ HEADERS = {
     ),
 }
 
-# ============================================================
-# Google Places API (New) — Identificazione attività e competitor
-# ============================================================
 
-def _identify_with_google_places(company_name: str, city: str = "", sector: str = "") -> dict:
-    """
-    Usa Google Places API (New) per identificare l'attività e trovare competitor reali.
-    Restituisce settore, dati GMB e lista competitor.
-    """
-    api_key = getattr(settings, 'GOOGLE_PAGESPEED_API_KEY', None)
-    if not api_key:
-        logger.warning("[PLACES] API key non trovata, skip Google Places")
-        return {}
+def _deduce_sector(website_data: dict) -> str:
+    """Deduce il settore dai dati del sito web."""
+    text_to_analyze = f"{website_data.get('title', '') or ''} {website_data.get('meta_description', '') or ''} "
+    text_to_analyze += " ".join(website_data.get('h1_tags', []) or []) + " "
+    text_to_analyze += " ".join(website_data.get('h2_tags', []) or [])
+    text_to_analyze = text_to_analyze.lower()
 
-    result = {
-        "sector": None,
-        "sector_display": None,
-        "primary_type": None,
-        "google_business": {},
-        "competitors": [],
-        "place_found": False,
+    sector_map = {
+        "Ristorante": ["ristorante", "pizzeria", "trattoria", "osteria", "cucina", "menu"],
+        "Hotel": ["hotel", "albergo", "b&b", "bed and breakfast", "resort", "ospitalità"],
+        "Edilizia": ["edilizia", "costruzioni", "ristrutturazioni", "impresa edile", "cartongesso", "serramenti"],
+        "Bellezza": ["parrucchiere", "estetica", "centro estetico", "salone", "beauty", "barbiere"],
+        "Salute": ["dentista", "studio medico", "poliambulatorio", "farmacia", "fisioterapia", "medico"],
+        "Commercio": ["negozio", "shop", "vendita", "articoli", "abbigliamento", "calzature"],
+        "Servizi Professionali": ["avvocato", "commercialista", "consulenza", "studio legale", "architetto", "ingegnere"],
+        "Automotive": ["auto", "concessionaria", "officina", "carrozzeria", "noleggio", "pneumatici"],
+        "Benessere": ["palestra", "fitness", "yoga", "piscina", "sport", "spa"],
     }
 
-    headers = {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": api_key,
-        "X-Goog-FieldMask": "places.id,places.displayName,places.types,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.rating,places.userRatingCount,places.websiteUri,places.nationalPhoneNumber,places.internationalPhoneNumber,places.currentOpeningHours,places.reviews,places.photos,places.location"
-    }
+    for sector, keywords in sector_map.items():
+        if any(kw in text_to_analyze for kw in keywords):
+            return sector
 
-    # --- STEP 1: Identifica l'attività ---
-    try:
-        search_query = f"{company_name} {city}".strip()
-        payload = {"textQuery": search_query, "languageCode": "it", "maxResultCount": 3}
-
-        resp = requests.post(
-            "https://places.googleapis.com/v1/places:searchText",
-            json=payload, headers=headers, timeout=15
-        )
-        data = resp.json()
-        places = data.get("places", [])
-
-        if not places:
-            logger.warning(f"[PLACES] Nessun risultato per: {search_query}")
-            return result
-
-        # Prendi il primo risultato (più rilevante)
-        place = places[0]
-        result["place_found"] = True
-        result["primary_type"] = place.get("primaryType", "")
-        
-        ptype_display = place.get("primaryTypeDisplayName", {})
-        result["sector_display"] = ptype_display.get("text", "")
-        result["sector"] = result["sector_display"] or result["primary_type"]
-
-        # Coordinate per la ricerca competitor
-        location = place.get("location", {})
-        lat = location.get("latitude")
-        lng = location.get("longitude")
-
-        # Dati GMB
-        result["google_business"] = {
-            "found": True,
-            "source": "google_places_api",
-            "title": place.get("displayName", {}).get("text", ""),
-            "rating": place.get("rating"),
-            "reviews_count": place.get("userRatingCount"),
-            "address": place.get("formattedAddress", ""),
-            "phone": place.get("nationalPhoneNumber") or place.get("internationalPhoneNumber"),
-            "website": place.get("websiteUri"),
-            "category": result["sector_display"],
-            "primary_type": result["primary_type"],
-            "place_id": place.get("id"),
-            "hours": None,
-            "reviews": [],
-        }
-
-        # Orari
-        hours_data = place.get("currentOpeningHours", {})
-        if hours_data:
-            result["google_business"]["hours"] = hours_data.get("weekdayDescriptions", [])
-
-        # Recensioni reali
-        reviews_list = place.get("reviews", [])
-        for rev in reviews_list[:5]:
-            result["google_business"]["reviews"].append({
-                "author": rev.get("authorAttribution", {}).get("displayName", ""),
-                "rating": rev.get("rating"),
-                "text": rev.get("text", {}).get("text", ""),
-                "time": rev.get("relativePublishTimeDescription", ""),
-            })
-
-        logger.info(f"[PLACES] Attività trovata: {result['google_business']['title']} — Settore: {result['sector_display']} ({result['primary_type']}) — Rating: {result['google_business']['rating']}")
-
-        # --- STEP 2: Cerca competitor reali nella zona ---
-        if lat and lng and result["primary_type"]:
-            try:
-                # Costruisci query competitor usando il tipo trovato
-                # Usa termini di ricerca migliori basati sul primary_type
-                type_to_search = {
-                    "general_contractor": "impresa edile ristrutturazioni",
-                    "electrician": "elettricista impianti elettrici",
-                    "plumber": "idraulico impianti idraulici",
-                    "restaurant": "ristorante",
-                    "cafe": "bar caffetteria",
-                    "hair_salon": "parrucchiere",
-                    "beauty_salon": "centro estetico",
-                    "dentist": "dentista studio dentistico",
-                    "lawyer": "avvocato studio legale",
-                    "accounting": "commercialista studio commercialista",
-                    "car_repair": "meccanico officina auto",
-                    "bakery": "panificio forno",
-                    "pharmacy": "farmacia",
-                    "gym": "palestra centro fitness",
-                    "hotel": "hotel albergo",
-                    "real_estate_agency": "agenzia immobiliare",
-                    "insurance_agency": "agenzia assicurazioni",
-                    "travel_agency": "agenzia viaggi",
-                    "veterinary_care": "veterinario clinica veterinaria",
-                    "pizza_restaurant": "pizzeria",
-                    "clothing_store": "negozio abbigliamento",
-                    "furniture_store": "negozio mobili arredamento",
-                    "florist": "fiorista",
-                    "pet_store": "negozio animali",
-                    "car_dealer": "concessionaria auto",
-                    "shopping_mall": "centro commerciale",
-                    "supermarket": "supermercato",
-                    "school": "scuola",
-                    "church": "chiesa",
-                }
-                primary = result.get("primary_type", "")
-                sector_for_search = type_to_search.get(primary, result["sector_display"] or primary)
-                comp_query = f"{sector_for_search} {city}".strip()
-                
-                comp_headers = {
-                    "Content-Type": "application/json",
-                    "X-Goog-Api-Key": api_key,
-                    "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.websiteUri,places.primaryTypeDisplayName"
-                }
-                comp_payload = {
-                    "textQuery": comp_query,
-                    "languageCode": "it",
-                    "maxResultCount": 15,
-                    "locationBias": {
-                        "circle": {
-                            "center": {"latitude": lat, "longitude": lng},
-                            "radius": 15000.0
-                        }
-                    }
-                }
-
-                comp_resp = requests.post(
-                    "https://places.googleapis.com/v1/places:searchText",
-                    json=comp_payload, headers=comp_headers, timeout=15
-                )
-                comp_data = comp_resp.json()
-                comp_places = comp_data.get("places", [])
-
-                company_lower = company_name.lower()
-                for cp in comp_places:
-                    cp_name = cp.get("displayName", {}).get("text", "")
-                    # Escludi l'attività stessa
-                    if company_lower in cp_name.lower():
-                        continue
-                    result["competitors"].append({
-                        "name": cp_name,
-                        "website": cp.get("websiteUri"),
-                        "rating": cp.get("rating"),
-                        "reviews_count": cp.get("userRatingCount"),
-                        "address": cp.get("formattedAddress", ""),
-                        "source": "google_places_api",
-                        "category": cp.get("primaryTypeDisplayName", {}).get("text", ""),
-                    })
-
-                logger.info(f"[PLACES] Competitor trovati: {len(result['competitors'])} per \"{comp_query}\" (raggio 15km)")
-            except Exception as e:
-                logger.warning(f"[PLACES] Errore ricerca competitor: {e}")
-
-    except Exception as e:
-        logger.warning(f"[PLACES] Errore identificazione attività: {e}")
-
-    return result
-
-
+    return "Attività Locale"
 
 
 def scrape_lead(website_url: str, company_name: str, social_links_db: dict = None, city: str = "", sector: str = "", indirizzo: str = "") -> dict[str, Any]:
-    """
-    Esegue lo scraping completo di un'azienda.
-    Restituisce un dizionario strutturato con tutti i dati raccolti.
-    
-    Args:
-        website_url: URL del sito aziendale
-        company_name: Nome dell'azienda
-        social_links_db: Dict di social links dal database {platform: url}
-        city: Città dell'azienda (se nota)
-        sector: Settore dell'azienda (se noto)
-    """
-    # Se abbiamo indirizzo completo, estraiamo subito città e provincia
+    """Esegue lo scraping completo di un'azienda."""
+    if city:
+        city = re.sub(r'\d{5}\s+', '', city)
+        city = re.sub(r'\s+[A-Z]{2}$', '', city)
+        city = city.strip()
+
     if indirizzo and not city:
         parti = [p.strip() for p in indirizzo.split(",")]
         if len(parti) >= 3:
             city = parti[-2].strip()
+            city = re.sub(r'^\d{5}\s*', '', city).strip()
         elif len(parti) == 2:
             city = parti[-1].strip()
+            city = re.sub(r'^\d{5}\s*', '', city).strip()
         logger.info(f"Città estratta dall'indirizzo: {city}")
+
     logger.info(f"Inizio scraping per {company_name} — {website_url} ({city or 'città non fornita'})")
+
     results = {
         "company_name": company_name,
         "website_url": website_url,
@@ -253,18 +93,21 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         "pagespeed": {},
         "apify": {},
         "perplexity": {},
-        "geo": {},
         "errors": [],
     }
 
     # 1. Scraping sito web
     try:
         results["website"] = _scrape_website(website_url)
+        if not sector or sector == "Da identificare":
+            sector = _deduce_sector(results["website"])
+            results["sector"] = sector
+            logger.info(f"Settore dedotto dal sito: {sector}")
     except Exception as e:
         logger.warning(f"Errore scraping sito {website_url}: {e}")
         results["errors"].append(f"Sito web: {str(e)}")
 
-    # 1b. PageSpeed Insights (Core Web Vitals, punteggi, suggerimenti)
+    # 1b. PageSpeed Insights
     try:
         results["pagespeed"] = _analyze_pagespeed(website_url)
         logger.info(f"PageSpeed completato per {website_url}")
@@ -273,56 +116,21 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         results["errors"].append(f"PageSpeed: {str(e)}")
         results["pagespeed"] = {"error": str(e)}
 
-    # 1c. Google Places API — Identificazione attività, settore e competitor
-    try:
-        places_data = _identify_with_google_places(company_name, city, sector)
-        if places_data.get("place_found"):
-            # Aggiorna settore se trovato
-            if places_data.get("sector") and (not sector or sector == "Da identificare"):
-                sector = places_data["sector"]
-                results["sector"] = sector
-                results["extracted_sector"] = sector
-                logger.info(f"[PLACES] Settore aggiornato: {sector}")
-            
-            # Aggiorna GMB se più ricco
-            if places_data.get("google_business", {}).get("found"):
-                results["google_business"] = places_data["google_business"]
-            
-            # Salva competitor da Places API
-            if places_data.get("competitors"):
-                results["competitors"] = places_data["competitors"]
-                logger.info(f"[PLACES] {len(results['competitors'])} competitor caricati")
-    except Exception as e:
-        logger.warning(f"Errore Google Places: {e}")
-
-    # 2. Analisi SEO avanzata via SerpAPI (6 query)
+    # 2. Analisi SEO avanzata (6 query) — via Serper.dev / CSE / scraping
     try:
         seo_data = _analyze_seo(website_url, company_name, city, sector)
         results["seo"] = seo_data.get("seo", {})
         results["google_business"] = seo_data.get("google_business", {})
-        # Mantieni competitor Google Places API se presenti, altrimenti usa SerpAPI
-        seo_competitors = seo_data.get("competitors", [])
-        if not results["competitors"]:
-            results["competitors"] = seo_competitors
-        else:
-            # Aggiungi competitor SerpAPI non duplicati (max 15 totali)
-            existing_names = {c["name"].lower() for c in results["competitors"]}
-            for sc in seo_competitors:
-                if len(results["competitors"]) >= 15:
-                    break
-                if sc.get("name", "").lower() not in existing_names:
-                    results["competitors"].append(sc)
-                    existing_names.add(sc["name"].lower())
+        results["competitors"] = seo_data.get("competitors", [])
         results["citations"] = seo_data.get("citations", [])
         results["indexed_pages"] = seo_data.get("indexed_pages", {"total": 0, "pages": []})
-        
-        # Aggiorna città e settore se estratti da SerpAPI
+
         if not results["city"] and seo_data.get("extracted_city"):
             results["city"] = seo_data["extracted_city"]
         if not results["sector"] and seo_data.get("extracted_sector"):
             results["sector"] = seo_data["extracted_sector"]
-            
-        logger.info(f"Analisi SerpAPI completata per {company_name}: {len(results['competitors'])} competitor, {len(results['citations'])} citazioni")
+
+        logger.info(f"Analisi SEO completata per {company_name}: {len(results['competitors'])} competitor, {len(results['citations'])} citazioni")
     except Exception as e:
         logger.warning(f"Errore analisi SEO per {company_name}: {e}")
         results["errors"].append(f"SEO: {str(e)}")
@@ -334,33 +142,26 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         logger.warning(f"Errore ricerca social per {company_name}: {e}")
         results["errors"].append(f"Social: {str(e)}")
 
-    # 4. Google Business Profile (Backup/Refine se Apify fallisce)
-    # Nota: I dati principali sono già stati presi da _analyze_seo (Query 1)
+    # 4. Google Business Profile backup
     if not results["google_business"] or not results["google_business"].get("found"):
         try:
             results["google_business"] = _check_google_business(company_name)
         except Exception as e:
             logger.warning(f"Errore Google Business backup per {company_name}: {e}")
 
-
-    # 5. Scraping avanzato via Apify (Facebook, Instagram, LinkedIn)
+    # 5. Scraping social media (Facebook, Instagram, LinkedIn) - senza Apify
     try:
-        from execution.scrape_apify import run_apify_scraping
+        from execution.scrape_social import run_social_scraping
 
-        # Costruisci social_links dando priorità ai dati dal DB
         social_links = {}
-        
-        # 1. Carica profilazione dal DB (priorità)
+
         if social_links_db:
             for platform, data in social_links_db.items():
-                # Se data è stringa (URL/Username)
                 if isinstance(data, str):
                     social_links[platform.lower()] = data
-                # Se data è dict (come ritornato da _find_social_media)
                 elif isinstance(data, dict) and data.get("url"):
                     social_links[platform.lower()] = data["url"]
 
-        # 2. Integra con link trovati nel sito solo se mancano
         sm = results.get("social_media", {})
         for platform in ["instagram", "facebook", "linkedin"]:
             if platform not in social_links and sm.get(platform):
@@ -370,53 +171,32 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
                 elif isinstance(item, str):
                     social_links[platform] = item
 
-        # Tenta di determinare la città se manca
         active_city = city
         if not active_city:
             gb = results.get("google_business", {})
             if gb.get("address"):
-                # Estrai l'ultima parte dell'indirizzo (spesso la città)
                 addr_parts = gb["address"].split(",")
                 if len(addr_parts) >= 2:
-                    # In Italia solitamente "Via ..., CAP Città (PROV)"
                     active_city = addr_parts[-2].strip().split(" ")[-1]
                 else:
                     active_city = gb["address"]
 
-        results["apify"] = run_apify_scraping(
+        results["apify"] = run_social_scraping(
             company_name=company_name,
             city=active_city,
             website=website_url,
             social_links=social_links,
             sector=sector,
+            rapidapi_key=getattr(settings, 'RAPIDAPI_KEY', None),
         )
-        logger.info(f"Apify scraping completato per {company_name}")
-
-        # Fix 4: Passa dati Google Maps a google_business per GPT-4o
-        apify_gm = results["apify"].get("google_maps", {})
-        if apify_gm.get("found"):
-            # Sovrascrivi/Estrai dati reali da Apify (più ricchi di SerpAPI)
-            results["google_business"] = {
-                "source": "apify_google_maps",
-                "name": apify_gm.get("name"),
-                "rating": apify_gm.get("rating"),
-                "reviews_count": apify_gm.get("reviews_count"),
-                "address": apify_gm.get("address"),
-                "phone": apify_gm.get("phone"),
-                "website": apify_gm.get("website"),
-                "hours": apify_gm.get("opening_hours"),
-                "category": apify_gm.get("category"),
-                "photos": apify_gm.get("photos", []),
-                "reviews": apify_gm.get("reviews", []), # Testi recensioni REALI
-            }
-            logger.info(f"Dati Google Business arricchiti con Apify per {company_name}")
+        logger.info(f"Social scraping completato per {company_name}")
 
     except Exception as e:
-        logger.warning(f"Errore Apify per {company_name}: {e}")
-        results["errors"].append(f"Apify: {str(e)}")
+        logger.warning(f"Errore social scraping per {company_name}: {e}")
+        results["errors"].append(f"Social: {str(e)}")
         results["apify"] = {"error": str(e)}
 
-    # 6. Ricerca Perplexity AI (contesto mercato e reputazione online)
+    # 6. Ricerca Perplexity AI
     try:
         results["perplexity"] = _perplexity_research(company_name, website_url)
         logger.info(f"Perplexity research completato per {company_name}")
@@ -425,28 +205,7 @@ def scrape_lead(website_url: str, company_name: str, social_links_db: dict = Non
         results["errors"].append(f"Perplexity: {str(e)}")
         results["perplexity"] = {"error": str(e)}
 
-
-    # 7. Analisi GEO / AI Visibility
-    try:
-        from execution.scrape_geo import scrape_geo
-        html_cached = results.get("website", {}).get("_raw_html")
-        results["geo"] = scrape_geo(
-            website_url=website_url,
-            company_name=company_name,
-            html_content=html_cached,
-        )
-        logger.info(
-            f"[GEO] Score: {results['geo']['geo_score'].get('score', 'N/D')}/100"
-        )
-    except Exception as e:
-        logger.warning(f"Errore analisi GEO per {company_name}: {e}")
-        results["errors"].append(f"GEO: {str(e)}")
-        results["geo"] = {"analyzed": False, "error": str(e)}
-
-    logger.info(
-        f"Scraping completato per {company_name}: "
-        f"{len(results['errors'])} errori"
-    )
+    logger.info(f"Scraping completato per {company_name}: {len(results['errors'])} errori")
     return results
 
 
@@ -493,30 +252,20 @@ def _scrape_website(url: str) -> dict:
     soup = BeautifulSoup(resp.text, "html.parser")
     domain = urlparse(url).netloc
 
-    # Meta tags
     data["title"] = soup.title.string.strip() if soup.title and soup.title.string else None
-
     meta_desc = soup.find("meta", attrs={"name": "description"})
     data["meta_description"] = meta_desc["content"].strip() if meta_desc and meta_desc.get("content") else None
-
-    # Viewport (responsive)
     viewport = soup.find("meta", attrs={"name": "viewport"})
     data["has_responsive_meta"] = viewport is not None
-
-    # Favicon
     favicon = soup.find("link", rel=lambda x: x and "icon" in x)
     data["has_favicon"] = favicon is not None
-
-    # Headings
     data["h1_tags"] = [h.get_text(strip=True) for h in soup.find_all("h1")][:10]
     data["h2_tags"] = [h.get_text(strip=True) for h in soup.find_all("h2")][:20]
 
-    # Immagini
     images = soup.find_all("img")
     data["images_count"] = len(images)
     data["images_without_alt"] = sum(1 for img in images if not img.get("alt"))
 
-    # Link
     links = soup.find_all("a", href=True)
     for link in links:
         href = link["href"]
@@ -528,11 +277,9 @@ def _scrape_website(url: str) -> dict:
         elif href.startswith("/"):
             data["internal_links_count"] += 1
 
-    # Conteggio parole
     text = soup.get_text(separator=" ", strip=True)
     data["word_count"] = len(text.split())
 
-    # Tecnologie
     html_lower = resp.text.lower()
     tech_signatures = {
         "WordPress": ["wp-content", "wp-includes", "wordpress"],
@@ -556,20 +303,12 @@ def _scrape_website(url: str) -> dict:
         if any(sig in html_lower for sig in signatures):
             data["technologies_detected"].append(tech)
 
-    data["has_analytics"] = any(
-        t in data["technologies_detected"]
-        for t in ["Google Analytics", "Google Tag Manager"]
-    )
-    data["has_cookie_banner"] = any(
-        t in data["technologies_detected"]
-        for t in ["Cookiebot", "GDPR Cookie"]
-    )
+    data["has_analytics"] = any(t in data["technologies_detected"] for t in ["Google Analytics", "Google Tag Manager"])
+    data["has_cookie_banner"] = any(t in data["technologies_detected"] for t in ["Cookiebot", "GDPR Cookie"])
 
-    # Structured data (JSON-LD)
     json_ld = soup.find_all("script", type="application/ld+json")
     data["structured_data"] = len(json_ld) > 0
 
-    # Contatti
     email_pattern = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
     phone_pattern = re.compile(r"(?:\+39\s?)?(?:0\d{1,3}[\s.-]?\d{5,9}|\d{3}[\s.-]?\d{6,7})")
     found_emails = email_pattern.findall(text)
@@ -579,7 +318,6 @@ def _scrape_website(url: str) -> dict:
         "phones": list(set(found_phones))[:5],
     }
 
-    # Pagine principali (dal menu)
     nav_links = []
     for nav in soup.find_all(["nav", "header"]):
         for a in nav.find_all("a", href=True):
@@ -589,16 +327,13 @@ def _scrape_website(url: str) -> dict:
                 nav_links.append({"label": label, "href": href})
     data["pages_found"] = nav_links[:20]
 
-    # Salva HTML grezzo per GEO (evita doppio fetch)
-    data["_raw_html"] = resp.text[:500000]
-
     return data
 
 
 def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: str = "") -> dict:
     """
-    Analisi SEO avanzata via SerpAPI utilizzando 6 query dinamiche.
-    Estrae dati GMB, competitor, citazioni e indicizzazione.
+    Analisi SEO via smart_search (Serper.dev → Google CSE → scraping diretto).
+    Sostituisce SerpAPI mantenendo la stessa struttura di output.
     """
     results = {
         "google_business": {"found": False, "source": "not_found"},
@@ -610,33 +345,30 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
             "organic_position": {
                 "brand_query": None,
                 "sector_local_query": None,
-                "sector_regional_query": None
-            }
+                "sector_regional_query": None,
+            },
         },
         "extracted_city": None,
-        "extracted_sector": None
+        "extracted_sector": None,
     }
 
-    api_key = settings.SERPAPI_KEY
-    if not api_key:
-        logger.error("SERPAPI_KEY non trovata nelle impostazioni")
-        return results
-
+    serper_key = getattr(settings, 'SERPER_KEY', None)
+    cse_key = getattr(settings, 'GOOGLE_CSE_KEY', None)
+    cx = getattr(settings, 'GOOGLE_CX', None)
     domain = urlparse(website_url).netloc.replace("www.", "")
-    
-    # 1. QUERY 1: Brand (Knowledge Graph + Local Pack + Organic)
+
+    # ── QUERY 1: Brand (Knowledge Graph + Local Pack + Organic) ──
     try:
         q1 = company_name
-        loc = f"{city}, Italy" if city else "Italy"
-        params = {
-            "q": q1,
-            "hl": "it", "gl": "it", "location": loc,
-            "api_key": api_key, "num": 10
-        }
-        resp = requests.get("https://serpapi.com/search.json", params=params, timeout=30)
-        data = resp.json()
-        
-        # Estrai Knowledge Graph
+        data = smart_search(
+            query=q1,
+            serper_key=serper_key,
+            google_cse_key=cse_key,
+            google_cx=cx,
+            need_knowledge_graph=True,
+            need_local_pack=True,
+        )
+
         kg = data.get("knowledge_graph", {})
         if kg:
             results["google_business"] = {
@@ -651,39 +383,31 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
                 "website": kg.get("website"),
                 "place_id": kg.get("place_id"),
                 "category": kg.get("type"),
-                "thumbnail": kg.get("thumbnail")
+                "thumbnail": kg.get("thumbnail"),
             }
-            # Se city era vuota, prova a estrarla dall'indirizzo
             if not city and results["google_business"]["address"]:
                 addr = results["google_business"]["address"]
-                # Prova 1: Cerca pattern città dopo il CAP (es. "09028 Sestu")
                 m = re.search(r'\d{5}\s+([A-Za-z\s]+?)(?:\s*\(|$)', addr)
                 if m:
                     results["extracted_city"] = m.group(1).strip()
                 else:
-                    # Prova 2: Split per virgola — in "Via X, Sestu, CA" la città è il penultimo
                     parts = [p.strip() for p in addr.split(",")]
                     if len(parts) >= 2:
-                        # Prendi il penultimo elemento, rimuovi eventuale CAP numerico
                         candidate = re.sub(r'^\d{5}\s*', '', parts[-2]).strip()
-                        # Rimuovi sigla provincia tipo " CA" o " (CA)"
                         candidate = re.sub(r'\s*\([A-Z]{2}\)\s*$', '', candidate)
                         candidate = re.sub(r'\s+[A-Z]{2}$', '', candidate)
                         if candidate and not candidate.isdigit():
                             results["extracted_city"] = candidate
                 if results["extracted_city"]:
                     city = results["extracted_city"]
-                    logger.info(f"[SERPAPI] Città estratta dall'indirizzo: {city}")
-            
-            # Se sector era vuoto, usa la categoria
+                    logger.info(f"[SEO] Città estratta: {city}")
+
             if not sector and results["google_business"]["category"]:
                 results["extracted_sector"] = results["google_business"]["category"]
                 sector = results["extracted_sector"]
 
-        # Se non c'è KG, prova il Local Pack
-        if not results["google_business"]["found"] and "local_results" in data:
+        if not results["google_business"]["found"]:
             for place in data.get("local_results", {}).get("places", []):
-                # Match approssimativo sul nome o website
                 if company_name.lower() in place.get("title", "").lower() or domain in place.get("links", {}).get("website", ""):
                     results["google_business"] = {
                         "found": True,
@@ -694,70 +418,59 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
                         "address": place.get("address"),
                         "phone": place.get("phone"),
                         "place_id": place.get("place_id"),
-                        "website": place.get("links", {}).get("website")
+                        "website": place.get("links", {}).get("website"),
                     }
                     break
 
-        # Organic Position Brand
         brand_pos = None
         for i, res in enumerate(data.get("organic_results", []), 1):
             if domain in res.get("link", ""):
                 brand_pos = i
                 break
-        
+
         results["seo"]["organic_position"]["brand_query"] = {
             "query": q1,
             "position": brand_pos,
-            "total_results": data.get("search_information", {}).get("total_results", 0)
+            "total_results": data.get("search_information", {}).get("total_results", 0),
         }
         results["seo"]["search_queries"].append({"query": q1, "results": len(data.get("organic_results", []))})
-        
-        logger.info(f"[SERPAPI] Brand Query: {q1} — Found: {results['google_business']['found']} ({results['google_business']['source']}), Pos: {brand_pos}")
+        logger.info(f"[SEO] Q1 Brand: found={results['google_business']['found']}, pos={brand_pos}")
 
     except Exception as e:
-        logger.error(f"Errore Query 1 SerpAPI: {e}")
+        logger.error(f"Errore Query 1: {e}")
 
-    # 2. QUERY 2: Brand + Recensioni (Citazioni/Reputazione)
+    # ── QUERY 2: Brand + Recensioni (citazioni) ──
     try:
         q2 = f"{company_name} recensioni"
-        params = {"q": q2, "hl": "it", "gl": "it", "api_key": api_key}
-        data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
-        
+        data = smart_search(query=q2, serper_key=serper_key, google_cse_key=cse_key, google_cx=cx)
         for res in data.get("organic_results", []):
-            link = res.get("link", "")
-            title = res.get("title", "")
-            snippet = res.get("snippet", "")
-            # Se il brand o il dominio sono nel risultato, lo salviamo come citazione
-            if company_name.lower() in title.lower() or domain in link:
+            if company_name.lower() in res.get("title", "").lower() or domain in res.get("link", ""):
                 _add_citation(results["citations"], res)
-                
-        logger.info(f"[SERPAPI] Reputazione Query: {q2} — Citazioni trovate: {len(results['citations'])}")
+        logger.info(f"[SEO] Q2 Recensioni: {len(results['citations'])} citazioni")
     except Exception as e:
-        logger.error(f"Errore Query 2 SerpAPI: {e}")
+        logger.error(f"Errore Query 2: {e}")
 
-    # 3. QUERY 3: Settore + Città (Competitor Locali)
+    # ── QUERY 3: Settore + Città (competitor locali) ──
     if city and sector:
         try:
             sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()
-            # Fix: Rimuovi la città dal settore se già presente (evita "edilizia Sestu Sestu")
             if city.lower() in sector_clean.lower():
                 sector_clean = re.sub(re.escape(city), '', sector_clean, flags=re.IGNORECASE).strip()
             q3 = f"{sector_clean} {city}"
-            params = {"q": q3, "hl": "it", "gl": "it", "location": f"{city}, Italy", "api_key": api_key}
-            data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
-            
-            # Local Competitors
+            data = smart_search(
+                query=q3,
+                serper_key=serper_key,
+                google_cse_key=cse_key,
+                google_cx=cx,
+                need_local_pack=True,
+            )
             for place in data.get("local_results", {}).get("places", []):
-                # Escludi l'azienda stessa
-                if company_name.lower() not in place.get("title", "").lower() and domain not in place.get("links", {}).get("website", ""):
+                if company_name.lower() not in place.get("title", "").lower():
                     _add_competitor(results["competitors"], place, "local_pack")
-
-            # Organic Competitors (escludi portali)
             for res in data.get("organic_results", []):
                 if not _is_portal(res.get("link", "")) and domain not in res.get("link", ""):
                     _add_competitor(results["competitors"], res, "organic")
 
-            # Organic Position Sector Local
             local_sec_pos = None
             for i, res in enumerate(data.get("organic_results", []), 1):
                 if domain in res.get("link", ""):
@@ -765,125 +478,59 @@ def _analyze_seo(website_url: str, company_name: str, city: str = "", sector: st
                     break
             results["seo"]["organic_position"]["sector_local_query"] = {
                 "query": q3, "position": local_sec_pos,
-                "total_results": data.get("search_information", {}).get("total_results", 0)
+                "total_results": data.get("search_information", {}).get("total_results", 0),
             }
-            logger.info(f"[SERPAPI] Local Sector Query: {q3} — Competitors: {len(results['competitors'])}, Pos: {local_sec_pos}")
+            logger.info(f"[SEO] Q3 Competitor locali: {len(results['competitors'])}, pos={local_sec_pos}")
         except Exception as e:
-            logger.error(f"Errore Query 3 SerpAPI: {e}")
+            logger.error(f"Errore Query 3: {e}")
 
-    # 4. QUERY 4: Settore + Capoluogo (Competitor Regionali)
+    # ── QUERY 4: Settore + Capoluogo (competitor regionali) ──
     if sector:
-        # Mappatura città → capoluogo di provincia/riferimento
-        _capoluogo_map = {
-            # Sardegna
-            "cagliari": "Cagliari", "sassari": "Sassari", "nuoro": "Nuoro",
-            "oristano": "Oristano", "olbia": "Sassari", "alghero": "Sassari",
-            "sestu": "Cagliari", "quartu sant elena": "Cagliari",
-            "selargius": "Cagliari", "assemini": "Cagliari", "carbonia": "Cagliari",
-            # Lombardia
-            "milano": "Milano", "brescia": "Brescia", "bergamo": "Bergamo",
-            "monza": "Milano", "como": "Como", "varese": "Varese",
-            "pavia": "Pavia", "cremona": "Cremona", "mantova": "Mantova",
-            # Lazio
-            "roma": "Roma", "frosinone": "Roma", "latina": "Roma",
-            "viterbo": "Roma", "rieti": "Roma",
-            # Campania
-            "napoli": "Napoli", "salerno": "Salerno", "caserta": "Napoli",
-            "avellino": "Napoli", "benevento": "Napoli",
-            # Sicilia
-            "palermo": "Palermo", "catania": "Catania", "messina": "Messina",
-            "agrigento": "Palermo", "siracusa": "Catania", "trapani": "Palermo",
-            "ragusa": "Catania", "caltanissetta": "Palermo", "enna": "Palermo",
-            # Piemonte
-            "torino": "Torino", "novara": "Torino", "alessandria": "Torino",
-            "asti": "Torino", "cuneo": "Torino", "vercelli": "Torino",
-            # Veneto
-            "venezia": "Venezia", "verona": "Verona", "padova": "Padova",
-            "vicenza": "Venezia", "treviso": "Venezia", "rovigo": "Venezia",
-            # Emilia-Romagna
-            "bologna": "Bologna", "modena": "Bologna", "parma": "Parma",
-            "reggio emilia": "Bologna", "ferrara": "Bologna", "ravenna": "Bologna",
-            "rimini": "Bologna", "forli": "Bologna", "piacenza": "Bologna",
-            # Toscana
-            "firenze": "Firenze", "pisa": "Firenze", "siena": "Firenze",
-            "livorno": "Firenze", "arezzo": "Firenze", "grosseto": "Firenze",
-            "lucca": "Firenze", "pistoia": "Firenze", "prato": "Firenze",
-            # Puglia
-            "bari": "Bari", "lecce": "Bari", "taranto": "Bari",
-            "foggia": "Bari", "brindisi": "Bari", "andria": "Bari",
-            # Calabria
-            "catanzaro": "Catanzaro", "reggio calabria": "Catanzaro",
-            "cosenza": "Catanzaro", "crotone": "Catanzaro", "vibo valentia": "Catanzaro",
-            # Liguria
-            "genova": "Genova", "la spezia": "Genova", "savona": "Genova", "imperia": "Genova",
-            # Marche
-            "ancona": "Ancona", "pesaro": "Ancona", "macerata": "Ancona",
-            # Abruzzo
-            "pescara": "Pescara", "chieti": "Pescara", "l aquila": "Pescara",
-            # Friuli
-            "trieste": "Trieste", "udine": "Trieste", "pordenone": "Trieste",
-            # Trentino
-            "trento": "Trento", "bolzano": "Trento",
-            # Umbria
-            "perugia": "Perugia", "terni": "Perugia",
-            # Basilicata
-            "potenza": "Potenza", "matera": "Potenza",
-            # Molise
-            "campobasso": "Campobasso",
-            # Valle d Aosta
-            "aosta": "Aosta",
-        }
-        city_key = city.lower().strip() if city else ""
-        capoluogo = _capoluogo_map.get(city_key, city or "Italia")
+        capoluogo = "Cagliari"
         if city and city.lower() != capoluogo.lower():
             try:
                 sector_clean = sector.split("-")[0].strip() if "-" in sector else sector.strip()
-                # Fix: Rimuovi la città dal settore se presente
                 if city.lower() in sector_clean.lower():
                     sector_clean = re.sub(re.escape(city), '', sector_clean, flags=re.IGNORECASE).strip()
                 q4 = f"{sector_clean} {capoluogo}"
-                params = {"q": q4, "hl": "it", "gl": "it", "location": f"{capoluogo}, Italy", "api_key": api_key}
-                data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
-                
-                # Aggiungi competitor senza duplicati
+                data = smart_search(
+                    query=q4,
+                    serper_key=serper_key,
+                    google_cse_key=cse_key,
+                    google_cx=cx,
+                    need_local_pack=True,
+                )
                 for place in data.get("local_results", {}).get("places", []):
-                    if company_name.lower() not in place.get("title", "").lower() and domain not in place.get("links", {}).get("website", ""):
+                    if company_name.lower() not in place.get("title", "").lower():
                         _add_competitor(results["competitors"], place, "local_pack")
-                
                 for res in data.get("organic_results", []):
                     if not _is_portal(res.get("link", "")) and domain not in res.get("link", ""):
                         _add_competitor(results["competitors"], res, "organic")
-                
-                logger.info(f"[SERPAPI] Regional Sector Query: {q4} — Competitors totali: {len(results['competitors'])}")
+                logger.info(f"[SEO] Q4 Competitor regionali: {len(results['competitors'])}")
             except Exception as e:
-                logger.error(f"Errore Query 4 SerpAPI: {e}")
+                logger.error(f"Errore Query 4: {e}")
 
-    # 5. QUERY 5: Pagine Indicizzate (site:)
+    # ── QUERY 5: Pagine indicizzate (site:) — scraping diretto ok ──
     try:
         q5 = f"site:{domain}"
-        params = {"q": q5, "hl": "it", "gl": "it", "api_key": api_key}
-        data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
-        
+        data = smart_search(query=q5, serper_key=serper_key, google_cse_key=cse_key, google_cx=cx)
         results["indexed_pages"] = {
             "total": data.get("search_information", {}).get("total_results", 0),
-            "pages": [{"title": r.get("title"), "link": r.get("link")} for r in data.get("organic_results", [])[:10]]
+            "pages": [{"title": r.get("title"), "link": r.get("link")} for r in data.get("organic_results", [])[:10]],
         }
-        logger.info(f"[SERPAPI] Indexed Pages: {results['indexed_pages']['total']}")
+        logger.info(f"[SEO] Q5 Pagine indicizzate: {results['indexed_pages']['total']}")
     except Exception as e:
-        logger.error(f"Errore Query 5 SerpAPI: {e}")
+        logger.error(f"Errore Query 5: {e}")
 
-    # 6. QUERY 6: Citazioni / Presenza Online
+    # ── QUERY 6: Citazioni / presenza online — scraping diretto ok ──
     try:
         q6 = f'"{company_name}" OR "{domain}" -site:{domain}'
-        params = {"q": q6, "hl": "it", "gl": "it", "api_key": api_key}
-        data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
-        
+        data = smart_search(query=q6, serper_key=serper_key, google_cse_key=cse_key, google_cx=cx)
         for res in data.get("organic_results", []):
             _add_citation(results["citations"], res)
-            
-        logger.info(f"[SERPAPI] Citations Query: {q6} — Totali: {len(results['citations'])}")
+        logger.info(f"[SEO] Q6 Citazioni totali: {len(results['citations'])}")
     except Exception as e:
-        logger.error(f"Errore Query 6 SerpAPI: {e}")
+        logger.error(f"Errore Query 6: {e}")
 
     return results
 
@@ -894,7 +541,7 @@ def _is_portal(url: str) -> bool:
         "paginebianche.it", "paginegialle.it", "edilnet.it", "virgilio.it",
         "yelp.com", "tripadvisor.com", "infobel.com", "cylex-italia.it",
         "prontopro.it", "instapro.it", "houzz.it", "misterimprese.it",
-        "paginegialle.it", "cybo.com", "guidaedilizia.it", "edilmap.it"
+        "cybo.com", "guidaedilizia.it", "edilmap.it",
     ]
     domain = urlparse(url).netloc.lower()
     return any(p in domain for p in portals)
@@ -904,14 +551,11 @@ def _add_competitor(comp_list: list, item: dict, source: str):
     """Aggiunge un competitor alla lista se non già presente (max 5)."""
     if len(comp_list) >= 5:
         return
-
     name = item.get("title") or item.get("name")
-    if not name: return
-    
-    # Evita duplicati pesanti
+    if not name:
+        return
     if any(c["name"].lower() == name.lower() for c in comp_list):
         return
-        
     comp_list.append({
         "name": name,
         "website": item.get("links", {}).get("website") or item.get("link"),
@@ -921,7 +565,7 @@ def _add_competitor(comp_list: list, item: dict, source: str):
         "phone": item.get("phone"),
         "source": source,
         "position": item.get("position"),
-        "place_id": item.get("place_id")
+        "place_id": item.get("place_id"),
     })
 
 
@@ -929,26 +573,24 @@ def _add_citation(cit_list: list, item: dict):
     """Aggiunge una citazione classificandola per tipo."""
     link = item.get("link", "")
     domain = urlparse(link).netloc.lower().replace("www.", "")
-    
-    # Classificazione tipo
+
     cit_type = "other"
     if any(s in domain for s in ["facebook.com", "instagram.com", "linkedin.com", "tiktok.com", "youtube.com"]):
         cit_type = "social"
     elif "digidentitycard.com" in domain:
         cit_type = "digidentity_card"
-    elif any(d in domain for d in ["paginegialle.it", "paginebianche.it", "edilnet.it", "virgilio.it", "yelp.com", "tripadvisor.com", "infobel.com"]):
+    elif any(d in domain for d in ["paginegialle.it", "paginebianche.it", "tripadvisor.com", "yelp.com"]):
         cit_type = "directory"
-        
-    # Evita duplicati esatti di link
+
     if any(c["link"] == link for c in cit_list):
         return
-        
+
     cit_list.append({
         "title": item.get("title"),
         "link": link,
         "source_domain": domain,
         "type": cit_type,
-        "snippet": item.get("snippet")
+        "snippet": item.get("snippet"),
     })
 
 
@@ -963,14 +605,12 @@ def _find_social_media(website_url: str, company_name: str, social_links_db: dic
         "tiktok": None,
     }
 
-    # Se sono presenti link social dal DB, usali con priorità
     if social_links_db:
         for platform, url in social_links_db.items():
             platform_lower = platform.lower()
             if platform_lower in data and url:
                 data[platform_lower] = {"url": url, "found_on_website": False, "found_in_db": True}
 
-    # Poi cerca nel sito web (sovrascrive solo se non trovato nel DB)
     try:
         resp = requests.get(website_url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
         html = resp.text.lower()
@@ -986,7 +626,7 @@ def _find_social_media(website_url: str, company_name: str, social_links_db: dic
 
         for platform, pattern in social_patterns.items():
             match = re.search(pattern, html)
-            if match and data[platform] is None:  # Solo se non trovato nel DB
+            if match and data[platform] is None:
                 url = match.group(0)
                 if not url.startswith("http"):
                     url = f"https://{url}"
@@ -999,7 +639,7 @@ def _find_social_media(website_url: str, company_name: str, social_links_db: dic
 
 
 def _check_google_business(company_name: str) -> dict:
-    """Verifica la presenza su Google Business."""
+    """Verifica la presenza su Google Business via smart_search."""
     data = {
         "found": False,
         "rating": None,
@@ -1010,27 +650,17 @@ def _check_google_business(company_name: str) -> dict:
         "category": None,
     }
 
-    if not settings.SERPAPI_KEY:
-        data["error"] = "SerpAPI key non configurata"
-        return data
-
     try:
-        resp = requests.get(
-            "https://serpapi.com/search.json",
-            params={
-                "q": company_name,
-                "hl": "it",
-                "gl": "it",
-                "api_key": settings.SERPAPI_KEY,
-            },
-            timeout=REQUEST_TIMEOUT,
+        result = smart_search(
+            query=company_name,
+            serper_key=getattr(settings, 'SERPER_KEY', None),
+            google_cse_key=getattr(settings, 'GOOGLE_CSE_KEY', None),
+            google_cx=getattr(settings, 'GOOGLE_CX', None),
+            need_local_pack=True,
+            need_knowledge_graph=True,
         )
-        result = resp.json()
 
-        # Cerca nei local results
-        local = result.get("local_results", {})
-        places = local.get("places", [])
-
+        places = result.get("local_results", {}).get("places", [])
         if places:
             place = places[0]
             data.update({
@@ -1042,7 +672,6 @@ def _check_google_business(company_name: str) -> dict:
                 "category": place.get("type"),
             })
 
-        # Knowledge graph
         kg = result.get("knowledge_graph", {})
         if kg and not data["found"]:
             data.update({
@@ -1060,16 +689,11 @@ def _check_google_business(company_name: str) -> dict:
 
 
 def _perplexity_research(company_name: str, website_url: str) -> dict[str, Any]:
-    """
-    Usa Perplexity AI per ricerca contestuale sull'azienda.
-    Restituisce informazioni su reputazione, mercato, competitor.
-    """
+    """Usa Perplexity AI per ricerca contestuale sull'azienda."""
     if not settings.PERPLEXITY_API_KEY:
         return {"error": "PERPLEXITY_API_KEY non configurata", "found": False}
 
     try:
-        import requests as req
-
         prompt = (
             f"Analizza la presenza digitale e la reputazione dell'azienda '{company_name}' "
             f"(sito: {website_url}). Cerca informazioni su:\n"
@@ -1081,7 +705,7 @@ def _perplexity_research(company_name: str, website_url: str) -> dict[str, Any]:
             f"Rispondi in italiano con dati concreti."
         )
 
-        resp = req.post(
+        resp = requests.post(
             "https://api.perplexity.ai/chat/completions",
             headers={
                 "Authorization": f"Bearer {settings.PERPLEXITY_API_KEY}",
@@ -1090,7 +714,7 @@ def _perplexity_research(company_name: str, website_url: str) -> dict[str, Any]:
             json={
                 "model": settings.PERPLEXITY_MODEL,
                 "messages": [
-                    {"role": "system", "content": "Sei un analista di digital marketing specializzato in PMI italiane. Rispondi con dati concreti e specifici."},
+                    {"role": "system", "content": "Sei un analista di digital marketing specializzato in PMI italiane."},
                     {"role": "user", "content": prompt},
                 ],
                 "max_tokens": 2000,
@@ -1100,14 +724,11 @@ def _perplexity_research(company_name: str, website_url: str) -> dict[str, Any]:
         )
         resp.raise_for_status()
         data = resp.json()
-
         content = data["choices"][0]["message"]["content"]
-        citations = data.get("citations", [])
-
         return {
             "found": True,
             "analysis": content,
-            "citations": citations,
+            "citations": data.get("citations", []),
             "model": data.get("model", settings.PERPLEXITY_MODEL),
             "tokens_used": data.get("usage", {}).get("total_tokens", 0),
         }
@@ -1117,23 +738,15 @@ def _perplexity_research(company_name: str, website_url: str) -> dict[str, Any]:
         return {"found": False, "error": str(e)}
 
 
-
 def _analyze_pagespeed(website_url: str) -> dict[str, Any]:
-    """
-    Analisi PageSpeed Insights via API Google (gratuita).
-    Restituisce Core Web Vitals, punteggi mobile e desktop, suggerimenti.
-    """
+    """Analisi PageSpeed Insights via API Google."""
     API_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
-    results = {
-        "mobile": {},
-        "desktop": {},
-        "errors": [],
-    }
+    results = {"mobile": {}, "desktop": {}, "errors": []}
 
     for strategy in ["mobile", "desktop"]:
         max_retries = 3
         retry_delay = 2
-        
+
         for attempt in range(max_retries):
             try:
                 params = {
@@ -1142,33 +755,26 @@ def _analyze_pagespeed(website_url: str) -> dict[str, Any]:
                     "locale": "it",
                     "category": ["performance", "seo", "best-practices", "accessibility"],
                 }
-                
-                # Aggiungi API Key se presente
                 if settings.GOOGLE_PAGESPEED_API_KEY:
                     params["key"] = settings.GOOGLE_PAGESPEED_API_KEY
 
                 resp = requests.get(API_URL, params=params, timeout=60)
-                
-                # Gestione Rate Limit (429) con backoff esponenziale
+
                 if resp.status_code == 429:
                     if attempt < max_retries - 1:
                         wait_time = retry_delay * (2 ** attempt)
-                        logger.warning(f"⚠️ PageSpeed 429 (Rate Limit). Retry {attempt+1}/{max_retries} in {wait_time}s...")
+                        logger.warning(f"PageSpeed 429. Retry {attempt+1}/{max_retries} in {wait_time}s...")
                         time.sleep(wait_time)
                         continue
                     else:
-                        resp.raise_for_status() # Lancia errore se superati i tentativi
-                
+                        resp.raise_for_status()
+
                 resp.raise_for_status()
                 data = resp.json()
 
-                # Lighthouse scores
                 categories = data.get("lighthouseResult", {}).get("categories", {})
-                scores = {}
-                for cat_key, cat_data in categories.items():
-                    scores[cat_key] = round((cat_data.get("score", 0) or 0) * 100)
+                scores = {k: round((v.get("score", 0) or 0) * 100) for k, v in categories.items()}
 
-                # Core Web Vitals
                 field_data = data.get("loadingExperience", {}).get("metrics", {})
                 cwv = {}
                 metric_map = {
@@ -1184,7 +790,6 @@ def _analyze_pagespeed(website_url: str) -> dict[str, Any]:
                     if metric:
                         cwv[local_name] = metric.get("percentile", metric.get("distributions", [{}]))
 
-                # Audit principali (opportunità di miglioramento)
                 audits = data.get("lighthouseResult", {}).get("audits", {})
                 opportunities = []
                 for audit_key, audit_data in audits.items():
@@ -1200,27 +805,22 @@ def _analyze_pagespeed(website_url: str) -> dict[str, Any]:
                             })
 
                 opportunities.sort(key=lambda x: x.get("savings_ms", 0), reverse=True)
-
                 results[strategy] = {
                     "scores": scores,
                     "core_web_vitals": cwv,
                     "opportunities": opportunities[:10],
                     "overall_category": data.get("loadingExperience", {}).get("overall_category", ""),
                 }
-
-                logger.info(
-                    f"✅ PageSpeed {strategy}: performance={scores.get('performance', '?')}, "
-                    f"seo={scores.get('seo', '?')}"
-                )
-                break # Esci dal ciclo retry se successo
+                logger.info(f"PageSpeed {strategy}: performance={scores.get('performance', '?')}, seo={scores.get('seo', '?')}")
+                break
 
             except Exception as e:
                 if attempt < max_retries - 1:
                     wait_time = retry_delay * (2 ** attempt)
-                    logger.warning(f"🔄 Errore PageSpeed {strategy} (Tentativo {attempt+1}): {e}. Riprovo in {wait_time}s...")
+                    logger.warning(f"Errore PageSpeed {strategy} (tentativo {attempt+1}): {e}. Riprovo in {wait_time}s...")
                     time.sleep(wait_time)
                 else:
-                    logger.error(f"❌ PageSpeed {strategy} fallito dopo {max_retries} tentativi: {e}")
+                    logger.error(f"PageSpeed {strategy} fallito: {e}")
                     results["errors"].append(f"PageSpeed {strategy}: {str(e)}")
                     results[strategy] = {"error": str(e)}
 

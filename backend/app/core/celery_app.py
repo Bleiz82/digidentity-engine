@@ -16,6 +16,7 @@ celery_app = Celery(
     include=[
         "backend.app.tasks.free_report_task",
         "backend.app.tasks.premium_report_task",
+        "backend.app.tasks.geo_audit_task",
     ],
 )
 

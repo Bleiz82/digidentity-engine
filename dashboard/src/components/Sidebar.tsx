@@ -12,13 +12,15 @@ import {
     Cpu,
     Settings,
     LogOut,
-    Fingerprint
+    Fingerprint,
+    Globe
 } from 'lucide-react'
 
 const menuItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/leads', label: 'Lead Pipeline', icon: Users },
     { href: '/diagnosi', label: 'Diagnosi', icon: FileText },
+    { href: '/geo-audits', label: 'GEO Audits', icon: Globe },
     { href: '/pagamenti', label: 'Pagamenti', icon: CreditCard },
     { href: '/revenue', label: 'Revenue', icon: TrendingUp },
     { href: '/provincie', label: 'Mappa Provincie', icon: MapPin },
@@ -59,8 +61,8 @@ export default function Sidebar() {
                             key={item.href}
                             href={item.href}
                             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
-                                    ? 'bg-[#F90100]/10 text-[#F90100] border border-[#F90100]/30'
-                                    : 'text-[#9CA3AF] hover:text-white hover:bg-[#1F1F1F]'
+                                ? 'bg-[#F90100]/10 text-[#F90100] border border-[#F90100]/30'
+                                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1F1F1F]'
                                 }`}
                         >
                             <Icon className="w-5 h-5" />

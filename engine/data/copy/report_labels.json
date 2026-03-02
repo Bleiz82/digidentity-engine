@@ -1,0 +1,33 @@
+{
+    "intestazione": {
+        "powered_by": "https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png"
+    },
+    "moduli": {
+        "citabilita": {
+            "nome": "Citabilità AI",
+            "peso": "25%",
+            "descrizione": "Quanto il contenuto è ottimizzato per le citazioni nelle risposte delle AI."
+        },
+        "crawler": {
+            "nome": "Accesso Crawler AI",
+            "weight": "15%",
+            "peso": "15%",
+            "descrizione": "Verifica della visibilità del sito per i bot specializzati di OpenAI, Claude e Perplexity."
+        },
+        "brand": {
+            "nome": "Brand Authority",
+            "peso": "20%",
+            "descrizione": "Consistenza della presenza del brand sulle fonti utilizzate dalle AI."
+        },
+        "schema": {
+            "nome": "Dati Strutturati",
+            "peso": "10%",
+            "descrizione": "Presenza di markup Schema.org e JSON-LD per una comprensione semantica migliore."
+        },
+        "contenuto": {
+            "nome": "Qualità Contenuto E-E-A-T",
+            "peso": "20%",
+            "descrizione": "Esperienza, Competenza, Autorevolezza e Affidabilità dei contenuti."
+        }
+    }
+}

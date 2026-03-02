@@ -29,6 +29,12 @@ class Settings:
     STRIPE_PRICE_ID: str = os.getenv("STRIPE_PRICE_ID", "")
     STRIPE_PRICE_ID_PREMIUM: str = os.getenv("STRIPE_PRICE_ID_PREMIUM", os.getenv("STRIPE_PRICE_ID", ""))
     STRIPE_PRICE_ID_CONSULENZA: str = os.getenv("STRIPE_PRICE_ID_CONSULENZA", "")
+    
+    # --- GEO Audit ---
+    STRIPE_PRICE_ID_GEO_SINGOLO: str = os.getenv("STRIPE_PRICE_ID_GEO_SINGOLO", "")
+    STRIPE_PRICE_ID_GEO_AGENCY_MONTHLY: str = os.getenv("STRIPE_PRICE_ID_GEO_AGENCY_MONTHLY", "")
+    STRIPE_PRICE_ID_GEO_AGENCY_ANNUAL: str = os.getenv("STRIPE_PRICE_ID_GEO_AGENCY_ANNUAL", "")
+    GEO_REPORT_DIR: str = os.getenv("GEO_REPORT_DIR", "/app/reports/geo")
 
     # --- Anthropic ---
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")

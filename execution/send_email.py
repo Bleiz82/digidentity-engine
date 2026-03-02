@@ -284,3 +284,94 @@ def _send_email(
     except Exception as e:
         logger.error(f"❌ Errore invio email a {to_email}: {e}")
         return False
+
+
+def send_geo_report_email(
+    to_email: str,
+    url_sito: str,
+    pdf_path: str,
+    piano: str,
+    geo_score: int
+) -> bool:
+    """
+    Invia l'email con il report GEO Audit allegato.
+    Usa un template dark coerente con l'identità visiva AI.
+    """
+    logo_url = "https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png"
+    subject = f"Il tuo GEO Report per {url_sito} è pronto!"
+    
+    # Determina colore e testo in base allo score
+    if geo_score >= 70:
+        score_color = "#22c55e"
+        score_label = "BUONO"
+    elif geo_score >= 50:
+        score_color = "#f59e0b"
+        score_label = "DISCRETO"
+    else:
+        score_color = "#ef4444"
+        score_label = "CRITICO"
+
+    html_body = f"""
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            .container {{ background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; }}
+            .header {{ background-color: #0f172a; padding: 40px; text-align: center; border-bottom: 3px solid #0ea5e9; }}
+            .content {{ padding: 40px; line-height: 1.6; }}
+            .score-box {{ background-color: rgba(14, 165, 233, 0.1); border: 2px solid #0ea5e9; border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center; }}
+            .score-num {{ font-size: 64px; font-weight: 800; color: {score_color}; margin: 0; line-height: 1; }}
+            .score-text {{ font-size: 14px; font-weight: 700; color: {score_color}; margin-top: 5px; }}
+            .footer {{ background-color: #1e293b; padding: 30px; text-align: center; font-size: 12px; color: #94a3b8; }}
+        </style>
+    </head>
+    <body style="margin: 0; padding: 20px; background-color: #f1f5f9;">
+        <div class="container">
+            <div class="header">
+                <img src="{logo_url}" width="200" alt="DigIdentity Agency">
+                <p style="margin: 15px 0 0; color: #0ea5e9; font-weight: 700; font-size: 12px; letter-spacing: 2px;">GEO AUDIT — AI OPTIMIZATION</p>
+            </div>
+            <div class="content">
+                <h1 style="color: #ffffff; font-size: 24px; margin-top: 0;">L'analisi è completata!</h1>
+                <p>Abbiamo analizzato la visibilità di <strong>{url_sito}</strong> nei principali Generative Engines (ChatGPT, Claude, Perplexity, Gemini).</p>
+                
+                <div class="score-box">
+                    <p style="margin: 0 0 10px; font-size: 12px; letter-spacing: 1px;">GEO SCORE ATTUALE</p>
+                    <p class="score-num">{geo_score}</p>
+                    <p class="score-text">STATUS: {score_label}</p>
+                </div>
+
+                <p>In allegato trovi il report PDF completo con:</p>
+                <ul style="color: #94a3b8; font-size: 14px;">
+                    <li>Analisi della Citabilità AI dei tuoi testi</li>
+                    <li>Verifica accessibilità per i Crawler AI</li>
+                    <li>Audit dei Dati Strutturati per le Risposte Dirette</li>
+                    <li>Piano di intervento prioritario</li>
+                </ul>
+
+                <div style="background-color: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e; padding: 15px; margin-top: 30px; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 14px; color: #ffffff;">💡 <strong>Prossimo passo:</strong> Implementa i suggerimenti a pagina 3 del report per aumentare drasticamente le probabilità che la tua attività venga consigliata dalle AI.</p>
+                </div>
+            </div>
+            <div class="footer">
+                <p><strong>DigIdentity Agency — Specialisti AI & Automazioni</strong></p>
+                <p>Via Dettori 3, Samatzai (SU), Sardegna | info@digidentityagency.it</p>
+                <p style="margin-top: 15px; font-size: 10px;">Questa email è stata inviata automaticamente dal sistema DigIdentity Engine.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Nome file allegato
+    target_domain = url_sito.replace("https://", "").replace("http://", "").split("/")[0]
+    attachment_name = f"GEO-Report-{target_domain}.pdf"
+
+    return _send_email(
+        to_email=to_email,
+        subject=subject,
+        html_body=html_body,
+        attachment_path=pdf_path,
+        attachment_name=attachment_name
+    )

@@ -57,6 +57,47 @@ async def create_checkout_consulenza(request: Request):
         logger.error("Errore Stripe: %s", str(e))
         raise HTTPException(status_code=502, detail=f"Errore Stripe: {str(e)}")
 
+@router.post("/create-geo-checkout")
+async def create_geo_checkout(request: Request):
+    try:
+        body = await request.json()
+        url_sito = body.get("url_sito", "")
+        email = body.get("email", "")
+        piano = body.get("piano", "singolo")
+        
+        if not url_sito or not email:
+            raise HTTPException(status_code=400, detail="url_sito e email obbligatori.")
+            
+        # Determina Price ID
+        if piano == "agency_monthly":
+            price_id = settings.STRIPE_PRICE_ID_GEO_AGENCY_MONTHLY
+            mode = "subscription"
+        elif piano == "agency_annual":
+            price_id = settings.STRIPE_PRICE_ID_GEO_AGENCY_ANNUAL
+            mode = "subscription"
+        else:
+            price_id = settings.STRIPE_PRICE_ID_GEO_SINGOLO
+            mode = "payment"
+            
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            mode=mode,
+            customer_email=email,
+            line_items=[{"price": price_id, "quantity": 1}],
+            metadata={
+                "url_sito": url_sito,
+                "piano": piano,
+                "type": "geo_audit"
+            },
+            success_url=f"{settings.APP_BASE_URL}/api/payment/success-geo?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{settings.APP_BASE_URL}/api/payment/cancel",
+        )
+        logger.info("Checkout GEO creata: %s per sito %s", checkout_session.id, url_sito)
+        return JSONResponse(content={"checkout_url": checkout_session.url, "session_id": checkout_session.id})
+    except stripe.error.StripeError as e:
+        logger.error("Errore Stripe GEO: %s", str(e))
+        raise HTTPException(status_code=502, detail=f"Errore Stripe: {str(e)}")
+
 @router.post("/webhook")
 async def stripe_webhook(request: Request):
     payload = await request.body()
@@ -98,7 +139,33 @@ async def stripe_webhook(request: Request):
                 logger.error("Errore task premium: %s", str(e))
         elif payment_type == "consulenza":
             logger.info("Consulenza pagata per lead %s - notifica da inviare", lead_id)
-        return JSONResponse(content={"status": "success", "lead_id": lead_id, "type": payment_type})
+        elif payment_type == "geo_audit":
+            url_sito = session.get("metadata", {}).get("url_sito")
+            piano = session.get("metadata", {}).get("piano", "singolo")
+            logger.info("GEO Audit pagato: sito=%s email=%s", url_sito, customer_email)
+            try:
+                from app.core.supabase_client import get_supabase
+                supabase = get_supabase()
+                # Crea record in tabella geo_audits
+                audit_result = supabase.table("geo_audits").insert({
+                    "url_sito": url_sito,
+                    "email_cliente": customer_email,
+                    "piano": piano,
+                    "stripe_session_id": session.get("id", ""),
+                    "stripe_payment_intent": payment_intent,
+                    "status": "pending"
+                }).execute()
+                
+                if audit_result.data:
+                    audit_id = audit_result.data[0]["id"]
+                    from app.tasks.geo_audit_task import task_geo_audit
+                    task_geo_audit.delay(audit_id)
+                    logger.info("Task GEO Audit avviato per audit %s", audit_id)
+                else:
+                    logger.error("Impossibile creare record geo_audits in Supabase")
+            except Exception as e:
+                logger.error("Errore salvataggio/avvio GEO Audit: %s", str(e))
+        return JSONResponse(content={"status": "success", "type": payment_type})
     logger.info("Evento non gestito: %s", event["type"])
     return JSONResponse(content={"status": "ignored"})
 
@@ -129,6 +196,20 @@ async def payment_success_consulenza(session_id: str = ""):
 2. Un esperto DigIdentity analizzerà il tuo Report Premium<br>
 3. <strong>45 minuti dedicati alla tua strategia digitale</strong></p></div>
 <p style="font-size:13px;color:#64748b">Ref: {session_id}</p></div></body></html>""")
+
+@router.get("/success-geo", response_class=HTMLResponse)
+async def payment_success_geo(session_id: str = ""):
+    return HTMLResponse(content=f"""<!DOCTYPE html>
+<html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GEO Audit Confermato</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#0a0f1e,#111827);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#e5e7eb}.card{background:rgba(17,24,39,.8);border:1px solid rgba(14,165,233,.3);border-radius:24px;padding:48px 40px;max-width:560px;width:90%;text-align:center}h1{font-size:28px;color:#0ea5e9;margin-bottom:16px}p{color:#9ca3af;line-height:1.6;margin-bottom:16px}.box{background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.2);border-radius:16px;padding:24px;margin:24px 0}</style></head>
+<body><div class="card"><h1>GEO Audit Confermato!</h1>
+<p>L'analisi definitiva della tua visibilità nelle AI sta per iniziare.</p>
+<div class="box"><p><strong>Cosa succede adesso?</strong></p>
+<p>1. Il nostro engine sta scansionando il tuo sito<br>
+2. Analizziamo citabilità, crawler e dati strutturati<br>
+3. <strong>Riceverai il GEO Report via email entro 15 minuti</strong></p></div>
+<p style="font-size:13px;color:#4b5563">Ref: {session_id}</p></div></body></html>""")
 
 @router.get("/cancel", response_class=HTMLResponse)
 async def payment_cancel():

@@ -118,5 +118,40 @@ async def download_report_pdf(report_id: str):
         raise HTTPException(status_code=500, detail="Errore interno")
 
 
-# ── NUOVI ENDPOINT: Pagine HTML interattive ──
+# ── NUOVI ENDPOINT: GEO Audit ──
 
+@router.get("/geo", tags=["geo"])
+async def list_geo_audits():
+    """Lista tutti i record della tabella geo_audits."""
+    db = get_supabase()
+    result = db.table("geo_audits").select("*").order("created_at", desc=True).execute()
+    return result.data
+
+@router.get("/geo/{audit_id}", tags=["geo"])
+async def get_geo_audit(audit_id: str):
+    """Dettaglio singolo geo_audit."""
+    db = get_supabase()
+    result = db.table("geo_audits").select("*").eq("id", audit_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Audit non trovato")
+    return result.data[0]
+
+@router.get("/geo/{audit_id}/pdf", tags=["geo"])
+async def download_geo_pdf(audit_id: str):
+    """FileResponse del PDF del report GEO."""
+    db = get_supabase()
+    result = db.table("geo_audits").select("pdf_path,url_sito").eq("id", audit_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Audit non trovato")
+    
+    audit = result.data[0]
+    pdf_path = audit.get("pdf_path")
+    if not pdf_path or not Path(pdf_path).exists():
+        raise HTTPException(status_code=404, detail="File PDF non trovato")
+    
+    url_sito = audit.get("url_sito", "sito").replace("https://", "").replace("http://", "").replace("/", "_")
+    return FileResponse(
+        path=pdf_path,
+        filename=f"GEO-Report-{url_sito}.pdf",
+        media_type="application/pdf"
+    )

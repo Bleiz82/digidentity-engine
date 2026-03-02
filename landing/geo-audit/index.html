@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEO Audit Italia - Generative Engine Optimization | DigIdentity</title>
+    <meta name="description" content="GEO Audit analizza quanto il tuo sito è ottimizzato per essere citato dai motori AI. Score, gap analysis e piano d'azione in un report PDF professionale.">
+    <meta property="og:title" content="GEO Audit Italia - Generative Engine Optimization">
+    <meta property="og:description" content="Ottieni un report PDF in 3 minuti con il tuo GEO Score e piano d'azione per farti citare da ChatGPT, Claude e Google AI Overview.">
+    <link rel="canonical" href="https://digidentityagency.it/geo-audit">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #FFFFFF;
+            --text-color: #0F172A;
+            --text-muted: #64748B;
+            --accent: #6366F1;
+            --accent-hover: #4F46E5;
+            --bg-alt: #F8FAFC;
+            --border-color: #E2E8F0;
+            --max-w: 1200px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: var(--max-w);
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+        }
+
+        .navbar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 72px;
+        }
+
+        .navbar-logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-color);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .navbar-link:hover {
+            color: var(--text-color);
+        }
+
+        /* HERO */
+        .hero {
+            padding: 96px 0;
+            text-align: center;
+        }
+
+        .badge-pill {
+            display: inline-block;
+            padding: 6px 14px;
+            background-color: #eef2ff;
+            color: var(--accent);
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -1.5px;
+            margin-bottom: 24px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--accent);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .hero-features {
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .hero-visual {
+            margin-top: 64px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .mockup {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            padding: 40px;
+            text-align: left;
+        }
+
+        .mockup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 24px;
+        }
+
+        .mockup-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .score-gauge {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 6px solid var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+            position: relative;
+        }
+
+        .score-gauge::before {
+            content: 'GEO SCORE';
+            position: absolute;
+            bottom: -22px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .mockup-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .mockup-line {
+            height: 12px;
+            background-color: var(--bg-alt);
+            border-radius: 6px;
+        }
+
+        .mockup-line.w-full { width: 100%; }
+        .mockup-line.w-3-4 { width: 75%; background-color: #eef2ff; }
+        .mockup-line.w-1-2 { width: 50%; }
+
+        /* STATS BAR */
+        .stats-bar {
+            background-color: var(--bg-alt);
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 48px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* SECTIONS */
+        .section {
+            padding: 96px 0;
+        }
+
+        .section-title {
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 24px;
+        }
+        
+        .section-intro {
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-bottom: 48px;
+            max-width: 600px;
+        }
+
+        /* PROBLEMA */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .problem-card {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
+        }
+
+        .problem-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-color);
+        }
+
+        .problem-desc {
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        /* COSA ANALIZZA */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
+            position: relative;
+            background-color: var(--bg-color);
+        }
+
+        .feature-weight {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            background-color: #eef2ff;
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background-color: #eef2ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .feature-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-right: 50px;
+            line-height: 1.3;
+        }
+
+        .feature-desc {
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        /* COSA RICEVI */
+        .receive-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+        }
+
+        .receive-list {
+            list-style: none;
+        }
+
+        .receive-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+            font-size: 16px;
+            color: var(--text-color);
+        }
+
+        .receive-icon {
+            color: var(--accent);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .receive-pdf {
+            width: 100%;
+            aspect-ratio: 3/4;
+            background-color: var(--bg-alt);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .receive-pdf::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background-color: var(--accent);
+        }
+
+        .pdf-header {
+            font-size: 24px;
+            font-weight: 700;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 8px;
+        }
+
+        .pdf-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .pdf-box {
+            flex: 1;
+            height: 80px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        
+        .pdf-text-line {
+            height: 10px;
+            background-color: var(--border-color);
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        /* FORM */
+        .form-section {
+            background-color: var(--bg-alt);
+            padding: 96px 0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .form-container {
+            max-width: 560px;
+            margin: 0 auto;
+            background-color: var(--bg-color);
+            border-radius: 16px;
+            padding: 48px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.04);
+            text-align: center;
+        }
+
+        .form-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+
+        .form-subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            color: var(--text-color);
+        }
+
+        .form-input::placeholder {
+            color: #94A3B8;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-btn {
+            width: 100%;
+            margin-top: 12px;
+            font-size: 16px;
+            padding: 16px;
+        }
+
+        .form-meta {
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .form-privacy {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #94A3B8;
+        }
+
+        .form-error {
+            color: #EF4444;
+            font-size: 14px;
+            margin-top: 20px;
+            display: none;
+            background-color: #FEF2F2;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #FEE2E2;
+            text-align: center;
+        }
+
+        /* FAQ */
+        .faq-section {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .accordion {
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .accordion:first-child {
+            border-top: 1px solid var(--border-color);
+        }
+
+        .accordion-input {
+            display: none;
+        }
+
+        .accordion-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 0;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .accordion-label::after {
+            content: '+';
+            font-size: 24px;
+            font-weight: 300;
+            color: var(--text-muted);
+            transition: transform 0.3s;
+        }
+
+        .accordion-input:checked + .accordion-label::after {
+            transform: rotate(45deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            color: var(--text-muted);
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .accordion-input:checked ~ .accordion-content {
+            max-height: 500px;
+            padding-bottom: 24px;
+        }
+
+        /* FOOTER */
+        .footer {
+            padding: 48px 0;
+            margin-top: 48px;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .footer-brand {
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: var(--text-color);
+        }
+
+        .footer-text {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+            color: var(--text-color);
+        }
+        
+        .footer-bottom {
+            margin-top: 24px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 40px; }
+            .hero p { font-size: 16px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .problem-grid { grid-template-columns: 1fr; }
+            .features-grid { grid-template-columns: 1fr; }
+            .receive-grid { grid-template-columns: 1fr; gap: 40px; }
+            .form-container { padding: 32px 24px; }
+            .footer-content { flex-direction: column; gap: 32px; }
+            .footer-links { flex-direction: column; gap: 12px; }
+            .section { padding: 64px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. NAVBAR -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="#" class="navbar-logo">DigIdentity</a>
+            <a href="https://digidentityagency.it" class="navbar-link" target="_blank" rel="noopener noreferrer">digidentityagency.it</a>
+        </div>
+    </nav>
+
+    <!-- 2. HERO SECTION -->
+    <header class="hero container">
+        <div class="badge-pill">Generative Engine Optimization • 2026</div>
+        <h1>Il tuo sito esiste per Google.<br>Esiste anche per ChatGPT?</h1>
+        <p>GEO Audit analizza quanto il tuo sito è ottimizzato per essere citato dai motori AI. Score, gap analysis e piano d'azione in un report PDF professionale — pronto in 3 minuti.</p>
+        
+        <a href="#form" class="btn">> Avvia GEO Audit — €99</a>
+        <div class="hero-features">
+            <span>✓ Report PDF in 3 min</span>
+            <span>✓ Invio automatico via email</span>
+            <span>✓ Pagamento sicuro Stripe</span>
+        </div>
+
+        <div class="hero-visual">
+            <div class="mockup">
+                <div class="mockup-header">
+                    <div class="mockup-title">GEO Audit Report</div>
+                    <div class="score-gauge">73</div>
+                </div>
+                <div class="mockup-lines">
+                    <div class="mockup-line w-full"></div>
+                    <div class="mockup-line w-3-4"></div>
+                    <div class="mockup-line w-1-2"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 3. STATS BAR -->
+    <div class="stats-bar">
+        <div class="container stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">$886M</div>
+                <div class="stat-label">Mercato GEO globale 2024</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">+527%</div>
+                <div class="stat-label">Crescita traffico AI YoY</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">4.4x</div>
+                <div class="stat-label">Conversione AI vs organico</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">23%</div>
+                <div class="stat-label">Marketer italiani già investono in GEO</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. SEZIONE IL PROBLEMA -->
+    <section class="section container">
+        <h2 class="section-title">I tuoi clienti ti chiedono il GEO Score. Sai cosa rispondere?</h2>
+        <p class="section-intro">La ricerca sta cambiando. Gli utenti non scrollano più le SERP: fanno domande alle intelligenze artificiali. Se il tuo sito non è citato dalle risposte AI, il tuo organico crollerà a breve.</p>
+        
+        <div class="problem-grid">
+            <div class="problem-card">
+                <h3 class="problem-title">ChatGPT non cita il sito</h3>
+                <p class="problem-desc">Il sito non appare nelle risposte AI, neanche per query estremamente pertinenti dove prima eri primo su Google.</p>
+            </div>
+            <div class="problem-card">
+                <h3 class="problem-title">Crawler AI bloccati</h3>
+                <p class="problem-desc">File robots.txt o configurazioni firewall che bloccano accidentalmente Googlebot-AI, GPTBot e ClaudeBot senza che tu lo sappia.</p>
+            </div>
+            <div class="problem-card">
+                <h3 class="problem-title">Zero struttura dati</h3>
+                <p class="problem-desc">Mancanza di schema.org, file llms.txt non configurato o povero E-E-A-T che penalizza gravemente la citabilità AI.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. SEZIONE COSA ANALIZZA -->
+    <section class="section container">
+        <h2 class="section-title">6 dimensioni di analisi. Un GEO Score definitivo.</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-weight">25%</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                </div>
+                <h3 class="feature-title">AI Citability</h3>
+                <p class="feature-desc">Quanto il contenuto è strutturato logicamente per essere citato e sintetizzato dai LLM.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-weight">20%</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                </div>
+                <h3 class="feature-title">Brand Authority</h3>
+                <p class="feature-desc">Menzioni del brand su fonti terze autorevoli, Wikipedia e copertura nel Knowledge Graph.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-weight">20%</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                </div>
+                <h3 class="feature-title">Content Quality & E-E-A-T</h3>
+                <p class="feature-desc">Esperienza, autorevolezza e affidabilità percepita dall'AI prima di raccomandare il tuo sito.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-weight">15%</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                </div>
+                <h3 class="feature-title">Technical Foundations</h3>
+                <p class="feature-desc">robots.txt, accessibilità per i bot, metadati, sitemap, crawlabilità e Core Web Vitals.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-weight">10%</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                </div>
+                <h3 class="feature-title">Structured Data</h3>
+                <p class="feature-desc">Presenza e validità di Schema.org JSON-LD e markup semantico avanzato.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-weight">10%</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                </div>
+                <h3 class="feature-title">Platform Optimization</h3>
+                <p class="feature-desc">Presenza di file llms.txt, OpenGraph tags corretti e profili social o direttori verificati.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. SEZIONE COSA RICEVI -->
+    <section class="section container">
+        <div class="receive-grid">
+            <div class="receive-content">
+                <h2 class="section-title">Un report PDF da consegnare al cliente. Già pronto.</h2>
+                <ul class="receive-list">
+                    <li class="receive-item"><span class="receive-icon">✓</span> GEO Score 0-100 con breakdown per dimensione</li>
+                    <li class="receive-item"><span class="receive-icon">✓</span> Analisi AI Citability con esempi di query</li>
+                    <li class="receive-item"><span class="receive-icon">✓</span> Verifica crawler AI (GPTBot, ClaudeBot, PerplexityBot)</li>
+                    <li class="receive-item"><span class="receive-icon">✓</span> Audit schema.org e dati strutturati</li>
+                    <li class="receive-item"><span class="receive-icon">✓</span> Brand mention analysis</li>
+                    <li class="receive-item"><span class="receive-icon">✓</span> Gap analysis vs benchmark di settore</li>
+                    <li class="receive-item"><span class="receive-icon">✓</span> Piano d'azione prioritizzato (quick wins + long term)</li>
+                    <li class="receive-item"><span class="receive-icon">✓</span> llms.txt ottimizzato generato automaticamente</li>
+                    <li class="receive-item"><span class="receive-icon">✓</span> White-label ready (logo cliente applicabile)</li>
+                </ul>
+            </div>
+            <div class="receive-visual">
+                <div class="receive-pdf">
+                    <div class="pdf-header">GEO Audit Report</div>
+                    <div class="pdf-text-line"></div>
+                    <div class="pdf-text-line" style="width: 80%"></div>
+                    <div class="pdf-text-line" style="width: 90%; margin-bottom: 24px;"></div>
+                    
+                    <div class="pdf-row">
+                        <div class="pdf-box"></div>
+                        <div class="pdf-box"></div>
+                    </div>
+                    
+                    <div class="pdf-text-line" style="margin-top: 16px;"></div>
+                    <div class="pdf-text-line" style="width: 60%"></div>
+                    <div class="pdf-text-line" style="width: 70%"></div>
+                    <div class="pdf-text-line" style="width: 40%"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. SEZIONE FORM -->
+    <section id="form" class="form-section">
+        <div class="container">
+            <div class="form-container">
+                <h2 class="form-title">Avvia il GEO Audit</h2>
+                <p class="form-subtitle">Inserisci l'URL del sito da analizzare e la tua email. Riceverai il report PDF entro 3 minuti dal pagamento.</p>
+                
+                <form id="geoAuditForm">
+                    <div class="form-group">
+                        <label for="url_sito" class="form-label">Sito da analizzare</label>
+                        <input type="url" id="url_sito" name="url_sito" class="form-input" placeholder="https://esempio.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email_cliente" class="form-label">La tua email (riceverai il report qui)</label>
+                        <input type="email" id="email_cliente" name="email_cliente" class="form-input" placeholder="tua@email.com" required>
+                    </div>
+                    
+                    <button type="submit" id="submitBtn" class="btn form-btn">> Procedi al pagamento — €99</button>
+                    
+                    <div class="form-meta">
+                        🔒 Pagamento sicuro via Stripe • Nessun abbonamento • Cancella quando vuoi
+                    </div>
+                    
+                    <div id="formError" class="form-error"></div>
+                    
+                    <p class="form-privacy">Trattamento dati nel rispetto del GDPR. I dati sono usati esclusivamente per generare l'audit.</p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. SEZIONE FAQ -->
+    <section class="section faq-section container">
+        <h2 class="section-title" style="text-align: center;">Domande frequenti</h2>
+        
+        <div class="accordion">
+            <input type="checkbox" id="faq1" class="accordion-input">
+            <label for="faq1" class="accordion-label">Cosa analizza esattamente il GEO Audit?</label>
+            <div class="accordion-content">
+                Il report copre 6 dimensioni fondamentali: AI Citability, Brand Authority, Content Quality (E-E-A-T), Foundations Tecniche, Dati Strutturati e Platform Optimization. Tutto questo viene condensato in un GEO Score da 0 a 100 che indica la tua "citabilità" per le intelligenze artificiali.
+            </div>
+        </div>
+        
+        <div class="accordion">
+            <input type="checkbox" id="faq2" class="accordion-input">
+            <label for="faq2" class="accordion-label">In quanto tempo ricevo il report?</label>
+            <div class="accordion-content">
+                Entro 3 minuti dal pagamento confermato, direttamente via email in formato PDF professionale.
+            </div>
+        </div>
+        
+        <div class="accordion">
+            <input type="checkbox" id="faq3" class="accordion-input">
+            <label for="faq3" class="accordion-label">Il report è white-label? Posso consegnarlo al mio cliente?</label>
+            <div class="accordion-content">
+                Sì, il PDF è professionale e redatto in modo da poter essere presentato direttamente in fase diagnostica. Una personalizzazione white-label completa (con invio automatico del tuo logo) è imminente.
+            </div>
+        </div>
+        
+        <div class="accordion">
+            <input type="checkbox" id="faq4" class="accordion-input">
+            <label for="faq4" class="accordion-label">Quali AI engine vengono verificati?</label>
+            <div class="accordion-content">
+                ChatGPT (GPTBot), Claude (ClaudeBot), Perplexity (PerplexityBot), e Google AI Overview (Googlebot-Extended), assicurandoci che non vi siano blocchi robot e che il markup per le citazioni sia ottimale.
+            </div>
+        </div>
+        
+        <div class="accordion">
+            <input type="checkbox" id="faq5" class="accordion-input">
+            <label for="faq5" class="accordion-label">Cosa succede se il sito è in manutenzione o protetto da password?</label>
+            <div class="accordion-content">
+                L'audit analizzerà tutto ciò che è pubblicamente accessibile. Ove i crawler incontrassero dei muri artificiali/manutenzione, verrà esplicitamente segnalato nel report come forte limite all'AI Citability.
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <div class="footer-brand">DigIdentity</div>
+                    <p class="footer-text">Powered by Claude AI & DigIdentity Engine</p>
+                    <p class="footer-text footer-bottom">Copyright 2026 DigIdentity Agency — P.IVA 03841840924</p>
+                </div>
+                <div class="footer-links">
+                    <a href="https://digidentityagency.it" class="footer-link">digidentityagency.it</a>
+                    <a href="#" class="footer-link">Privacy Policy</a>
+                    <a href="mailto:info@digidentityagency.it" class="footer-link">info@digidentityagency.it</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('geoAuditForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const formError = document.getElementById('formError');
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Hide past errors
+                formError.style.display = 'none';
+                formError.textContent = '';
+                
+                const urlInput = document.getElementById('url_sito').value.trim();
+                const emailInput = document.getElementById('email_cliente').value.trim();
+                
+                // Basic validation
+                if (!urlInput.startsWith('http://') && !urlInput.startsWith('https://')) {
+                    showError('L\'URL del sito deve iniziare con http:// o https://');
+                    return;
+                }
+
+                if (!emailInput || !emailInput.includes('@')) {
+                    showError('Inserisci un indirizzo email valido');
+                    return;
+                }
+                
+                // Loading state
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Elaborazione...';
+                
+                try {
+                    const response = await fetch('https://api.digidentityagency.it/api/payment/create-geo-checkout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            url_sito: urlInput,
+                            email_cliente: emailInput
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(result.detail || result.error || 'Errore durante l\'elaborazione della richiesta');
+                    }
+                    
+                    if (result.checkout_url) {
+                        window.location.href = result.checkout_url;
+                    } else {
+                        throw new Error('URL di checkout non ricevuto dal server');
+                    }
+                } catch (err) {
+                    showError(err.message || 'Si è verificato un errore imprevisto di rete. Riprova più tardi.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            });
+
+            function showError(message) {
+                formError.textContent = message;
+                formError.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

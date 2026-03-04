@@ -80,6 +80,7 @@ def task_free_report(self, lead_id: str):
     
     indirizzo = lead.get("indirizzo") or ""
     # Pulisci città: rimuovi CAP e sigla provincia
+    telefono = lead.get("telefono") or lead.get("phone", "")
     import re as _re
     if city:
         city = _re.sub(r"\b\d{5}\b", "", city).strip()
@@ -102,7 +103,7 @@ def task_free_report(self, lead_id: str):
     # ── 2. Scraping ──
     try:
         db.table("leads").update({"status": "scraping"}).eq("id", lead_id).execute()
-        scraping_data = scrape_lead(website_url, company_name, social_links_db, city, sector, indirizzo)
+        scraping_data = scrape_lead(website_url, company_name, social_links_db, city, sector, indirizzo, contact_name, email, telefono)
 
         # Aggiorna variabili locali PRIMA del salvataggio
         sector = scraping_data.get("sector") or scraping_data.get("extracted_sector") or sector

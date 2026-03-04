@@ -61,6 +61,7 @@ class Settings:
 
     # --- Google APIs ---
     GOOGLE_PAGESPEED_API_KEY: str = os.getenv("GOOGLE_PAGESPEED_API_KEY", "")
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", os.getenv("GOOGLE_PAGESPEED_API_KEY", ""))
 
     # --- OpenAI ---
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
@@ -74,6 +75,7 @@ class Settings:
 
     # --- Redis / Celery ---
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+    INTERNAL_API_KEY: str = os.getenv("INTERNAL_API_KEY", "digidentity_internal_2026")
 
     # --- App ---
     APP_BASE_URL: str = os.getenv("APP_BASE_URL", "http://127.0.0.1:8080")

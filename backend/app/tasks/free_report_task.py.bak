@@ -73,6 +73,11 @@ def task_free_report(self, lead_id: str):
         sector = scraping_cached.get("sector") or scraping_cached.get("extracted_sector") or ""
     
     indirizzo = lead.get("indirizzo") or ""
+    # Pulisci città: rimuovi CAP e sigla provincia
+    import re as _re
+    if city:
+        city = _re.sub(r"\b\d{5}\b", "", city).strip()
+        city = _re.sub(r"\b[A-Z]{2}\b$", "", city).strip()
     logger.info(f"[FREE] Città: {city}, Settore: {sector}, Indirizzo: {indirizzo}")
 
     # Parsa piattaforme_social dal lead
@@ -93,15 +98,18 @@ def task_free_report(self, lead_id: str):
         db.table("leads").update({"status": "scraping"}).eq("id", lead_id).execute()
         scraping_data = scrape_lead(website_url, company_name, social_links_db, city, sector, indirizzo)
 
-        # Salva dati scraping su Supabase (Fix 1: persistenza totale)
+        # Aggiorna variabili locali PRIMA del salvataggio
+        sector = scraping_data.get("sector") or scraping_data.get("extracted_sector") or sector
+        city = scraping_data.get("city") or scraping_data.get("extracted_city") or city
+
+        # Salva dati scraping + settore + citta su Supabase
         db.table("leads").update({
             "scraping_data": scraping_data,
-            "settore_attivita": scraping_data.get("sector") or scraping_data.get("extracted_sector") or sector,
-            "citta": scraping_data.get("city") or city,
+            "settore_attivita": sector,
+            "citta": city,
         }).eq("id", lead_id).execute()
 
-
-        logger.info(f"[FREE] Scraping completato per {company_name}")
+        logger.info(f"[FREE] Scraping completato per {company_name} — Città: {city}, Settore: {sector}")
     except Exception as e:
         logger.error(f"[FREE] Errore scraping per {company_name}: {e}")
         db.table("leads").update({
@@ -191,31 +199,9 @@ def task_free_report(self, lead_id: str):
     
     logger.info(f"[FREE] Score calcolati: {scores['punteggio_globale']}/100")
 
-    # ── 6. Generazione PDF ──
-    try:
-        pdf_dir = Path("/app/reports/free")
-        pdf_dir.mkdir(parents=True, exist_ok=True)
-        pdf_path = str(pdf_dir / f"free_{lead_id}.pdf")
-
-        generate_pdf(
-            report_markdown,
-            pdf_path,
-            scraping_data=scraping_data,
-            company_name=company_name,
-            date_str="",
-            location=f"{city}, {lead.get('provincia', '')}"
-        )
-        logger.info(f"[FREE] PDF generato: {pdf_path}")
-    except Exception as e:
-        logger.error(f"[FREE] Errore PDF per {company_name}: {e}")
-        db.table("leads").update({
-            "status": "error",
-            "error_message": f"Errore PDF: {str(e)}",
-        }).eq("id", lead_id).execute()
-        raise self.retry(exc=e)
-
-    # ── 7. Generazione HTML interattivo ──
+    # ── 6. Generazione HTML interattivo ──
     html_url = ""
+    html_content = ""
     try:
         base_url = settings.APP_BASE_URL.rstrip("/")
 
@@ -227,14 +213,43 @@ def task_free_report(self, lead_id: str):
             sector=sector,
             city=city,
             checkout_url=checkout_url,
+            lead_id=lead_id,
         )
         html_path = save_free_html(html_content, lead_id)
         html_url = f"{base_url}/api/reports/diagnosi/free/{lead_id}"
 
         logger.info(f"[FREE] HTML generato: {html_url}")
     except Exception as e:
-        # L'HTML è un bonus — se fallisce, il PDF è già pronto
         logger.warning(f"[FREE] Errore generazione HTML (non bloccante): {e}")
+
+    # ── 7. Generazione PDF dall'HTML (unica fonte di verità) ──
+    try:
+        pdf_dir = Path("/app/reports/free")
+        pdf_dir.mkdir(parents=True, exist_ok=True)
+        pdf_path = str(pdf_dir / f"free_{lead_id}.pdf")
+
+        if html_content:
+            # PDF generato dall'HTML interattivo — punteggi e layout identici
+            from weasyprint import HTML as WP_HTML
+            WP_HTML(string=html_content, base_url="/app/").write_pdf(pdf_path)
+        else:
+            # Fallback: vecchio sistema da markdown
+            generate_pdf(
+                report_markdown,
+                pdf_path,
+                scraping_data=scraping_data,
+                company_name=company_name,
+                date_str="",
+                location=f"{city}" if lead.get('provincia', '') in ('', 'ND', None) else f"{city}, {lead.get('provincia', '')}"
+            )
+        logger.info(f"[FREE] PDF generato: {pdf_path}")
+    except Exception as e:
+        logger.error(f"[FREE] Errore PDF per {company_name}: {e}")
+        db.table("leads").update({
+            "status": "error",
+            "error_message": f"Errore PDF: {str(e)}",
+        }).eq("id", lead_id).execute()
+        raise self.retry(exc=e)
 
     # ── 8. Invio email ──
     try:

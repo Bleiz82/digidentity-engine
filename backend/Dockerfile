@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 
 COPY backend/ /app/backend/
 COPY execution/ /app/execution/
+COPY engine/ /app/engine/
 COPY assets/ /app/assets/
 
 RUN mkdir -p /app/reports/free /app/reports/premium

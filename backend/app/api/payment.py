@@ -158,8 +158,8 @@ async def stripe_webhook(request: Request):
                 
                 if audit_result.data:
                     audit_id = audit_result.data[0]["id"]
-                    from app.tasks.geo_audit_task import task_geo_audit
-                    task_geo_audit.delay(audit_id)
+                    from app.tasks.geo_audit_task import task_geo_audit  # noqa
+                    task_geo_audit.apply_async(args=[audit_id])
                     logger.info("Task GEO Audit avviato per audit %s", audit_id)
                 else:
                     logger.error("Impossibile creare record geo_audits in Supabase")
@@ -217,3 +217,53 @@ async def payment_cancel():
 <html lang="it"><head><meta charset="UTF-8"><title>Annullato</title>
 <style>body{font-family:'Segoe UI',sans-serif;background:#0f172a;min-height:100vh;display:flex;align-items:center;justify-content:center;color:#e2e8f0}.card{background:rgba(30,41,59,.8);border:1px solid rgba(239,68,68,.3);border-radius:24px;padding:48px;max-width:480px;text-align:center}h1{color:#f87171;margin-bottom:16px}p{color:#94a3b8}</style></head>
 <body><div class="card"><h1>Pagamento Annullato</h1><p>Non e' stato effettuato alcun addebito.</p></div></body></html>""")
+
+@router.post("/internal/avvia-audit")
+async def internal_avvia_audit(request: Request):
+    """Endpoint interno per avviare audit senza pagamento Stripe."""
+    api_key = request.headers.get("X-Internal-Key", "")
+    if api_key != settings.INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Accesso non autorizzato.")
+    try:
+        body = await request.json()
+        url_sito = body.get("url_sito", "")
+        email = body.get("email", "digidentityagency@gmail.com")
+        tipo = body.get("tipo", "geo")  # geo oppure premium
+        if not url_sito:
+            raise HTTPException(status_code=400, detail="url_sito obbligatorio.")
+        from app.core.supabase_client import get_supabase
+        supabase = get_supabase()
+        if tipo == "geo":
+            result = supabase.table("geo_audits").insert({
+                "url_sito": url_sito,
+                "email_cliente": email,
+                "piano": "singolo",
+                "stripe_session_id": "INTERNO",
+                "status": "pending"
+            }).execute()
+            if result.data:
+                audit_id = result.data[0]["id"]
+                from app.tasks.geo_audit_task import task_geo_audit  # noqa
+                task_geo_audit.apply_async(args=[audit_id])
+                logger.info("Audit GEO interno avviato: %s", audit_id)
+                return JSONResponse(content={"status": "avviato", "tipo": "geo", "audit_id": audit_id})
+        elif tipo == "premium":
+            result = supabase.table("leads").insert({
+                "nome_azienda": f"Test interno — {url_sito}",
+                "website_url": url_sito,
+                "email": email,
+                "status": "payment_completed",
+                "stripe_session_id": "INTERNO",
+            }).execute()
+            if result.data:
+                lead_id = result.data[0]["id"]
+                from app.tasks.premium_report_task import task_premium_report
+                task_premium_report.delay(lead_id)
+                logger.info("Report Premium interno avviato: %s", lead_id)
+                return JSONResponse(content={"status": "avviato", "tipo": "premium", "lead_id": lead_id})
+        raise HTTPException(status_code=400, detail="tipo non valido. Usa 'geo' o 'premium'.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Errore endpoint interno: %s", str(e))
+        raise HTTPException(status_code=500, detail=str(e))

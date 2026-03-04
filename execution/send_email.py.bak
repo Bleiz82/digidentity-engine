@@ -24,14 +24,28 @@ def send_free_report_email(
     contact_name: str | None,
     pdf_path: str,
     checkout_url: str,
+    html_url: str = "",
 ) -> bool:
     """
     Invia l'email con il report gratuito e la CTA per il report premium.
+    Include link alla versione HTML interattiva se disponibile.
     """
     greeting = f"Ciao {contact_name}" if contact_name else "Ciao"
     logo_url = "https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png"
     
     subject = f"La tua Diagnosi Digitale è pronta! — {company_name}"
+
+    # Blocco HTML interattivo (solo se html_url è disponibile)
+    html_interactive_block = ""
+    if html_url:
+        html_interactive_block = f"""
+                                <div style="background-color: #0a0a0a; border: 2px solid #F90100; border-radius: 12px; padding: 25px; margin: 30px 0; text-align: center;">
+                                    <p style="font-size: 12px; letter-spacing: 2px; margin: 0 0 10px; color: #F90100; font-weight: bold;">VERSIONE INTERATTIVA</p>
+                                    <p style="font-size: 16px; font-weight: 700; margin: 0 0 8px; color: #ffffff;">Visualizza la diagnosi online</p>
+                                    <p style="font-size: 13px; margin: 0 0 18px; color: #999999;">Dark theme, animazioni e navigazione per sezione</p>
+                                    <a href="{html_url}" style="display: inline-block; background: #F90100; color: #ffffff; padding: 12px 30px; border-radius: 8px; font-weight: 700; font-size: 15px; text-decoration: none;">APRI LA DIAGNOSI INTERATTIVA</a>
+                                </div>
+"""
 
     html_body = f"""
     <!DOCTYPE html>
@@ -39,7 +53,7 @@ def send_free_report_email(
     <head>
         <meta charset="UTF-8">
         <style>
-            .btn {{
+            .btn {{{{
                 background-color: #F90100 !important;
                 color: #ffffff !important;
                 padding: 18px 35px !important;
@@ -47,7 +61,7 @@ def send_free_report_email(
                 text-decoration: none !important;
                 font-weight: bold !important;
                 display: inline-block !important;
-            }}
+            }}}}
         </style>
     </head>
     <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333333;">
@@ -70,6 +84,8 @@ def send_free_report_email(
                                     Abbiamo completato l'analisi della presenza digitale di <strong>{company_name}</strong>. 
                                     In allegato trovi il report PDF con i risultati e i primi passi suggeriti.
                                 </p>
+
+                                {html_interactive_block}
                                 
                                 <div style="background-color: #fff5f5; border-left: 4px solid #F90100; padding: 20px; margin: 30px 0;">
                                     <p style="margin: 0; font-weight: bold; color: #F90100;">💡 Lo sapevi?</p>
@@ -122,14 +138,28 @@ def send_premium_report_email(
     contact_name: str | None,
     pdf_path: str,
     consulenza_url: str = "",
+    html_url: str = "",
 ) -> bool:
     """
     Invia l'email con il report premium post-pagamento.
+    Include link alla versione HTML interattiva se disponibile.
     """
     greeting = f"Ciao {contact_name}" if contact_name else "Ciao"
     logo_url = "https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png"
     
     subject = f"Il tuo Piano Strategico AI è pronto! — {company_name}"
+
+    # Blocco HTML interattivo (solo se html_url è disponibile)
+    html_interactive_block = ""
+    if html_url:
+        html_interactive_block = f"""
+                                <div style="background-color: #0a0a0a; border: 2px solid #F90100; border-radius: 12px; padding: 25px; margin: 30px 0; text-align: center;">
+                                    <p style="font-size: 12px; letter-spacing: 2px; margin: 0 0 10px; color: #F90100; font-weight: bold;">VERSIONE INTERATTIVA</p>
+                                    <p style="font-size: 16px; font-weight: 700; margin: 0 0 8px; color: #ffffff;">Visualizza la diagnosi online</p>
+                                    <p style="font-size: 13px; margin: 0 0 18px; color: #999999;">Animazioni, grafici interattivi e navigazione per sezione</p>
+                                    <a href="{html_url}" style="display: inline-block; background: #F90100; color: #ffffff; padding: 12px 30px; border-radius: 8px; font-weight: 700; font-size: 15px; text-decoration: none;">APRI LA DIAGNOSI INTERATTIVA</a>
+                                </div>
+"""
 
     html_body = f"""
     <!DOCTYPE html>
@@ -164,6 +194,8 @@ def send_premium_report_email(
                                     e le opportunità di integrazione AI specifiche per il tuo business.
                                 </p>
 
+                                {html_interactive_block}
+
                                 <div style="background-color: #f0fff4; border-left: 4px solid #10B981; padding: 20px; margin: 30px 0;">
                                     <p style="margin: 0; font-weight: bold; color: #10B981;">📅 Cosa fare ora?</p>
                                     <p style="margin: 5px 0 0; font-size: 14px;">
@@ -175,7 +207,7 @@ def send_premium_report_email(
                                     <p style="font-size: 12px; letter-spacing: 2px; margin: 0 0 10px; opacity: 0.8;">OFFERTA ESCLUSIVA</p>
                                     <p style="font-size: 22px; font-weight: 800; margin: 0 0 5px;">Consulenza Strategica 1-to-1</p>
                                     <p style="font-size: 14px; margin: 0 0 15px; opacity: 0.9;">45 minuti con Stefano per trasformare questa diagnosi in azioni concrete</p>
-                                    <div style="font-size: 36px; font-weight: 800; color: #FFD700; margin: 15px 0;">€199</div>
+                                    <div style="font-size: 36px; font-weight: 800; color: #FFD700; margin: 15px 0;">&euro;199</div>
                                     <p style="font-size: 12px; margin: 0 0 20px; opacity: 0.7;">Se poi lavoriamo insieme, li scaliamo dal primo progetto</p>
                                     <a href="https://buy.stripe.com/3cI3cx3WUaTheOieMgdMI00" style="display: inline-block; background: #FFD700; color: #1a0000; padding: 14px 35px; border-radius: 8px; font-weight: 800; font-size: 16px; text-decoration: none;">PRENOTA LA CONSULENZA — &euro;199</a>
                                 </div>

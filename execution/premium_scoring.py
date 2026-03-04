@@ -1,226 +1,58 @@
 """
-DigIdentity Premium — Scoring Module
-Calcola i punteggi per ogni area della diagnosi digitale.
+DigIdentity Premium — Scoring Module (v2)
+Wrapper su compute_free_scores: punteggi IDENTICI alla free.
+Aggiunge chiavi extra per compatibilita con premium_context.
 """
+import logging
+from execution.calculate_scores import compute_free_scores
 
-def calculate_scores(data: dict) -> dict:
-    """Calcola punteggi 0-100 per ogni area e il punteggio globale."""
+logger = logging.getLogger(__name__)
 
-    scores = {}
 
-    # ── SITO WEB ──
-    site = data.get("website", {})
-    site_score = 50  # base
-    wc = site.get("word_count", 0) or 0
-    if wc >= 2000:
-        site_score += 15
-    elif wc >= 1000:
-        site_score += 8
-    elif wc < 500:
-        site_score -= 15
+def calculate_scores(scraping_data: dict) -> dict:
+    """
+    Calcola punteggi con la STESSA logica della free report.
+    Aggiunge chiavi extra per premium_context (pagespeed dettaglio).
+    """
+    # Punteggi identici alla free
+    scores = compute_free_scores(scraping_data)
 
-    lt = site.get("load_time_ms", 9999) or 9999
-    if lt < 500:
-        site_score += 10
-    elif lt < 1000:
-        site_score += 5
-    elif lt > 2000:
-        site_score -= 10
+    # Chiavi extra da PageSpeed (premium_context le mostra nel dettaglio)
+    ps = scraping_data.get("pagespeed", {})
+    mob = ps.get("mobile", {}).get("scores", {})
+    desk = ps.get("desktop", {}).get("scores", {})
 
-    imgs = site.get("images_count", 0) or 0
-    imgs_no_alt = site.get("images_without_alt", 0) or 0
-    if imgs > 0 and imgs_no_alt == 0:
-        site_score += 5
-    elif imgs > 0 and (imgs_no_alt / imgs) > 0.5:
-        site_score -= 10
+    def _norm(v):
+        if v is None:
+            return 0
+        v = float(v)
+        return int(v * 100) if v <= 1 else int(v)
 
-    if site.get("has_ssl"):
-        site_score += 5
-    else:
-        site_score -= 15
+    scores["velocita_mobile"] = _norm(mob.get("performance", 0))
+    scores["velocita_desktop"] = _norm(desk.get("performance", 0))
+    scores["seo_score"] = _norm(mob.get("seo", 0))
+    scores["accessibilita"] = _norm(mob.get("accessibility", 0))
+    scores["best_practices"] = _norm(mob.get("best-practices", 0))
 
-    if site.get("has_favicon"):
-        site_score += 2
-    if site.get("meta_description"):
-        site_score += 5
-    else:
-        site_score -= 5
-    if site.get("h1_tags"):
-        site_score += 3
-    else:
-        site_score -= 5
-    if site.get("has_analytics"):
-        site_score += 5
-    else:
-        site_score -= 5
+    # Alias: premium_context usa "globale"
+    scores["globale"] = scores.get("punteggio_globale", 0)
 
-    scores["sito"] = max(0, min(100, site_score))
-
-    # ── PAGESPEED ──
-    ps = data.get("pagespeed", {})
-    mob = ps.get("mobile", {})
-    desk = ps.get("desktop", {})
-    mob_scores = mob.get("scores", {})
-    desk_scores = desk.get("scores", {})
-    scores["velocita_mobile"] = int(mob_scores.get("performance", 0) or 0)
-    scores["velocita_desktop"] = int(desk_scores.get("performance", 0) or 0)
-    scores["seo_score"] = int(mob_scores.get("seo", 0) or 0)
-    scores["accessibilita"] = int(mob_scores.get("accessibility", 0) or 0)
-    scores["best_practices"] = int(mob_scores.get("best-practices", 0) or 0)
-
-    # ── GOOGLE BUSINESS ──
-    gb = data.get("google_business", {})
-    gb_score = 0
-    if gb and gb.get("name"):
-        gb_score += 20
-    rating = gb.get("rating", 0) or 0
-    reviews = gb.get("reviews_count", 0) or 0
-    photos = gb.get("photos_count", 0) or 0
-    if rating >= 4.5:
-        gb_score += 20
-    elif rating >= 4.0:
-        gb_score += 15
-    elif rating >= 3.5:
-        gb_score += 10
-    if reviews >= 50:
-        gb_score += 20
-    elif reviews >= 20:
-        gb_score += 15
-    elif reviews >= 10:
-        gb_score += 10
-    elif reviews >= 5:
-        gb_score += 5
-    if photos >= 30:
-        gb_score += 15
-    elif photos >= 15:
-        gb_score += 10
-    elif photos >= 5:
-        gb_score += 5
-    if gb.get("hours"):
-        gb_score += 5
-    if gb.get("phone"):
-        gb_score += 5
-    if gb.get("website") and "https" in str(gb.get("website", "")):
-        gb_score += 5
-    if gb.get("services"):
-        gb_score += 5
-    if gb.get("posts_count", 0) or 0 > 0:
-        gb_score += 5
-    scores["google_business"] = max(0, min(100, gb_score))
-
-    # ── FACEBOOK ──
-    fb = data.get("apify", {}).get("facebook", {})
-    fb_score = 0
-    if fb and (fb.get("page_name") or fb.get("likes")):
-        fb_score += 20
-    likes = fb.get("likes", 0) or 0
-    if likes >= 1000:
-        fb_score += 20
-    elif likes >= 500:
-        fb_score += 15
-    elif likes >= 200:
-        fb_score += 10
-    elif likes >= 50:
-        fb_score += 5
-    fb_rating_raw = fb.get("rating", 0) or 0
-    try:
-        fb_rating = float(fb_rating_raw)
-    except (ValueError, TypeError):
-        fb_rating = 5.0 if "100%" in str(fb_rating_raw) else 0.0
-    if fb_rating >= 4.5:
-        fb_score += 15
-    elif fb_rating >= 4.0:
-        fb_score += 10
-    fb_posts = fb.get("recent_posts_count", 0) or 0
-    if fb_posts >= 10:
-        fb_score += 15
-    elif fb_posts >= 5:
-        fb_score += 10
-    elif fb_posts >= 1:
-        fb_score += 5
-    fb_engagement = fb.get("engagement_rate", 0) or 0
-    if fb_engagement >= 3:
-        fb_score += 10
-    elif fb_engagement >= 1:
-        fb_score += 5
-    if fb.get("last_post_days", 999) < 30:
-        fb_score += 10
-    scores["facebook"] = max(0, min(100, fb_score))
-
-    # ── INSTAGRAM ──
-    ig = data.get("apify", {}).get("instagram", {})
-    ig_score = 0
-    if ig and (ig.get("username") or ig.get("followers")):
-        ig_score += 15
-    followers = ig.get("followers", 0) or 0
-    if followers >= 2000:
-        ig_score += 20
-    elif followers >= 1000:
-        ig_score += 15
-    elif followers >= 500:
-        ig_score += 10
-    elif followers >= 100:
-        ig_score += 5
-    ig_engagement = ig.get("engagement_rate", 0) or 0
-    if ig_engagement >= 5:
-        ig_score += 15
-    elif ig_engagement >= 3:
-        ig_score += 10
-    elif ig_engagement >= 1:
-        ig_score += 5
-    ig_posts = ig.get("posts_count", 0) or 0
-    if ig_posts >= 50:
-        ig_score += 15
-    elif ig_posts >= 20:
-        ig_score += 10
-    elif ig_posts >= 5:
-        ig_score += 5
-    if ig.get("is_business"):
-        ig_score += 10
-    if ig.get("last_post_days", 999) < 30:
-        ig_score += 10
-    scores["instagram"] = max(0, min(100, ig_score))
-
-    # ── REPUTAZIONE AI ──
-    perp = data.get("perplexity", {})
-    ai_score = 30  # base
-    perp_text = str(perp).lower()
-    positive_terms = ["consigliato", "positiv", "ottim", "eccellent", "buon", "apprezzat", "professionale"]
-    negative_terms = ["non visibile", "assente", "scarsa", "nessuna recensione", "poco conosciut", "non consolidat", "debole"]
-    for term in positive_terms:
-        if term in perp_text:
-            ai_score += 8
-    for term in negative_terms:
-        if term in perp_text:
-            ai_score -= 8
-    scores["reputazione_ai"] = max(0, min(100, ai_score))
-
-    # ── PUNTEGGIO GLOBALE ──
-    weights = {
-        "sito": 0.15,
-        "velocita_mobile": 0.12,
-        "velocita_desktop": 0.08,
-        "seo_score": 0.10,
-        "accessibilita": 0.035,
-        "best_practices": 0.035,
-        "google_business": 0.18,
-        "facebook": 0.10,
-        "instagram": 0.10,
-        "reputazione_ai": 0.10,
-    }
-    globale = sum(scores.get(k, 0) * w for k, w in weights.items())
-    scores["globale"] = round(globale)
-
+    logger.info(f"[PREMIUM SCORING v2] Punteggio globale: {scores['globale']}/100 (identico a free)")
     return scores
 
 
-def determine_top_actions(data: dict, scores: dict) -> list:
+def determine_top_actions(scraping_data: dict, scores: dict) -> list:
     """Restituisce le 5 azioni prioritarie basate sui dati e punteggi."""
     actions = []
 
     # 1. Recensioni Google
-    gb = data.get("google_business", {})
-    reviews = gb.get("reviews_count", 0) or 0
+    gb = scraping_data.get("google_business", {})
+    gb_reviews_raw = gb.get("reviews_count", gb.get("total_reviews", 0))
+    if isinstance(gb_reviews_raw, list):
+        reviews = len(gb_reviews_raw)
+    else:
+        reviews = int(gb_reviews_raw or 0)
+
     if reviews < 15:
         actions.append({
             "azione": "Raccolta recensioni Google",
@@ -230,8 +62,8 @@ def determine_top_actions(data: dict, scores: dict) -> list:
             "priorita": 1
         })
 
-    # 2. Correzioni urgenti sito/brand
-    site = data.get("website", {})
+    # 2. Correzioni urgenti sito
+    site = scraping_data.get("website", {})
     problems = []
     if not site.get("meta_description"):
         problems.append("meta description assente")
@@ -261,7 +93,8 @@ def determine_top_actions(data: dict, scores: dict) -> list:
         })
 
     # 4. Pagine servizio
-    indexed = data.get("seo", {}).get("indexed_pages", {})
+    seo = scraping_data.get("seo", {})
+    indexed = seo.get("indexed_pages", {})
     total_pages = indexed.get("total", 0) if isinstance(indexed, dict) else 0
     if total_pages < 15:
         actions.append({
@@ -273,8 +106,8 @@ def determine_top_actions(data: dict, scores: dict) -> list:
         })
 
     # 5. Calendario social
-    ig = data.get("apify", {}).get("instagram", {})
-    fb = data.get("apify", {}).get("facebook", {})
+    ig = scraping_data.get("apify", {}).get("instagram", {})
+    fb = scraping_data.get("apify", {}).get("facebook", {})
     ig_posts = ig.get("posts_count", 0) or 0
     fb_days = fb.get("last_post_days", 999) or 999
     if ig_posts < 20 or fb_days > 60:
@@ -286,13 +119,24 @@ def determine_top_actions(data: dict, scores: dict) -> list:
             "priorita": 5
         })
 
-    # Se meno di 5 azioni, aggiungi generiche
+    # Riempimento se meno di 5
     if len(actions) < 5:
         if not any(a["azione"].startswith("Google Business") for a in actions):
             actions.append({
                 "azione": "Potenziamento Google Business Profile",
                 "descrizione": "Aggiungere foto (target 30-50), elencare tutti i servizi, pubblicare un post settimanale, aggiornare orari e categorie.",
                 "costo": "Gratuito",
+                "impatto": "Medio-Alto",
+                "priorita": len(actions) + 1
+            })
+
+    if len(actions) < 5:
+        geo_score = scores.get("score_geo", scores.get("geo", 0))
+        if geo_score < 50:
+            actions.append({
+                "azione": "Ottimizzazione visibilita AI (GEO)",
+                "descrizione": f"GEO Score: {geo_score}/100. Aggiungere dati strutturati, creare contenuti citabili, ottimizzare per motori AI come ChatGPT e Perplexity.",
+                "costo": "200-500 EUR",
                 "impatto": "Medio-Alto",
                 "priorita": len(actions) + 1
             })

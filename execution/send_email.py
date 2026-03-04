@@ -236,8 +236,8 @@ def send_premium_report_email(
         to_email=to_email,
         subject=subject,
         html_body=html_body,
-        attachment_path=None,
-        attachment_name=None,
+        attachment_path=pdf_path,
+        attachment_name=f"Diagnosi-Premium-{company_name}.pdf",
     )
 
 

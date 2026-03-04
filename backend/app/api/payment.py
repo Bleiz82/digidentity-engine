@@ -267,3 +267,89 @@ async def internal_avvia_audit(request: Request):
     except Exception as e:
         logger.error("Errore endpoint interno: %s", str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/internal/genera-premium")
+async def internal_genera_premium(request: Request):
+    """Genera report Premium su lead esistente o nuovo — uso interno."""
+    api_key = request.headers.get("X-Internal-Key", "")
+    if api_key != settings.INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Accesso non autorizzato.")
+    try:
+        body = await request.json()
+        lead_id = body.get("lead_id")
+
+        if lead_id:
+            from app.core.supabase_client import get_supabase
+            supabase = get_supabase()
+            supabase.table("leads").update({
+                "status": "payment_completed",
+                "stripe_session_id": "INTERNO_ADMIN",
+            }).eq("id", lead_id).execute()
+        else:
+            nome = body.get("nome_azienda", "Test interno")
+            sito = body.get("sito_web", "")
+            email = body.get("email", "digidentityagency@gmail.com")
+            citta = body.get("citta", "")
+            settore = body.get("settore", "")
+            from app.core.supabase_client import get_supabase
+            supabase = get_supabase()
+            result = supabase.table("leads").insert({
+                "nome_azienda": nome,
+                "sito_web": sito,
+                "email": email,
+                "citta": citta,
+                "settore_attivita": settore,
+                "status": "payment_completed",
+                "stripe_session_id": "INTERNO_ADMIN",
+            }).execute()
+            if not result.data:
+                raise HTTPException(status_code=500, detail="Errore creazione lead")
+            lead_id = result.data[0]["id"]
+
+        from app.tasks.premium_report_task import task_premium_report
+        task_premium_report.delay(lead_id)
+        logger.info("[ADMIN] Report Premium avviato per lead %s", lead_id)
+        return JSONResponse(content={"status": "avviato", "tipo": "premium", "lead_id": lead_id})
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("[ADMIN] Errore genera-premium: %s", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/internal/genera-geo")
+async def internal_genera_geo(request: Request):
+    """Genera GEO Audit senza pagamento — uso interno."""
+    api_key = request.headers.get("X-Internal-Key", "")
+    if api_key != settings.INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Accesso non autorizzato.")
+    try:
+        body = await request.json()
+        url_sito = body.get("url_sito", "")
+        email = body.get("email", "digidentityagency@gmail.com")
+        if not url_sito:
+            raise HTTPException(status_code=400, detail="url_sito obbligatorio.")
+
+        from app.core.supabase_client import get_supabase
+        supabase = get_supabase()
+        result = supabase.table("geo_audits").insert({
+            "url_sito": url_sito,
+            "email_cliente": email,
+            "piano": "interno",
+            "stripe_session_id": "INTERNO_ADMIN",
+            "status": "pending"
+        }).execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Errore creazione audit")
+        audit_id = result.data[0]["id"]
+
+        from app.tasks.geo_audit_task import task_geo_audit
+        task_geo_audit.apply_async(args=[audit_id])
+        logger.info("[ADMIN] GEO Audit avviato: %s", audit_id)
+        return JSONResponse(content={"status": "avviato", "tipo": "geo", "audit_id": audit_id})
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("[ADMIN] Errore genera-geo: %s", str(e))
+        raise HTTPException(status_code=500, detail=str(e))

@@ -14,6 +14,48 @@ export default function LeadsPage() {
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
     const [expandedLead, setExpandedLead] = useState<string | null>(null)
     const [provincie, setProvincie] = useState<string[]>([])
+    const [adminLoading, setAdminLoading] = useState<string | null>(null)
+    const [adminMsg, setAdminMsg] = useState<string | null>(null)
+
+    const triggerPremium = async (leadId: string) => {
+        setAdminLoading(leadId)
+        setAdminMsg(null)
+        try {
+            const res = await fetch('https://api.digidentityagency.it/api/payment/internal/genera-premium', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Internal-Key': 'dIgId_int3rn4L_X9kM2pV7nQ4wL6jR8' },
+                body: JSON.stringify({ lead_id: leadId })
+            })
+            const data = await res.json()
+            if (res.ok) {
+                setAdminMsg('Report Premium avviato!')
+                fetchLeads()
+            } else {
+                setAdminMsg(data.detail || data.error || 'Errore')
+            }
+        } catch { setAdminMsg('Errore di connessione') }
+        finally { setAdminLoading(null) }
+    }
+
+    const triggerFreeReport = async (leadId: string) => {
+        setAdminLoading(leadId + '_free')
+        setAdminMsg(null)
+        try {
+            const res = await fetch('https://api.digidentityagency.it/api/payment/internal/genera-premium', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Internal-Key': 'dIgId_int3rn4L_X9kM2pV7nQ4wL6jR8' },
+                body: JSON.stringify({ lead_id: leadId })
+            })
+            const data = await res.json()
+            if (res.ok) {
+                setAdminMsg('Report Free ri-avviato!')
+                fetchLeads()
+            } else {
+                setAdminMsg(data.detail || data.error || 'Errore')
+            }
+        } catch { setAdminMsg('Errore di connessione') }
+        finally { setAdminLoading(null) }
+    }
 
     useEffect(() => { fetchLeads() }, [])
 
@@ -260,6 +302,26 @@ export default function LeadsPage() {
                                 <p className="text-sm text-slate-400">Settore: {lead.settore_attivita}</p>
                                 <p className="text-xs text-slate-600 mt-2">ID: {lead.id}</p>
                             </div>
+                        </div>
+                        {/* Bottoni Admin */}
+                        <div className="mt-6 pt-4 border-t border-slate-700/50 flex flex-wrap gap-3">
+                            {adminMsg && <p className="w-full text-sm text-emerald-400 mb-2">{adminMsg}</p>}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); triggerFreeReport(lead.id) }}
+                                disabled={adminLoading === lead.id + '_free'}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {adminLoading === lead.id + '_free' ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
+                                Ri-genera Free Report
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); triggerPremium(lead.id) }}
+                                disabled={adminLoading === lead.id}
+                                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {adminLoading === lead.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
+                                Genera Premium (interno)
+                            </button>
                         </div>
                     </div>
                 )

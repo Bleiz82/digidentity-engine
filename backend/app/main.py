@@ -65,6 +65,7 @@ app.add_middleware(
         "http://127.0.0.1:8080",
         "https://diagnosi.digidentityagency.it",
         "https://www.diagnosi.digidentityagency.it",
+        "https://admin.digidentityagency.it",
         settings.APP_BASE_URL,
     ],
     allow_credentials=True,

@@ -21,6 +21,34 @@ export default function GeoAuditsPage() {
     const [audits, setAudits] = useState<GeoAudit[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [showForm, setShowForm] = useState(false)
+    const [geoUrl, setGeoUrl] = useState('')
+    const [geoEmail, setGeoEmail] = useState('digidentityagency@gmail.com')
+    const [geoLoading, setGeoLoading] = useState(false)
+    const [geoMsg, setGeoMsg] = useState<string | null>(null)
+
+    const triggerGeoAudit = async () => {
+        if (!geoUrl) return
+        setGeoLoading(true)
+        setGeoMsg(null)
+        try {
+            const res = await fetch('https://api.digidentityagency.it/api/payment/internal/genera-geo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Internal-Key': 'dIgId_int3rn4L_X9kM2pV7nQ4wL6jR8' },
+                body: JSON.stringify({ url_sito: geoUrl, email: geoEmail })
+            })
+            const data = await res.json()
+            if (res.ok) {
+                setGeoMsg('GEO Audit avviato!')
+                setGeoUrl('')
+                setShowForm(false)
+                fetchAudits()
+            } else {
+                setGeoMsg(data.detail || data.error || 'Errore')
+            }
+        } catch { setGeoMsg('Errore di connessione') }
+        finally { setGeoLoading(false) }
+    }
 
     useEffect(() => {
         fetchAudits()
@@ -152,14 +180,22 @@ export default function GeoAuditsPage() {
                     </h1>
                     <p className="text-slate-400 mt-1">Audit sul posizionamento AI/GEO dei siti analizzati</p>
                 </div>
-                <button 
-                    onClick={fetchAudits}
-                    disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-300 hover:text-white transition-all disabled:opacity-50"
-                >
-                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    Aggiorna
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => setShowForm(!showForm)}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#F90100] hover:bg-[#d40100] text-white font-medium rounded-xl transition-all"
+                    >
+                        Nuovo GEO Audit
+                    </button>
+                    <button 
+                        onClick={fetchAudits}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-300 hover:text-white transition-all disabled:opacity-50"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        Aggiorna
+                    </button>
+                </div>
             </div>
 
             {/* ERROR BANNER */}
@@ -167,6 +203,31 @@ export default function GeoAuditsPage() {
                 <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center gap-3 text-red-400">
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
                     <p className="text-sm font-medium">{error}</p>
+                </div>
+            )}
+
+            {/* Form Nuovo GEO Audit */}
+            {showForm && (
+                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4">Nuovo GEO Audit (interno)</h3>
+                    {geoMsg && <p className="text-sm text-emerald-400 mb-3">{geoMsg}</p>}
+                    <div className="flex flex-wrap gap-4 items-end">
+                        <div className="flex-1 min-w-[250px]">
+                            <label className="block text-xs text-slate-400 mb-1">URL Sito *</label>
+                            <input type="text" value={geoUrl} onChange={(e) => setGeoUrl(e.target.value)} placeholder="https://esempio.it"
+                                className="w-full px-4 py-2.5 bg-black border border-slate-700 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-[#F90100]/50" />
+                        </div>
+                        <div className="flex-1 min-w-[250px]">
+                            <label className="block text-xs text-slate-400 mb-1">Email</label>
+                            <input type="email" value={geoEmail} onChange={(e) => setGeoEmail(e.target.value)}
+                                className="w-full px-4 py-2.5 bg-black border border-slate-700 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-[#F90100]/50" />
+                        </div>
+                        <button onClick={triggerGeoAudit} disabled={geoLoading || !geoUrl}
+                            className="px-6 py-2.5 bg-[#F90100] hover:bg-[#d40100] text-white font-medium rounded-xl transition-all disabled:opacity-50 flex items-center gap-2">
+                            {geoLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
+                            Avvia Audit
+                        </button>
+                    </div>
                 </div>
             )}
 

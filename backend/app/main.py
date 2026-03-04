@@ -55,6 +55,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Gestione OPTIONS preflight esplicita
+from starlette.responses import Response
+
+@app.options('/{rest_of_path:path}')
+async def preflight_handler(rest_of_path: str):
+    return Response(status_code=200)
+
 # CORS
 app.add_middleware(
     CORSMiddleware,

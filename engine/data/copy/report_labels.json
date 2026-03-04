@@ -1,33 +1,86 @@
 {
-    "intestazione": {
-        "powered_by": "https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png"
-    },
-    "moduli": {
-        "citabilita": {
-            "nome": "Citabilità AI",
-            "peso": "25%",
-            "descrizione": "Quanto il contenuto è ottimizzato per le citazioni nelle risposte delle AI."
-        },
-        "crawler": {
-            "nome": "Accesso Crawler AI",
-            "weight": "15%",
-            "peso": "15%",
-            "descrizione": "Verifica della visibilità del sito per i bot specializzati di OpenAI, Claude e Perplexity."
-        },
-        "brand": {
-            "nome": "Brand Authority",
-            "peso": "20%",
-            "descrizione": "Consistenza della presenza del brand sulle fonti utilizzate dalle AI."
-        },
-        "schema": {
-            "nome": "Dati Strutturati",
-            "peso": "10%",
-            "descrizione": "Presenza di markup Schema.org e JSON-LD per una comprensione semantica migliore."
-        },
-        "contenuto": {
-            "nome": "Qualità Contenuto E-E-A-T",
-            "peso": "20%",
-            "descrizione": "Esperienza, Competenza, Autorevolezza e Affidabilità dei contenuti."
-        }
+  "intestazione": {
+    "titolo": "GEO Audit Report",
+    "sottotitolo": "Analisi di Visibilità AI — Generative Engine Optimization",
+    "prodotto": "GEO Audit Italia",
+    "powered_by": "Powered by DigIdentity Agency",
+    "tagline": "AI & Automazioni per la Tua Impresa",
+    "data_label": "Data analisi",
+    "sito_analizzato": "Sito analizzato",
+    "piano": "Piano"
+  },
+  "geo_score": {
+    "titolo": "GEO Score Complessivo",
+    "descrizione": "Il GEO Score misura quanto il tuo sito è ottimizzato per essere trovato e citato dai motori di ricerca AI come ChatGPT, Perplexity, Claude e Google AI Overviews.",
+    "livelli": {
+      "0-30": {"etichetta": "Invisibile alle AI", "colore": "#DC2626", "emoji": "🔴"},
+      "31-50": {"etichetta": "Visibilità minima", "colore": "#EA580C", "emoji": "🟠"},
+      "51-70": {"etichetta": "In sviluppo", "colore": "#CA8A04", "emoji": "🟡"},
+      "71-85": {"etichetta": "Buona visibilità", "colore": "#16A34A", "emoji": "🟢"},
+      "86-100": {"etichetta": "Eccellente", "colore": "#0891B2", "emoji": "💎"}
     }
+  },
+  "moduli": {
+    "citabilita": {
+      "nome": "Citabilità AI",
+      "descrizione": "Quanto il contenuto è strutturato per essere citato dalle AI",
+      "peso": "25%"
+    },
+    "brand": {
+      "nome": "Autorità del Brand",
+      "descrizione": "Presenza del brand su piattaforme citate dalle AI",
+      "peso": "20%"
+    },
+    "contenuto": {
+      "nome": "Qualità Contenuto & E-E-A-T",
+      "descrizione": "Esperienza, Competenza, Autorevolezza, Affidabilità",
+      "peso": "20%"
+    },
+    "crawler": {
+      "nome": "Accesso Crawler AI",
+      "descrizione": "Accesso dei bot AI al sito e file llms.txt",
+      "peso": "15%"
+    },
+    "schema": {
+      "nome": "Dati Strutturati",
+      "descrizione": "Schema markup JSON-LD per la comprensione AI",
+      "peso": "10%"
+    },
+    "piattaforme": {
+      "nome": "Ottimizzazione Piattaforme",
+      "descrizione": "Readiness specifica per ChatGPT, Perplexity, Google AIO",
+      "peso": "10%"
+    }
+  },
+  "priorita": {
+    "titolo": "Piano d'Azione Prioritizzato",
+    "sottotitolo": "Interventi ordinati per impatto sul GEO Score",
+    "livelli": {
+      "CRITICA": {"colore": "#DC2626", "emoji": "🔴"},
+      "ALTA": {"colore": "#EA580C", "emoji": "🟠"},
+      "MEDIA": {"colore": "#CA8A04", "emoji": "🟡"},
+      "BASSA": {"colore": "#16A34A", "emoji": "🟢"}
+    }
+  },
+  "footer": {
+    "disclaimer": "Questo report è generato automaticamente da GEO Audit Italia. I dati sono aggiornati alla data dell'analisi. Per una consulenza personalizzata contatta DigIdentity Agency.",
+    "contatto": "info@digidentityagency.it",
+    "telefono": "+39 392 199 0215",
+    "sito": "https://digidentityagency.it",
+    "indirizzo": "Via Dettori 3, 09020 Samatzai (SU), Sardegna",
+    "copyright": "© 2026 DigIdentity Agency — Tutti i diritti riservati"
+  },
+  "crawler_ai": {
+    "GPTBot": "OpenAI / ChatGPT",
+    "ChatGPT-User": "ChatGPT Browsing",
+    "OAI-SearchBot": "OpenAI Search",
+    "ClaudeBot": "Anthropic / Claude",
+    "PerplexityBot": "Perplexity AI",
+    "Google-Extended": "Google Gemini / AI Overviews",
+    "Gemini": "Google Gemini",
+    "Bingbot": "Microsoft Copilot",
+    "FacebookBot": "Meta AI",
+    "Applebot-Extended": "Apple Intelligence",
+    "YouBot": "You.com AI"
+  }
 }

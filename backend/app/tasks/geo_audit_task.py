@@ -43,17 +43,15 @@ def task_geo_audit(self, audit_id: str):
         asyncio.set_event_loop(loop)
         try:
             risultati = loop.run_until_complete(esegui_audit_completo(url_sito))
+            geo_score = risultati.get("geo_score", 0)
+            pdf_path = loop.run_until_complete(genera_pdf_report(
+                risultati=risultati,
+                url_sito=url_sito,
+                email_cliente=email_cliente,
+                session_id=audit_id,
+            ))
         finally:
             loop.close()
-            
-        geo_score = risultati.get("geo_score", 0)
-        
-        # 3. Generazione Report PDF
-        pdf_path = genera_pdf_report(
-            risultati=risultati,
-            output_dir=settings.GEO_REPORT_DIR,
-            audit_id=audit_id
-        )
         
         pdf_file = Path(pdf_path)
         pdf_size = pdf_file.stat().st_size if pdf_file.exists() else 0

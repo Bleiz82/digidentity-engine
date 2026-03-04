@@ -296,7 +296,7 @@ export default function GeoAuditsPage() {
                                     <td className="px-6 py-4">
                                         {audit.pdf_path ? (
                                             <a
-                                                href={`/api/reports/geo/${audit.id}/pdf`}
+                                                href={`https://api.digidentityagency.it/api/reports/geo/${audit.id}/pdf`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 hover:text-white rounded-lg text-xs font-medium transition-all"

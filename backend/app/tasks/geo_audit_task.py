@@ -88,7 +88,6 @@ def task_geo_audit(self, audit_id: str):
             "status": "completed",
             "geo_score": geo_score,
             "pdf_path": pdf_path,
-            "html_path": html_path,
             "pdf_size_bytes": pdf_size,
             "risultati_json": risultati,
             "email_sent": success_email,

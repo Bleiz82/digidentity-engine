@@ -107,7 +107,7 @@ Scrivi 3-4 paragrafi che:
 4. Danno una prospettiva di miglioramento realistica
 
 Tono: professionale ma diretto, come un consulente senior italiano.
-Lunghezza: 300-400 parole.""",
+Lunghezza: 800-1000 parole. Scrivi in modo molto dettagliato con sottosezioni, esempi concreti e tabelle markdown.""",
 
         "citabilita": f"""Sei un esperto di GEO italiano. Analizza questi dati di citabilità AI per {url_sito}:
 
@@ -121,7 +121,7 @@ Scrivi un'analisi dettagliata in italiano che include:
 5. Template di paragrafo ottimale per la citabilità AI
 
 Tono: tecnico ma comprensibile, con esempi pratici.
-Lunghezza: 400-500 parole.""",
+Lunghezza: 1000-1300 parole. Scrivi in modo molto dettagliato con sottosezioni numerate, esempi concreti, tabelle markdown e checklist operative.""",
 
         "crawler": f"""Sei un esperto di GEO italiano. Analizza questi dati sui crawler AI per {url_sito}:
 
@@ -135,7 +135,7 @@ Scrivi un'analisi dettagliata in italiano che include:
 5. Priorità degli interventi con impatto stimato
 
 Includi il codice robots.txt ottimizzato pronto all'uso.
-Lunghezza: 400-500 parole.""",
+Lunghezza: 1000-1300 parole. Scrivi in modo molto dettagliato con sottosezioni numerate, esempi concreti, tabelle markdown e checklist operative.""",
 
         "brand": f"""Sei un esperto di GEO e brand authority italiano. Analizza questi dati per {url_sito}:
 
@@ -149,7 +149,7 @@ Scrivi un'analisi dettagliata in italiano che include:
 5. Strategia LinkedIn, YouTube e piattaforme italiane di settore
 6. Template outreach per ottenere citazioni da fonti autorevoli italiane
 
-Lunghezza: 450-550 parole.""",
+Lunghezza: 1100-1400 parole. Scrivi in modo molto dettagliato con sottosezioni numerate, analisi tecniche approfondite, tabelle, esempi pratici e raccomandazioni step-by-step.""",
 
         "schema": f"""Sei un esperto di Schema Markup e dati strutturati per il mercato italiano. Analizza per {url_sito}:
 
@@ -162,7 +162,7 @@ Scrivi un'analisi dettagliata in italiano che include:
 4. Istruzioni di implementazione per ogni schema consigliato
 5. Errori comuni nel Schema Markup italiano da evitare
 
-Lunghezza: 400-500 parole.""",
+Lunghezza: 1000-1300 parole. Scrivi in modo molto dettagliato con sottosezioni numerate, esempi concreti, tabelle markdown e checklist operative.""",
 
         "contenuto": f"""Sei un esperto di E-E-A-T e qualità contenuto per il mercato italiano. Analizza per {url_sito}:
 
@@ -175,7 +175,7 @@ Scrivi un'analisi dettagliata in italiano che include:
 4. 5 raccomandazioni prioritizzate per migliorare l'E-E-A-T
 5. Checklist pratica per l'ottimizzazione dei contenuti
 
-Lunghezza: 450-550 parole.""",
+Lunghezza: 1100-1400 parole. Scrivi in modo molto dettagliato con sottosezioni numerate, analisi tecniche approfondite, tabelle, esempi pratici e raccomandazioni step-by-step.""",
 
         "piano_azione": f"""Sei un consulente GEO senior italiano. Basandoti su questo audit completo per {url_sito}:
 
@@ -190,7 +190,7 @@ Crea un piano d'azione dettagliato in italiano con:
 5. Stima realistica del miglioramento del GEO Score per ogni fase
 
 Tono: concreto, con stime di tempo e impatto per ogni azione.
-Lunghezza: 500-600 parole.""",
+Lunghezza: 1300-1600 parole. Scrivi in modo estremamente dettagliato con timeline, tabelle impatto/sforzo, KPI misurabili, esempi concreti per il settore e raccomandazioni operative step-by-step.""",
 
         "benchmark": f"""Sei un esperto di GEO italiano con conoscenza del mercato italiano. Per il sito {url_sito} con GEO Score {dati.get('geo_score', 0)}/100:
 
@@ -201,7 +201,7 @@ Scrivi una sezione di benchmark in italiano che include:
 4. Opportunità specifiche per il mercato italiano
 5. Trend GEO 2026 rilevanti per questo tipo di sito
 
-Lunghezza: 350-450 parole.""",
+Lunghezza: 900-1100 parole. Scrivi in modo molto dettagliato con dati di mercato, proiezioni, tabelle comparative, trend AI e analisi competitiva approfondita.""",
     }
 
     prompt = prompts.get(sezione, "")

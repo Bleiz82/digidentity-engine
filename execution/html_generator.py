@@ -194,9 +194,9 @@ def _markdown_to_html(text: str) -> str:
     for line in lines:
         stripped = line.strip()
 
-        # Heading h1 (# singolo) — render come h3 nelle sezioni
+        # Heading h1 (# singolo) — render come h2 per navigazione
         if stripped.startswith('# ') and not stripped.startswith('## '):
-            html_lines.append(f'<h3>{stripped[2:].strip()}</h3>')
+            html_lines.append(f'<h2>{stripped[2:].strip()}</h2>')
             continue
 
         # Heading h3
@@ -212,7 +212,7 @@ def _markdown_to_html(text: str) -> str:
             if in_paragraph:
                 html_lines.append('</p>')
                 in_paragraph = False
-            html_lines.append(f'<h3>{stripped[3:]}</h3>')  # Render as h3 inside sections
+            html_lines.append(f'<h2>{stripped[3:]}</h2>')  # Render as h2 for navigation
             continue
 
         # Horizontal rule

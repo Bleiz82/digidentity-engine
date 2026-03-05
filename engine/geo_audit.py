@@ -83,12 +83,13 @@ def calcola_geo_score(risultati: dict) -> int:
     score_tecnico = risultati.get("crawler", {}).get("score", 0)
     score_schema = risultati.get("schema", {}).get("score", 0)
 
+    # Platform optimization (10%) distribuito: +5% citabilita, +5% brand
     geo_score = (
-        score_citabilita * PESI_SCORING["citabilita_ai"] +
-        score_brand * PESI_SCORING["autorita_brand"] +
-        score_contenuto * PESI_SCORING["qualita_contenuto"] +
-        score_tecnico * PESI_SCORING["fondamenta_tecniche"] +
-        score_schema * PESI_SCORING["dati_strutturati"]
+        score_citabilita * 0.30 +
+        score_brand * 0.25 +
+        score_contenuto * 0.20 +
+        score_tecnico * 0.15 +
+        score_schema * 0.10
     )
 
     return round(min(max(geo_score, 0), 100))

@@ -908,8 +908,8 @@ def generate_geo_html(risultati: dict, url_sito: str, audit_id: str, analisi: di
     module_defs = [
         ("citabilita", "Citabilità AI", "25%"),
         ("crawler", "Accesso Crawler AI", "15%"),
-        ("brand", "Autorità del Brand", "25%"),
-        ("schema", "Dati Strutturati", "15%"),
+        ("brand", "Autorità del Brand", "20%"),
+        ("schema", "Dati Strutturati", "10%"),
         ("contenuto", "Qualità Contenuto E-E-A-T", "20%"),
     ]
     cards_html = ""

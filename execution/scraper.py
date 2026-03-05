@@ -205,7 +205,7 @@ def scrape_lead(
 
     # ── LAYER 3: SerpAPI (solo 2 query) ──
     try:
-        seo_data = _analyze_seo_serpapi(website_url, company_name, city, sector)
+        seo_data = _analyze_seo_serpapi(website_url, company_name, city, sector, indirizzo=indirizzo)
         results["seo"] = seo_data.get("seo", {})
         results["citations"] = seo_data.get("citations", [])
         results["indexed_pages"] = seo_data.get("indexed_pages", {"total": 0, "pages": []})
@@ -728,7 +728,7 @@ def _analyze_pagespeed(website_url: str) -> dict[str, Any]:
 #  LAYER 3: SerpAPI (solo 2 query)
 # ══════════════════════════════════════════════════════════
 
-def _analyze_seo_serpapi(website_url: str, company_name: str, city: str = "", sector: str = "") -> dict:
+def _analyze_seo_serpapi(website_url: str, company_name: str, city: str = "", sector: str = "", indirizzo: str = "") -> dict:
     """
     SerpAPI — solo 2 query per risparmiare crediti (limite 250/mese).
     Query 1: "{nome_azienda} {città}" — posizione brand
@@ -756,9 +756,9 @@ def _analyze_seo_serpapi(website_url: str, company_name: str, city: str = "", se
 
     # ── Query 1: Brand ──
     try:
-        q1 = f"{company_name} {city}".strip()
+        q1 = company_name.strip()
         loc = f"{city}, Italy" if city else "Italy"
-        params = {"q": q1, "hl": "it", "gl": "it", "location": loc, "api_key": api_key, "num": 10}
+        params = {"q": q1, "hl": "it", "gl": "it", "location": loc, "api_key": api_key, "num": 20}
         resp = requests.get("https://serpapi.com/search.json", params=params, timeout=30)
         data = resp.json()
 
@@ -795,11 +795,19 @@ def _analyze_seo_serpapi(website_url: str, company_name: str, city: str = "", se
         results["seo"]["search_queries"].append({"query": q1, "results": len(data.get("organic_results", []))})
 
         # Citazioni dalla query brand
+        # Cerca nome flessibile: parole principali del nome (>3 chars, no forme giuridiche)
+        _skip_words = {"srls", "srl", "sas", "snc", "spa", "s.r.l.", "s.r.l.s.", "s.a.s.", "s.n.c.", "s.p.a.", "di", "e", "il", "la", "da", "del", "dei", "delle"}
+        _name_words = [w.lower() for w in company_name.split() if len(w) > 3 and w.lower().strip(".") not in _skip_words]
+        _known_citation_domains = ["digidentitycard.com", "paginegialle.it", "paginebianche.it", "edilnet.it", "yelp.com", "tripadvisor.com", "trustpilot.com", "virgilio.it", "infobel.com"]
         for res in data.get("organic_results", []):
-            if domain not in res.get("link", ""):
-                link = res.get("link", "")
-                title = res.get("title", "")
-                if company_name.lower() in title.lower() or domain in link:
+            res_link = res.get("link", "")
+            if domain not in res_link:
+                res_title = res.get("title", "").lower()
+                res_snippet = res.get("snippet", "").lower() if res.get("snippet") else ""
+                # Citazione se: nome trovato nel titolo/snippet O sito di citazione noto
+                name_match = sum(1 for w in _name_words if w in res_title or w in res_snippet) >= max(1, len(_name_words) // 2)
+                known_domain = any(d in res_link for d in _known_citation_domains)
+                if name_match or known_domain:
                     _add_citation(results["citations"], res)
 
         logger.info(f"[SERPAPI] Q1 '{q1}': GMB={results['google_business']['found']}, Pos={brand_pos}")
@@ -813,7 +821,8 @@ def _analyze_seo_serpapi(website_url: str, company_name: str, city: str = "", se
             if city.lower() in sector_clean.lower():
                 sector_clean = re.sub(re.escape(city), '', sector_clean, flags=re.IGNORECASE).strip()
             q2 = f"{sector_clean} {city}"
-            params = {"q": q2, "hl": "it", "gl": "it", "location": f"{city}, Italy", "api_key": api_key, "num": 10}
+            loc2 = f"{city}, Italy" if city else "Italy"
+            params = {"q": q2, "hl": "it", "gl": "it", "location": loc2, "api_key": api_key, "num": 20}
             data = requests.get("https://serpapi.com/search.json", params=params, timeout=30).json()
 
             # Competitor dal local pack

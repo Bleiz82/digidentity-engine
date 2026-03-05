@@ -176,18 +176,27 @@ def get_google_business_reputazione_data(ctx: dict) -> str:
     fb = ctx["scraping_data"].get("apify", {}).get("facebook", {})
     site = ctx["scraping_data"].get("website", {})
     ig = ctx["scraping_data"].get("apify", {}).get("instagram", {})
+    gb_name = gb.get('title', gb.get('name', 'N/A'))
+    gb_found = gb.get('found', False)
+    gb_status = 'TROVATA E ATTIVA' if gb_found else 'NON TROVATA'
+    gb_rating_val = gb.get('rating')
+    gb_rating_str = str(gb_rating_val) + '/5' if gb_rating_val else 'Nessuna valutazione'
+    gb_reviews = gb.get('reviews_count', gb.get('total_reviews', 0))
+    gb_photos = gb.get('photos', [])
+    gb_photos_count = len(gb_photos) if isinstance(gb_photos, list) else gb_photos
     return f"""
 GOOGLE BUSINESS PROFILE:
-- Nome: {gb.get('name', 'N/A')}
+- Scheda trovata: {gb_status}
+- Nome scheda: {gb_name}
+- Place ID: {gb.get('place_id', 'N/A')}
 - Indirizzo: {gb.get('address', 'N/A')}
 - Telefono: {gb.get('phone', 'N/A')}
 - Orari: {gb.get('hours', 'N/A')}
 - Categoria: {gb.get('category', 'N/A')}
-- Rating: {gb.get('rating', 'N/A')}
-- Recensioni totali: {gb.get('reviews_count', 'N/A')}
-- Foto: {gb.get('photos_count', gb.get('photos', 'N/A'))}
-- Sito web: {gb.get('website', 'N/A')}
-- Stato: {gb.get('status', 'N/A')}
+- Rating: {gb_rating_str}
+- Recensioni totali: {gb_reviews}
+- Foto caricate: {gb_photos_count}
+- Sito web collegato: {gb.get('website', 'Non collegato')}
 - Servizi elencati: {gb.get('services', 'N/A')}
 - Post pubblicati: {gb.get('posts_count', 'N/A')}
 - Link Maps: {gb.get('maps_url', 'N/A')}

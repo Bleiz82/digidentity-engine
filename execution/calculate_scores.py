@@ -24,7 +24,16 @@ def compute_free_scores(scraping_data: Dict[str, Any]) -> Dict[str, int]:
         else:
             gb_reviews = int(gb_reviews_raw or 0)
             
-        score_gmb = min(100, int(gb_rating * 12 + min(gb_reviews, 200) * 0.2))
+        # Base: scheda esiste = 10pt, ha telefono = +5, ha indirizzo = +5, ha sito = +5
+        gb_found = gb.get("found", False)
+        gb_base = 0
+        if gb_found:
+            gb_base = 10
+            if gb.get("phone"): gb_base += 5
+            if gb.get("address"): gb_base += 5
+            if gb.get("website"): gb_base += 5
+            if gb.get("photos") and len(gb.get("photos", [])) > 0: gb_base += 5
+        score_gmb = min(100, int(gb_base + gb_rating * 12 + min(gb_reviews, 200) * 0.2))
 
         # 2. Social Media Score
         apify_data = scraping_data.get("apify", {})

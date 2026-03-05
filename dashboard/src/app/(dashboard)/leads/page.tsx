@@ -41,7 +41,7 @@ export default function LeadsPage() {
         setAdminLoading(leadId + '_free')
         setAdminMsg(null)
         try {
-            const res = await fetch('https://api.digidentityagency.it/api/payment/internal/genera-premium', {
+            const res = await fetch('https://api.digidentityagency.it/api/payment/internal/genera-free', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Internal-Key': 'dIgId_int3rn4L_X9kM2pV7nQ4wL6jR8' },
                 body: JSON.stringify({ lead_id: leadId })

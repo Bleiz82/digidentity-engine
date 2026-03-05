@@ -269,6 +269,38 @@ async def internal_avvia_audit(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+@router.post("/internal/genera-free")
+async def internal_genera_free(request: Request):
+    """Genera report Free su lead esistente — uso interno."""
+    api_key = request.headers.get("X-Internal-Key", "")
+    if api_key != settings.INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Accesso non autorizzato.")
+    try:
+        body = await request.json()
+        lead_id = body.get("lead_id")
+
+        if not lead_id:
+            raise HTTPException(status_code=400, detail="lead_id richiesto")
+
+        from app.core.supabase_client import get_supabase
+        supabase = get_supabase()
+        supabase.table("leads").update({
+            "status": "generating_free",
+        }).eq("id", lead_id).execute()
+
+        from app.tasks.free_report_task import task_free_report
+        task_free_report.delay(lead_id)
+        logger.info("[ADMIN] Report Free avviato per lead %s", lead_id)
+        return JSONResponse(content={"status": "avviato", "tipo": "free", "lead_id": lead_id})
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("[ADMIN] Errore genera-free: %s", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 @router.post("/internal/genera-premium")
 async def internal_genera_premium(request: Request):
     """Genera report Premium su lead esistente o nuovo — uso interno."""

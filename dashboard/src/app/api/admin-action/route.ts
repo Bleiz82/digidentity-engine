@@ -24,9 +24,7 @@ export async function POST(request: NextRequest) {
                 payload = { lead_id }
                 break
             case 'free':
-                endpoint = '/api/payment/internal/genera-premium'
-                // Per ri-generare free, usiamo un endpoint dedicato
-                // Per ora resettiamo lo status e ri-triggeriamo
+                endpoint = '/api/payment/internal/genera-free'
                 payload = { lead_id }
                 break
             case 'geo':

@@ -44,12 +44,23 @@ def task_geo_audit(self, audit_id: str):
         try:
             risultati = loop.run_until_complete(esegui_audit_completo(url_sito))
             geo_score = risultati.get("geo_score", 0)
-            pdf_path = loop.run_until_complete(genera_pdf_report(
+            report_result = loop.run_until_complete(genera_pdf_report(
                 risultati=risultati,
                 url_sito=url_sito,
                 email_cliente=email_cliente,
                 session_id=audit_id,
             ))
+            pdf_path = report_result["pdf_path"]
+            html_path_pdf = report_result["html_path"]
+            analisi_raw = report_result.get("analisi", {})
+            
+            # Genera pagina HTML interattiva (stile premium)
+            try:
+                html_path = generate_geo_html(risultati, url_sito, audit_id, analisi_raw)
+                logger.info(f"✅ HTML interattivo GEO generato: {html_path}")
+            except Exception as e:
+                logger.error(f"⚠️ Errore generazione HTML interattivo: {e}")
+                html_path = html_path_pdf
         finally:
             loop.close()
         
@@ -57,12 +68,19 @@ def task_geo_audit(self, audit_id: str):
         pdf_size = pdf_file.stat().st_size if pdf_file.exists() else 0
 
         # 4. Invio Email
+        # Costruisci URL pagina HTML interattiva
+        from backend.app.core.config import get_settings
+        _settings = get_settings()
+        _base = _settings.APP_BASE_URL or "https://api.digidentityagency.it"
+        html_url = f"{_base}/api/reports/geo/{audit_id}/view"
+
         success_email = send_geo_report_email(
             to_email=email_cliente,
             url_sito=url_sito,
             pdf_path=pdf_path,
             piano=piano,
-            geo_score=geo_score
+            geo_score=geo_score,
+            html_url=html_url
         )
 
         # 5. Aggiornamento finale record su Supabase
@@ -70,6 +88,7 @@ def task_geo_audit(self, audit_id: str):
             "status": "completed",
             "geo_score": geo_score,
             "pdf_path": pdf_path,
+            "html_path": html_path,
             "pdf_size_bytes": pdf_size,
             "risultati_json": risultati,
             "email_sent": success_email,

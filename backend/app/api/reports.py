@@ -162,3 +162,15 @@ async def download_geo_pdf(audit_id: str):
         filename=f"GEO-Report-{url_sito}.pdf",
         media_type="application/pdf"
     )
+
+
+@router.get("/geo/{audit_id}/view")
+async def view_geo_report_html(audit_id: str):
+    """Visualizza il report GEO come pagina HTML interattiva."""
+    # Cerca il file su disco — non serve Supabase
+    geo_html = REPORTS_DIR / "geo" / f"geo_{audit_id}.html"
+    if geo_html.exists():
+        from fastapi.responses import HTMLResponse
+        html_content = geo_html.read_text(encoding="utf-8")
+        return HTMLResponse(content=html_content)
+    raise HTTPException(status_code=404, detail="Report GEO HTML non trovato")

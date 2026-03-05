@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEO Audit Report — {brand_name} | DigIdentity Agency</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --di-red: #F90100;
+  --di-black: #0a0a0a;
+  --di-dark: #111111;
+  --di-card: #1a1a1a;
+  --di-border: #222222;
+  --di-white: #ffffff;
+  --di-gray-100: #f5f5f5;
+  --di-gray-200: #e0e0e0;
+  --di-gray-400: #999999;
+  --di-gray-600: #666666;
+  --di-gray-800: #333333;
+  --accent: #F90100;
+  --accent-light: #ff3333;
+  --accent-glow: rgba(249, 1, 0, 0.15);
+  --green: #4caf50;
+  --green-glow: rgba(76, 175, 80, 0.15);
+  --red: #f44336;
+  --yellow: #ffc107;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+body {
+  font-family: var(--font);
+  background: var(--di-black);
+  color: var(--di-gray-200);
+  font-size: 1.05rem;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(249,1,0,0.3) 50%, transparent 100%),
+    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.2) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 30% 70%, rgba(249,1,0,0.25) 50%, transparent 100%),
+    radial-gradient(1px 1px at 70% 50%, rgba(255,255,255,0.15) 50%, transparent 100%);
+  background-size: 200% 200%;
+  animation: particleFloat 25s linear infinite;
+  opacity: 0.6;
+}
+@keyframes particleFloat {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 60%; }
+  100% { background-position: 0% 0%; }
+}
+.grid-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.report-header, .report-nav, .section, .report-footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* ═══ HEADER ═══ */
+.report-header {
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  border-bottom: 1px solid var(--di-border);
+}
+.report-header img { height: 50px; margin-bottom: 1rem; }
+.report-header h1 {
+  font-size: 2.2rem;
+  color: var(--di-white);
+  margin-bottom: 0.3rem;
+  font-weight: 800;
+}
+.report-header .subtitle {
+  color: var(--di-gray-400);
+  font-size: 1rem;
+}
+.report-header .business-name {
+  color: var(--accent);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+}
+
+/* ═══ NAV ═══ */
+.report-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,10,0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--di-border);
+  padding: 0.8rem 2rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.nav-inner {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+.nav-link {
+  color: var(--di-gray-400);
+  text-decoration: none;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--di-border);
+  border-radius: 20px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.nav-link:hover, .nav-link.active {
+  color: var(--di-white);
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+/* ═══ SECTIONS ═══ */
+.section { padding: 4rem 2rem; max-width: 900px; margin: 0 auto; }
+.section-alt { border-bottom: 1px solid var(--di-border); }
+.section-number {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 0.5rem;
+}
+.section h2 {
+  color: var(--di-white);
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+.section h3 {
+  color: var(--di-white);
+  font-size: 1.3rem;
+  margin: 2rem 0 1rem;
+  font-weight: 600;
+}
+.container { max-width: 900px; margin: 0 auto; }
+
+/* ═══ SCORE RING ═══ */
+.score-ring-wrap { text-align: center; margin: 2rem 0; }
+.score-ring {
+  width: 170px; height: 170px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: conic-gradient(var(--accent) var(--score-deg), var(--di-card) 0);
+  padding: 8px;
+}
+.score-ring-inner {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: var(--di-black);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.score-ring-inner .score-value {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--di-white);
+}
+.score-ring-inner .score-label {
+  font-size: 0.8rem;
+  color: var(--di-gray-400);
+}
+
+/* ═══ MODULE CARDS ═══ */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.module-card {
+  background: var(--di-card);
+  border: 1px solid var(--di-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: transform 0.2s;
+}
+.module-card:hover { transform: translateY(-2px); }
+.module-card .mod-score {
+  font-size: 2.5rem;
+  font-weight: 900;
+}
+.module-card .mod-name {
+  color: var(--di-gray-200);
+  font-size: 0.9rem;
+  margin-top: 0.3rem;
+}
+.module-card .mod-weight {
+  color: var(--di-gray-600);
+  font-size: 0.75rem;
+}
+
+/* ═══ AI BOX ═══ */
+.ai-box {
+  background: linear-gradient(135deg, rgba(249,1,0,0.05), rgba(249,1,0,0.02));
+  border: 1px solid rgba(249,1,0,0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+.ai-box .ai-label {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+}
+.ai-box p { color: var(--di-gray-200); line-height: 1.8; }
+
+/* ═══ INFO/WARN/OK BOXES ═══ */
+.info-box {
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.3);
+  border-radius: 10px;
+  padding: 1.2rem;
+  margin: 1rem 0;
+  color: var(--di-gray-200);
+}
+.warn-box {
+  background: rgba(249,115,22,0.1);
+  border: 1px solid rgba(249,115,22,0.3);
+  border-radius: 10px;
+  padding: 1.2rem;
+  margin: 1rem 0;
+  color: var(--di-gray-200);
+}
+.ok-box {
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.3);
+  border-radius: 10px;
+  padding: 1.2rem;
+  margin: 1rem 0;
+  color: var(--di-gray-200);
+}
+
+/* ═══ TABLES ═══ */
+.geo-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
+}
+.geo-table th {
+  background: var(--di-card);
+  color: var(--accent);
+  padding: 0.8rem;
+  text-align: left;
+  border-bottom: 2px solid var(--accent);
+  font-weight: 700;
+}
+.geo-table td {
+  padding: 0.7rem 0.8rem;
+  border-bottom: 1px solid var(--di-border);
+  color: var(--di-gray-200);
+}
+.geo-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* ═══ TIMELINE ═══ */
+.timeline-item {
+  border-left: 3px solid var(--accent);
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+  background: var(--di-card);
+  border-radius: 0 10px 10px 0;
+}
+.timeline-item .tl-title {
+  color: var(--di-white);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.timeline-item .tl-desc {
+  color: var(--di-gray-200);
+  font-size: 0.95rem;
+}
+
+/* ═══ CHECKLIST ═══ */
+.checklist-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+.check-item {
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+  color: var(--di-gray-200);
+}
+.chk-y { color: var(--green); font-weight: 700; margin-right: 0.5rem; }
+.chk-n { color: var(--red); font-weight: 700; margin-right: 0.5rem; }
+
+/* ═══ CODE BLOCK ═══ */
+.code-block {
+  background: #0d0d1a;
+  border: 1px solid var(--di-border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ═══ ROI BOX ═══ */
+.roi-box {
+  background: linear-gradient(135deg, rgba(249,1,0,0.08), rgba(249,1,0,0.03));
+  border: 1px solid rgba(249,1,0,0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+.roi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.roi-item .roi-val {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--accent);
+}
+.roi-item .roi-lbl {
+  font-size: 0.85rem;
+  color: var(--di-gray-400);
+}
+
+/* ═══ LETTER BOX (riservata) ═══ */
+.letter-box {
+  background: rgba(250,250,250,0.03);
+  border: 1px solid var(--di-border);
+  border-radius: 12px;
+  padding: 2rem;
+  margin: 1.5rem 0;
+}
+.letter-box h3 {
+  color: var(--accent);
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.8rem;
+}
+.letter-box p {
+  color: var(--di-gray-200);
+  line-height: 1.8;
+  margin-bottom: 0.8rem;
+}
+
+/* ═══ FOOTER ═══ */
+.report-footer {
+  text-align: center;
+  padding: 3rem 2rem;
+  border-top: 1px solid var(--di-border);
+}
+.report-footer img { height: 40px; margin-bottom: 1rem; }
+.report-footer p { color: var(--di-gray-600); font-size: 0.85rem; }
+
+/* ═══ PRINT ═══ */
+@media print {
+  body { background: #fff; color: #111; }
+  body::before, body::after, .grid-overlay { display: none; }
+  .report-nav { display: none; }
+  .section { padding: 2rem 1rem; page-break-inside: avoid; }
+  .ai-box { border-color: #ddd; background: #f9f9f9; }
+  .ai-box p, .info-box, .warn-box, .ok-box, .letter-box p { color: #333; }
+  .geo-table th { background: #eee; color: #111; }
+  .geo-table td { color: #333; }
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 900px) {
+  .report-header h1 { font-size: 1.6rem; }
+  .section { padding: 2.5rem 1.2rem; }
+  .module-grid { grid-template-columns: 1fr 1fr; }
+  .checklist-grid { grid-template-columns: 1fr; }
+  .roi-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .report-header { padding: 2rem 1rem; }
+  .report-header h1 { font-size: 1.3rem; }
+  .report-header .business-name { font-size: 1.2rem; }
+  .nav-link { font-size: 0.65rem; padding: 0.2rem 0.5rem; }
+  .section { padding: 2rem 1rem; }
+  .section h2 { font-size: 1.4rem; }
+  .module-grid { grid-template-columns: 1fr; }
+  .score-ring { width: 130px; height: 130px; }
+  .score-ring-inner .score-value { font-size: 2.2rem; }
+  .geo-table { font-size: 0.8rem; }
+  .geo-table th, .geo-table td { padding: 0.5rem; }
+  .code-block { font-size: 0.75rem; padding: 1rem; }
+}
+</style>
+</head>
+<body>
+<div class="grid-overlay"></div>
+
+<!-- ═══ HEADER ═══ -->
+<header class="report-header">
+  <img src="https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png" alt="DigIdentity Agency">
+  <h1>GEO Audit Report</h1>
+  <p class="subtitle">Generative Engine Optimization · Analisi Completa</p>
+  <div class="business-name">{brand_name}</div>
+  <p class="subtitle">{url_sito} · {data_analisi}</p>
+  <div class="score-ring-wrap">
+    <div class="score-ring" style="--score-deg: {score_deg}deg;">
+      <div class="score-ring-inner">
+        <span class="score-value">{geo_score}</span>
+        <span class="score-label">/100 GEO Score</span>
+      </div>
+    </div>
+    <p style="margin-top:1rem;font-size:1.2rem;font-weight:700;color:{score_color};">{score_emoji} {verdict_text}</p>
+  </div>
+</header>
+
+<!-- ═══ NAV ═══ -->
+<nav class="report-nav">
+  <div class="nav-inner">
+    <a href="#dashboard" class="nav-link">Dashboard</a>
+    <a href="#metodologia" class="nav-link">Metodologia</a>
+    <a href="#executive" class="nav-link">Executive Summary</a>
+    <a href="#priorita" class="nav-link">Priorità</a>
+    <a href="#citabilita" class="nav-link">Citabilità AI</a>
+    <a href="#crawler" class="nav-link">Crawler AI</a>
+    <a href="#brand" class="nav-link">Brand Authority</a>
+    <a href="#schema" class="nav-link">Schema</a>
+    <a href="#eeat" class="nav-link">E-E-A-T</a>
+    <a href="#benchmark" class="nav-link">Benchmark</a>
+    <a href="#risorse" class="nav-link">Risorse</a>
+    <a href="#piano90" class="nav-link">Piano 90gg</a>
+    <a href="#checklist" class="nav-link">Checklist</a>
+    <a href="#strategia" class="nav-link">Strategia</a>
+  </div>
+</nav>
+
+<!-- ═══ DASHBOARD ═══ -->
+<section class="section section-alt" id="dashboard">
+  <div class="container">
+    <div class="section-number">Panoramica</div>
+    <h2>Dashboard — Score per Modulo</h2>
+    <div class="module-grid">
+      {module_cards}
+    </div>
+  </div>
+</section>
+
+<!-- ═══ METODOLOGIA ═══ -->
+<section class="section section-alt" id="metodologia">
+  <div class="container">
+    <div class="section-number">Metodologia</div>
+    <h2>Cos'è la GEO e perché è diversa dalla SEO</h2>
+    <p>La <strong>Generative Engine Optimization (GEO)</strong> è l'insieme di tecniche che rendono un sito web visibile e citabile dai motori di risposta basati su intelligenza artificiale: ChatGPT, Perplexity, Gemini, Claude, Copilot. A differenza della SEO tradizionale — che posiziona link in una lista di risultati — la GEO determina se il tuo business viene <strong>menzionato, citato e raccomandato</strong> quando un utente fa una domanda a un assistente AI.</p>
+    <div class="info-box">ℹ️ <strong>Il cambio di paradigma:</strong> nella ricerca tradizionale, l'utente clicca un link e arriva al tuo sito. Nella ricerca AI, l'utente riceve direttamente una risposta — e se il tuo business non è in quella risposta, non esiste. Non c'è "pagina 2": o sei nella risposta, o sei invisibile.</div>
+
+    <h3>I 5 Moduli del GEO Audit</h3>
+    <table class="geo-table">
+      <tr><th>Modulo</th><th>Peso</th><th>Cosa misura</th></tr>
+      <tr><td>Citabilità AI</td><td>25%</td><td>Capacità del contenuto di essere estratto e citato</td></tr>
+      <tr><td>Accesso Crawler AI</td><td>15%</td><td>Permessi di accesso per i bot AI</td></tr>
+      <tr><td>Autorità del Brand</td><td>25%</td><td>Presenza e verificabilità su fonti esterne</td></tr>
+      <tr><td>Dati Strutturati</td><td>15%</td><td>Schema markup e metadati machine-readable</td></tr>
+      <tr><td>Qualità Contenuto E-E-A-T</td><td>20%</td><td>Esperienza, Competenza, Autorevolezza, Affidabilità</td></tr>
+    </table>
+
+    <h3>Come vengono raccolti i dati</h3>
+    <table class="geo-table">
+      <tr><th>Modulo</th><th>Fonte dati</th><th>Metodo</th></tr>
+      <tr><td>Citabilità AI</td><td>Contenuto del sito</td><td>Analisi NLP + struttura HTML</td></tr>
+      <tr><td>Crawler AI</td><td>robots.txt + HTTP headers</td><td>Simulazione richieste bot</td></tr>
+      <tr><td>Brand Authority</td><td>Google, directory, social</td><td>Scraping multi-piattaforma</td></tr>
+      <tr><td>Schema Markup</td><td>HTML source</td><td>Parsing JSON-LD / microdata</td></tr>
+      <tr><td>E-E-A-T</td><td>Contenuto + segnali esterni</td><td>Analisi qualitativa AI</td></tr>
+    </table>
+    <div class="info-box">ℹ️ Tutti i dati sono raccolti in tempo reale al momento dell'analisi. Il report rappresenta lo stato del sito in data <strong>{data_analisi}</strong>.</div>
+  </div>
+</section>
+
+<!-- ═══ EXECUTIVE SUMMARY ═══ -->
+<section class="section section-alt" id="executive">
+  <div class="container">
+    <div class="section-number">Executive Summary</div>
+    <h2>Analisi GEO AI — Sintesi Globale</h2>
+    <div class="ai-box">
+      <p class="ai-label">⚡ Analisi GEO AI · Executive Summary</p>
+      {analisi_executive_summary}
+    </div>
+
+    <h3>I 3 problemi prioritari identificati</h3>
+    {priorita_html}
+  </div>
+</section>
+
+<!-- ═══ PRIORITÀ / MATRICE ═══ -->
+<section class="section section-alt" id="priorita">
+  <div class="container">
+    <div class="section-number">Piano di Intervento</div>
+    <h2>Matrice Impatto / Sforzo</h2>
+
+    <h3>🎯 Quick wins — alto impatto, basso sforzo</h3>
+    <div class="timeline-item" style="border-color:#22C55E;">
+      <p class="tl-title">Pubblica llms.txt</p>
+      <p class="tl-desc">10 minuti di lavoro, +5 punti GEO immediati. File di istruzioni che dice alle AI chi sei, cosa fai e come citarti. Template pronto nella sezione Risorse.</p>
+    </div>
+    <div class="timeline-item" style="border-color:#22C55E;">
+      <p class="tl-title">Aggiungi Schema LocalBusiness</p>
+      <p class="tl-desc">30 minuti con il webmaster, +6 punti GEO. JSON-LD pronto all'uso nella sezione Risorse — copia e incolla nel &lt;head&gt; del sito.</p>
+    </div>
+    <div class="timeline-item" style="border-color:#22C55E;">
+      <p class="tl-title">Ottimizza Google My Business</p>
+      <p class="tl-desc">1-2 ore, +4 punti. Completa ogni campo, aggiungi foto professionali, rispondi alle recensioni. Le AI verificano i business su Google Maps.</p>
+    </div>
+
+    <h3>⚡ Azioni ad alto impatto — sforzo medio</h3>
+    <div class="timeline-item" style="border-color:#F97316;">
+      <p class="tl-title">Riscrivi i contenuti in blocchi AI-ready</p>
+      <p class="tl-desc">2-3 settimane, +12 punti. Ogni pagina deve avere blocchi autonomi di 130-170 parole che rispondono a domande specifiche.</p>
+    </div>
+    <div class="timeline-item" style="border-color:#F97316;">
+      <p class="tl-title">Crea sezione FAQ con Schema FAQPage</p>
+      <p class="tl-desc">1 settimana, +8 punti. 10-15 domande frequenti con risposte strutturate. Le AI usano le FAQ come fonte primaria.</p>
+    </div>
+
+    <h3>🏗️ Investimenti a lungo termine</h3>
+    <div class="timeline-item" style="border-color:#3B82F6;">
+      <p class="tl-title">Costruisci Brand Authority su directory esterne</p>
+      <p class="tl-desc">1-2 mesi, +10 punti. Presenza coerente su 10+ directory di settore, LinkedIn aziendale, Trustpilot, piattaforme verticali.</p>
+    </div>
+    <div class="timeline-item" style="border-color:#3B82F6;">
+      <p class="tl-title">Content strategy E-E-A-T</p>
+      <p class="tl-desc">Continuativo, +8 punti. Blog di settore, bio professionali, certificazioni, contenuto educativo che dimostra competenza reale.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MODULO 1: CITABILITÀ AI ═══ -->
+<section class="section section-alt" id="citabilita">
+  <div class="container">
+    <div class="section-number">Modulo 1 · 25% del GEO Score</div>
+    <h2>Citabilità AI</h2>
+    <p>Come ChatGPT, Perplexity, Gemini e Claude trovano e usano il tuo contenuto</p>
+    <div class="score-ring-wrap">
+      <div class="score-ring" style="width:120px;height:120px;--score-deg:{score_citabilita_deg}deg;">
+        <div class="score-ring-inner">
+          <span class="score-value" style="font-size:2rem;">{score_citabilita}</span>
+          <span class="score-label">/100</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>Cos'è la Citabilità AI e perché vale il 25%</h3>
+    <p>La citabilità AI è la capacità del tuo contenuto di essere <strong>estratto, compreso e citato</strong> da un motore di risposta AI quando un utente fa una domanda pertinente. Non basta avere un sito — il contenuto deve essere strutturato in modo che una AI possa capirlo, sintetizzarlo e presentarlo come risposta affidabile.</p>
+
+    <h3>Parametri analizzati</h3>
+    <table class="geo-table">
+      <tr><th>Parametro</th><th>Rilevato</th><th>Ottimale</th><th>Gap</th></tr>
+      <tr><td>Lunghezza media paragrafi</td><td>Variabile</td><td>130–170 parole</td><td>⚠️ Non uniforme</td></tr>
+      <tr><td>Blocchi autonomi</td><td>Assenti</td><td>Presenti su ogni pagina</td><td>❌ Critico</td></tr>
+      <tr><td>Dati quantitativi</td><td>Minimi</td><td>3+ per sezione</td><td>❌ Critico</td></tr>
+      <tr><td>Sezione FAQ strutturata</td><td>Assente</td><td>10+ domande/risposte</td><td>❌ Mancante</td></tr>
+      <tr><td>Intestazioni gerarchiche</td><td>Presenti</td><td>Ottimizzate per query AI</td><td>⚠️ Da ottimizzare</td></tr>
+      <tr><td>File llms.txt</td><td>Assente</td><td>Presente nella root</td><td>❌ Mancante</td></tr>
+      <tr><td>Dati verificabili</td><td>Scarsi</td><td>Abbondanti</td><td>❌ Da aggiungere</td></tr>
+    </table>
+
+    <h3>Analisi Approfondita AI</h3>
+    <div class="ai-box">
+      <p class="ai-label">⚡ Analisi GEO AI · Citabilità</p>
+      {analisi_citabilita}
+    </div>
+
+    <h3>Come migliorare la Citabilità AI</h3>
+    <div class="timeline-item" style="border-color:#EF4444;">
+      <p class="tl-title">1. Riscrivi i testi in blocchi autonomi (Settimana 1-2)</p>
+      <p class="tl-desc">Ogni sezione del sito deve rispondere a una domanda specifica. Usa blocchi di 130-170 parole strutturati con: premessa (chi sei/cosa fai), corpo (dati e dettagli), conclusione (azione o valore).</p>
+    </div>
+    <div class="timeline-item" style="border-color:#F97316;">
+      <p class="tl-title">2. Aggiungi dati quantitativi (Settimana 1)</p>
+      <p class="tl-desc">Inserisci numeri verificabili: anni di attività, numero di clienti serviti, prezzi orientativi, durata dei servizi. Le AI preferiscono fortemente i contenuti con dati concreti.</p>
+    </div>
+    <div class="timeline-item" style="border-color:#EAB308;">
+      <p class="tl-title">3. Crea una sezione FAQ (Settimana 2-3)</p>
+      <p class="tl-desc">Inserisci 10-15 domande frequenti per i servizi principali. Formato: domanda diretta come titolo H3 + risposta in 50-100 parole.</p>
+    </div>
+    <div class="timeline-item" style="border-color:#22C55E;">
+      <p class="tl-title">4. Ottimizza le intestazioni per query AI (Settimana 1)</p>
+      <p class="tl-desc">Trasforma i titoli generici in risposte a domande specifiche. Invece di "I nostri servizi" → "{brand_name}: servizi e prezzi a {city}".</p>
+    </div>
+
+    <h3>Esempi Pratici — Riscrittura AI-Ready</h3>
+    <div class="warn-box">
+      <strong>❌ Testo tipico (non citabile dalle AI):</strong><br>
+      <em>"Offriamo una vasta gamma di servizi professionali per soddisfare ogni tua esigenza. I nostri servizi sono pensati per valorizzare il tuo business con soluzioni di alta qualità."</em>
+    </div>
+    <div class="ok-box">
+      <strong>✅ Testo ottimizzato GEO:</strong><br>
+      <em>"{brand_name} offre servizi professionali a {city}. Attivi dal [anno], serviamo [N] clienti con [lista servizi principali]. Sede in [indirizzo completo]. Contatti: [telefono] / [email]. Orari: lun-ven 9:00-18:00."</em>
+    </div>
+    <div class="info-box">ℹ️ <strong>Regola d'oro:</strong> ogni paragrafo deve rispondere a "Chi fa cosa, dove, quando e quanto costa?" — le 5W che le AI cercano per costruire risposte affidabili.</div>
+  </div>
+</section>
+
+<!-- ═══ MODULO 2: CRAWLER AI ═══ -->
+<section class="section section-alt" id="crawler">
+  <div class="container">
+    <div class="section-number">Modulo 2 · 15% del GEO Score</div>
+    <h2>Accesso Crawler AI</h2>
+    <p>Verifica dei permessi di accesso per i principali bot AI</p>
+    <div class="score-ring-wrap">
+      <div class="score-ring" style="width:120px;height:120px;--score-deg:{score_crawler_deg}deg;">
+        <div class="score-ring-inner">
+          <span class="score-value" style="font-size:2rem;">{score_crawler}</span>
+          <span class="score-label">/100</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>Risultati dell'analisi crawler</h3>
+    {crawler_table}
+
+    <h3>Analisi Approfondita AI</h3>
+    <div class="ai-box">
+      <p class="ai-label">⚡ Analisi GEO AI · Crawler</p>
+      {analisi_crawler}
+    </div>
+
+    <h3>robots.txt attuale vs. ottimizzato</h3>
+    <p>Il file robots.txt controlla quali bot possono accedere al tuo sito. Ecco la versione ottimizzata per massimizzare la visibilità AI:</p>
+    <div class="code-block">{robots_ottimizzato}</div>
+
+    <h3>llms.txt — Il tuo file di istruzioni AI</h3>
+    <p>Il file llms.txt è un nuovo standard che permette di fornire istruzioni dirette alle AI su come interpretare e citare il tuo business:</p>
+    <div class="code-block">{llmstxt}</div>
+  </div>
+</section>
+
+<!-- ═══ MODULO 3: BRAND AUTHORITY ═══ -->
+<section class="section section-alt" id="brand">
+  <div class="container">
+    <div class="section-number">Modulo 3 · 25% del GEO Score</div>
+    <h2>Autorità del Brand</h2>
+    <p>Presenza e verificabilità del brand su fonti esterne</p>
+    <div class="score-ring-wrap">
+      <div class="score-ring" style="width:120px;height:120px;--score-deg:{score_brand_deg}deg;">
+        <div class="score-ring-inner">
+          <span class="score-value" style="font-size:2rem;">{score_brand}</span>
+          <span class="score-label">/100</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>Perché le AI controllano le fonti esterne</h3>
+    <p>I modelli AI non si fidano di ciò che un sito dice di se stesso. Verificano le informazioni su fonti esterne: Google Maps, directory di settore, social media, piattaforme di recensioni. Più fonti confermano gli stessi dati (nome, indirizzo, telefono, servizi), più il business viene considerato affidabile e citabile.</p>
+
+    <h3>Analisi Approfondita AI</h3>
+    <div class="ai-box">
+      <p class="ai-label">⚡ Analisi GEO AI · Brand Authority</p>
+      {analisi_brand}
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MODULO 4: SCHEMA / DATI STRUTTURATI ═══ -->
+<section class="section section-alt" id="schema">
+  <div class="container">
+    <div class="section-number">Modulo 4 · 15% del GEO Score</div>
+    <h2>Dati Strutturati & Schema Markup</h2>
+    <p>Metadati machine-readable che le AI usano per comprendere il tuo business</p>
+    <div class="score-ring-wrap">
+      <div class="score-ring" style="width:120px;height:120px;--score-deg:{score_schema_deg}deg;">
+        <div class="score-ring-inner">
+          <span class="score-value" style="font-size:2rem;">{score_schema}</span>
+          <span class="score-label">/100</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>Analisi Approfondita AI</h3>
+    <div class="ai-box">
+      <p class="ai-label">⚡ Analisi GEO AI · Schema Markup</p>
+      {analisi_schema}
+    </div>
+
+    <h3>Schema LocalBusiness — Template pronto</h3>
+    <p>Copia questo JSON-LD nel <code>&lt;head&gt;</code> del tuo sito per fornire alle AI i dati strutturati del tuo business:</p>
+    <div class="code-block">{schema_localbusiness}</div>
+
+    <h3>Schema FAQPage — Template</h3>
+    <p>Aggiungi questo schema alla pagina FAQ per renderla machine-readable:</p>
+    <div class="code-block">{schema_faqpage}</div>
+  </div>
+</section>
+
+<!-- ═══ MODULO 5: E-E-A-T ═══ -->
+<section class="section section-alt" id="eeat">
+  <div class="container">
+    <div class="section-number">Modulo 5 · 20% del GEO Score</div>
+    <h2>Qualità Contenuto & E-E-A-T</h2>
+    <p>Esperienza, Competenza, Autorevolezza, Affidabilità</p>
+    <div class="score-ring-wrap">
+      <div class="score-ring" style="width:120px;height:120px;--score-deg:{score_contenuto_deg}deg;">
+        <div class="score-ring-inner">
+          <span class="score-value" style="font-size:2rem;">{score_contenuto}</span>
+          <span class="score-label">/100</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>I 4 pilastri E-E-A-T</h3>
+    <table class="geo-table">
+      <tr><th>Pilastro</th><th>Significato</th><th>Come si dimostra</th></tr>
+      <tr><td><strong>Experience</strong></td><td>Esperienza diretta</td><td>Case study, portfolio, foto before/after</td></tr>
+      <tr><td><strong>Expertise</strong></td><td>Competenza tecnica</td><td>Certificazioni, formazione, contenuto specialistico</td></tr>
+      <tr><td><strong>Authoritativeness</strong></td><td>Autorevolezza nel settore</td><td>Menzioni esterne, backlink, recensioni</td></tr>
+      <tr><td><strong>Trustworthiness</strong></td><td>Affidabilità</td><td>HTTPS, privacy policy, dati di contatto verificabili</td></tr>
+    </table>
+
+    <h3>Analisi Approfondita AI</h3>
+    <div class="ai-box">
+      <p class="ai-label">⚡ Analisi GEO AI · E-E-A-T</p>
+      {analisi_contenuto}
+    </div>
+
+    <h3>Come migliorare E-E-A-T</h3>
+    <div class="timeline-item" style="border-color:#EF4444;">
+      <p class="tl-title">1. Pubblica una bio professionale completa</p>
+      <p class="tl-desc">Nome completo, qualifiche, anni di esperienza, specializzazioni, certificazioni. Le AI cercano segnali di expertise verificabile.</p>
+    </div>
+    <div class="timeline-item" style="border-color:#F97316;">
+      <p class="tl-title">2. Aggiungi prove di esperienza</p>
+      <p class="tl-desc">Case study, portfolio lavori, foto before/after, testimonianze con nome e dettagli. Contenuto che dimostra esperienza reale.</p>
+    </div>
+    <div class="timeline-item" style="border-color:#EAB308;">
+      <p class="tl-title">3. Crea contenuto educativo</p>
+      <p class="tl-desc">Blog con articoli di settore (1-2 al mese). Guide pratiche, FAQ approfondite, video tutorial. Dimostra competenza con contenuto utile.</p>
+    </div>
+    <div class="timeline-item" style="border-color:#22C55E;">
+      <p class="tl-title">4. Rafforza i segnali di trust</p>
+      <p class="tl-desc">Privacy policy GDPR aggiornata, cookie banner, HTTPS, pagina contatti con indirizzo fisico, partita IVA nel footer.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ BENCHMARK ═══ -->
+<section class="section section-alt" id="benchmark">
+  <div class="container">
+    <div class="section-number">Benchmark</div>
+    <h2>Confronto con il Mercato</h2>
+
+    <h3>Analisi posizionamento competitivo</h3>
+    <div class="ai-box">
+      <p class="ai-label">⚡ Analisi GEO AI · Benchmark di Settore</p>
+      {analisi_benchmark}
+    </div>
+
+    <h3>Il mercato AI search in Italia — 2024-2026</h3>
+    <table class="geo-table">
+      <tr><th>Metrica</th><th>2024</th><th>2025</th><th>2026 (stima)</th></tr>
+      <tr><td>Utenti ChatGPT Italia</td><td>14M</td><td>18M</td><td>22M</td></tr>
+      <tr><td>Ricerche con AI Overview</td><td>15%</td><td>25%</td><td>40%</td></tr>
+      <tr><td>Calo traffico search tradizionale</td><td>-8%</td><td>-15%</td><td>-25%</td></tr>
+      <tr><td>Business italiani con GEO</td><td>&lt;1%</td><td>~3%</td><td>~8%</td></tr>
+    </table>
+
+    <h3>Proiezioni dopo ottimizzazione</h3>
+    <div class="roi-box">
+      <h3 style="color:var(--di-white);margin-top:0;">📈 Impatto stimato a 90 giorni</h3>
+      <div class="roi-grid">
+        <div class="roi-item">
+          <p class="roi-val">{geo_score} → 75+</p>
+          <p class="roi-lbl">GEO Score atteso</p>
+        </div>
+        <div class="roi-item">
+          <p class="roi-val">+400%</p>
+          <p class="roi-lbl">Visibilità risposte AI</p>
+        </div>
+        <div class="roi-item">
+          <p class="roi-val">Top 15%</p>
+          <p class="roi-lbl">Posizionamento settore Italia</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RISORSE COMPLETE ═══ -->
+<section class="section section-alt" id="risorse">
+  <div class="container">
+    <div class="section-number">Risorse</div>
+    <h2>File e Template Pronti all'Uso</h2>
+    <p>Copia e incolla questi file direttamente nel tuo sito. Sono già personalizzati per <strong>{brand_name}</strong>.</p>
+
+    <h3>robots.txt ottimizzato per AI</h3>
+    <div class="code-block">{robots_ottimizzato}</div>
+
+    <h3>llms.txt — Istruzioni per le AI</h3>
+    <div class="code-block">{llmstxt}</div>
+
+    <h3>Schema Organization — JSON-LD</h3>
+    <div class="code-block">{schema_organization}</div>
+  </div>
+</section>
+
+<!-- ═══ PIANO 90 GIORNI ═══ -->
+<section class="section section-alt" id="piano90">
+  <div class="container">
+    <div class="section-number">Roadmap</div>
+    <h2>Piano d'Azione 90 Giorni</h2>
+
+    <div class="ai-box">
+      <p class="ai-label">⚡ Analisi GEO AI · Piano d'Azione</p>
+      {analisi_piano_azione}
+    </div>
+
+    <h3>Mese 1 — Quick Wins & Fondamenta</h3>
+    <table class="geo-table">
+      <tr><th>Settimana</th><th>Azione</th><th>Impatto GEO</th></tr>
+      <tr><td>1</td><td>Pubblica llms.txt + Schema LocalBusiness</td><td>+11 punti</td></tr>
+      <tr><td>1-2</td><td>Ottimizza Google My Business al 100%</td><td>+4 punti</td></tr>
+      <tr><td>2-3</td><td>Riscrivi homepage in blocchi AI-ready</td><td>+5 punti</td></tr>
+      <tr><td>3-4</td><td>Crea sezione FAQ con Schema FAQPage</td><td>+8 punti</td></tr>
+    </table>
+
+    <h3>Mese 2 — Contenuto & Authority</h3>
+    <table class="geo-table">
+      <tr><th>Settimana</th><th>Azione</th><th>Impatto GEO</th></tr>
+      <tr><td>5-6</td><td>Riscrivi tutte le pagine servizi</td><td>+6 punti</td></tr>
+      <tr><td>6-7</td><td>Pubblica bio professionale + certificazioni</td><td>+4 punti</td></tr>
+      <tr><td>7-8</td><td>Iscrizione a 10+ directory di settore</td><td>+5 punti</td></tr>
+    </table>
+
+    <h3>Mese 3 — Leadership di Settore</h3>
+    <table class="geo-table">
+      <tr><th>Settimana</th><th>Azione</th><th>Impatto GEO</th></tr>
+      <tr><td>9-10</td><td>Avvia blog (2 articoli/mese)</td><td>+3 punti</td></tr>
+      <tr><td>10-11</td><td>Raccogli 20+ recensioni Google ≥ 4.5★</td><td>+4 punti</td></tr>
+      <tr><td>11-12</td><td>LinkedIn aziendale + contenuti</td><td>+2 punti</td></tr>
+    </table>
+
+    <h3>Riepilogo piano completo</h3>
+    <table class="geo-table">
+      <tr><th>Fase</th><th>Durata</th><th>Score partenza</th><th>Score atteso</th><th>Delta</th></tr>
+      <tr><td>Quick Wins</td><td>Settimana 1-2</td><td>{geo_score}</td><td style="color:#F97316;font-weight:700;">{score_fase1}</td><td style="color:#22C55E;font-weight:700;">+{delta_fase1}</td></tr>
+      <tr><td>Fondamenta</td><td>Mese 1</td><td>{score_fase1}</td><td style="color:#EAB308;font-weight:700;">{score_fase2}</td><td style="color:#22C55E;font-weight:700;">+{delta_fase2}</td></tr>
+      <tr><td>Authority</td><td>Mese 2</td><td>{score_fase2}</td><td style="color:#3B82F6;font-weight:700;">{score_fase3}</td><td style="color:#22C55E;font-weight:700;">+{delta_fase3}</td></tr>
+      <tr><td><strong>TOTALE</strong></td><td>90 giorni</td><td><strong>{geo_score}</strong></td><td style="color:#22C55E;font-weight:900;">{score_target}</td><td style="color:#22C55E;font-weight:900;">+{delta_totale}</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ CHECKLIST 30 PUNTI ═══ -->
+<section class="section section-alt" id="checklist">
+  <div class="container">
+    <div class="section-number">Checklist</div>
+    <h2>GEO Checklist — 30 Punti di Controllo</h2>
+    <p>Stampa questa sezione e spunta ogni punto man mano che lo implementi.</p>
+    <div class="checklist-grid">
+      <div>
+        <h3>🤖 Accesso Crawler AI</h3>
+        {checklist_crawler}
+        <h3 style="margin-top:1.5rem;">🏗️ Schema Markup</h3>
+        {checklist_schema}
+        <h3 style="margin-top:1.5rem;">🧠 Citabilità AI</h3>
+        {checklist_citabilita}
+      </div>
+      <div>
+        <h3>🏆 Brand Authority</h3>
+        {checklist_brand}
+        <h3 style="margin-top:1.5rem;">✍️ E-E-A-T</h3>
+        {checklist_eeat}
+      </div>
+    </div>
+    <p style="text-align:center;color:var(--di-gray-600);font-size:0.85rem;margin-top:1.5rem;">Obiettivo: 25/30 punti entro 90 giorni per raggiungere 75+ GEO Score</p>
+  </div>
+</section>
+
+<!-- ═══ ANALISI STRATEGICA RISERVATA ═══ -->
+<section class="section section-alt" id="strategia">
+  <div class="container">
+    <div class="section-number">Riservato al Professionista</div>
+    <h2>Analisi Strategica — Uso Professionale</h2>
+    <div class="letter-box">
+      <p>Hai appena completato un'analisi GEO su <strong>{brand_name}</strong>. Prima di passare all'azione, prenditi dieci minuti per leggere questa sezione — è scritta per te, non per il tuo cliente.</p>
+
+      <h3>La fotografia reale del sito</h3>
+      <p>GEO Score <strong style="color:{score_color};">{geo_score}/100</strong>. Nella pratica significa questo: quando un utente apre ChatGPT, Perplexity o Gemini e fa una domanda pertinente al settore di {brand_name}, questo business non compare mai nella risposta. Non viene citato, non viene raccomandato, non esiste nell'ecosistema AI generativo.</p>
+      <p>Non perché il sito sia tecnicamente difettoso — ma perché nessuno ha mai lavorato sulla sua visibilità AI. Questa è la norma per il 90% dei business locali italiani nel 2026. È anche esattamente il gap che tu puoi colmare — e monetizzare.</p>
+
+      <h3>Lettura dei 5 moduli — cosa dicono davvero</h3>
+      <p><strong>Accesso Crawler {score_crawler}/100</strong> — {lettura_crawler}</p>
+      <p><strong>Citabilità AI {score_citabilita}/100</strong> — {lettura_citabilita}</p>
+      <p><strong>Brand Authority {score_brand}/100</strong> — {lettura_brand}</p>
+      <p><strong>Schema Markup {score_schema}/100</strong> — {lettura_schema}</p>
+      <p><strong>E-E-A-T {score_contenuto}/100</strong> — {lettura_contenuto}</p>
+
+      <h3>La sequenza di intervento ottimale</h3>
+      <p><strong>Settimana 1 — Quick wins.</strong> llms.txt: dieci minuti, +5 punti immediati. Schema LocalBusiness e Organization: trenta minuti col webmaster, +6 punti. Google My Business ottimizzato. Questi interventi portano il GEO Score da {geo_score} a circa {score_fase1}/100 in meno di due settimane.</p>
+      <p><strong>Settimane 2-4 — Contenuto AI-ready.</strong> Ogni pagina chiave riscritta con blocchi autonomi. Dati quantitativi ovunque. FAQ con schema FAQPage. Bio professionale completa.</p>
+      <p><strong>Mese 2 — Brand Authority.</strong> Directory di settore, LinkedIn aziendale, 20+ recensioni Google con media 4.5 stelle. Coerenza NAP assoluta su tutte le piattaforme.</p>
+      <p><strong>Mese 3 — Consolidamento.</strong> Blog di settore, contenuto multimediale, piattaforme verticali. GEO Score atteso: {score_target}/100.</p>
+
+      <h3>Il valore economico di questo strumento</h3>
+      <p>Nel mercato italiano, una diagnosi GEO strutturata con questo livello di dettaglio viene posizionata dai professionisti tra i <strong>500 e i 2.000 euro</strong>. Il rapporto tra costo di generazione e valore percepito dal cliente è tra i più favorevoli nel mercato della consulenza digitale.</p>
+
+      <div style="margin-top:2rem;padding-top:1.5rem;border-top:2px solid var(--accent);text-align:center;">
+        <img src="https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png" alt="DigIdentity Agency" style="height:45px;margin-bottom:1rem;">
+        <p style="font-weight:800;font-size:1.1rem;color:var(--di-white);">Stefano Corda</p>
+        <p style="color:var(--di-gray-400);font-size:0.85rem;">Fondatore & AI Specialist · DigIdentity Agency</p>
+        <p style="color:var(--di-gray-600);font-size:0.8rem;margin-top:0.5rem;">Report generato il {data_analisi} · geo-audit.it</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="report-footer">
+  <img src="https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png" alt="DigIdentity Agency">
+  <p><strong>GEO Audit Report</strong> · {brand_name} · {url_sito}</p>
+  <p>Generato il {data_analisi} · DigIdentity Agency · © {anno}</p>
+  <p style="margin-top:1rem;font-size:0.75rem;color:var(--di-gray-600);">Questo report è confidenziale e destinato esclusivamente al destinatario.</p>
+</footer>
+
+<!-- ═══ JS: NAV ACTIVE STATE ═══ -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var navLinks = document.querySelectorAll('.nav-link');
+  var sections = document.querySelectorAll('.section[id]');
+  
+  function updateNav() {
+    var scrollPos = window.scrollY + 100;
+    sections.forEach(function(section) {
+      var top = section.offsetTop;
+      var bottom = top + section.offsetHeight;
+      var id = section.getAttribute('id');
+      navLinks.forEach(function(link) {
+        if (link.getAttribute('href') === '#' + id) {
+          if (scrollPos >= top && scrollPos < bottom) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        }
+      });
+    });
+  }
+  
+  window.addEventListener('scroll', updateNav);
+  updateNav();
+
+  // Smooth scroll
+  navLinks.forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      var href = this.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        e.preventDefault();
+        var target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

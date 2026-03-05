@@ -388,6 +388,9 @@ async def genera_pdf_report(
         "benchmark": analisi_tasks[7] if not isinstance(analisi_tasks[7], Exception) else "",
     }
 
+    # Salva analisi raw (markdown) prima della conversione
+    analisi_raw_md = {k: v for k, v in analisi.items() if isinstance(v, str)}
+    
     # Converti tutto il Markdown in HTML per le ai-box
     for key in analisi:
         if isinstance(analisi[key], str):
@@ -438,38 +441,33 @@ async def genera_pdf_report(
         "anno": datetime.now().year,
     }
 
-    # Renderizza template HTML
-    try:
-        template = jinja_env.get_template("report_ita.html")
-        html_content = template.render(**template_data)
-    except Exception as e:
-        logger.error(f"❌ Errore rendering template: {e}")
-        html_content = f"<html><body><h1>Errore generazione report: {e}</h1></body></html>"
-
-    # Salva file HTML
+    # Genera HTML interattivo (stile premium dark) tramite html_generator
+    from execution.html_generator import generate_geo_html, _markdown_to_html
+    
     dominio = url_sito.replace("https://", "").replace("http://", "").replace("/", "-").replace(".", "-")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     nome_file = f"GEO-Report-{dominio}-{timestamp}"
     
+    percorso_html_interattivo = generate_geo_html(risultati, url_sito, session_id, analisi_raw_md)
+    logger.success(f"✅ Report HTML interattivo salvato: {percorso_html_interattivo}")
+    
+    # Anche salva copia con nome timestamped
     percorso_html = os.path.join(REPORT_OUTPUT_DIR, f"{nome_file}.html")
+    import shutil
+    shutil.copy2(percorso_html_interattivo, percorso_html)
+    
     percorso_pdf = os.path.join(REPORT_OUTPUT_DIR, f"{nome_file}.pdf")
 
-    with open(percorso_html, "w", encoding="utf-8") as f:
-        f.write(html_content)
-
-    logger.success(f"✅ Report HTML salvato: {percorso_html}")
-
-    # Genera PDF con WeasyPrint
+    # Genera PDF con WeasyPrint dall'HTML interattivo
     try:
         from weasyprint import HTML
         HTML(filename=percorso_html).write_pdf(percorso_pdf)
         logger.success(f"✅ PDF generato: {percorso_pdf}")
-        percorso_finale = percorso_pdf
     except Exception as e:
-        logger.warning(f"⚠️ WeasyPrint non disponibile, uso HTML: {e}")
-        percorso_finale = percorso_html
+        logger.warning(f"⚠️ WeasyPrint errore, PDF non generato: {e}")
+        percorso_pdf = percorso_html
 
     durata = (datetime.now() - inizio).seconds
     logger.success(f"🎉 Report completo generato in {durata}s")
 
-    return percorso_finale
+    return {"pdf_path": percorso_pdf, "html_path": percorso_html_interattivo, "analisi": analisi_raw_md}

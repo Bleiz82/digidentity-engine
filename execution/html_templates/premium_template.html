@@ -664,19 +664,69 @@ strong { color: var(--di-white); font-weight: 600; }
   color: var(--accent);
   text-decoration: underline;
 }
+/* PAGESPEED GRID */
+.ps-grid {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.ps-device {
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+.ps-device-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--di-white);
+  margin-bottom: 0.8rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.ps-rings-row {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 /* RESPONSIVE */
+@media (max-width: 900px) {
+  .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+  .ps-grid { gap: 1.5rem; }
+  .nav-link { font-size: 0.7rem; padding: 0.3rem 0.6rem; }
+}
 @media (max-width: 700px) {
   .dashboard-grid { grid-template-columns: 1fr; }
   .cta-grid { grid-template-columns: 1fr; }
-  .business-name { font-size: 1.7rem; }
-  .container { padding: 0 1.2rem; }
+  .business-name { font-size: 1.4rem; }
+  .container { padding: 0 1rem; }
   .action-card { flex-direction: column; gap: 0.5rem; }
-  .report-nav { padding: 0.8rem 1rem; }
-  .nav-link { font-size: 0.6rem; padding: 0.2rem 0.5rem; }
-  .compare-label { min-width: 80px; font-size: 0.65rem; }
-  .score-ring { width: 130px; height: 130px; }
-  .score-ring-inner { width: 108px; height: 108px; }
-  .score-number { font-size: 2.4rem; }
+  .report-nav { padding: 0.6rem 0.8rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nav-inner { flex-wrap: nowrap; overflow-x: auto; gap: 0.3rem; }
+  .nav-link { font-size: 0.55rem; padding: 0.2rem 0.4rem; white-space: nowrap; }
+  .compare-label { min-width: 70px; font-size: 0.6rem; }
+  .score-ring { width: 120px; height: 120px; }
+  .score-ring-inner { width: 100px; height: 100px; }
+  .score-number { font-size: 2rem; }
+  .ps-grid { flex-direction: column; align-items: center; gap: 1rem; }
+  .ps-device { max-width: 100%; }
+  .ps-rings-row { gap: 0.5rem; }
+  .section { padding: 2rem 0; }
+  .section h2 { font-size: 1.3rem; }
+  .section-content { font-size: 0.9rem; line-height: 1.7; }
+  .global-score-label { font-size: 0.9rem; }
+  .mini-ring { width: 55px; height: 55px; }
+}
+@media (max-width: 400px) {
+  .business-name { font-size: 1.2rem; }
+  .container { padding: 0 0.8rem; }
+  .nav-link { font-size: 0.5rem; }
+  .score-ring { width: 100px; height: 100px; }
+  .score-ring-inner { width: 84px; height: 84px; }
+  .score-number { font-size: 1.6rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -724,7 +774,6 @@ strong { color: var(--di-white); font-weight: 600; }
     <a href="#ads" class="nav-link">Ads</a>
     <a href="#piano90" class="nav-link">Piano 90gg</a>
     <a href="#relazione" class="nav-link">Relazione</a>
-    <a href="{pdf_download_url}" class="nav-link" style="color:#fff;background:#F90100;border-color:#F90100;padding:6px 14px;border-radius:6px;" download>⬇ Scarica PDF</a>
   </div>
 </nav>
 
@@ -735,10 +784,7 @@ strong { color: var(--di-white); font-weight: 600; }
     <h2>Dashboard</h2>
     <div class="dashboard-grid">
       {dashboard_cards}
-    <!-- RADAR CHART -->
-    <div style="margin: 2rem auto; max-width: 500px; text-align: center;">
-      <canvas id="radarChart" width="500" height="400"></canvas>
-    </div>
+
     </div>
     <div class="global-score-wrap">
       <div class="global-score-label">Punteggio Complessivo DigIdentity</div>
@@ -1063,57 +1109,6 @@ strong { color: var(--di-white); font-weight: 600; }
 var chartScores = {score_map_json};
 
 document.addEventListener('DOMContentLoaded', function() {
-
-  // ── RADAR CHART ──────────────────────────────────────────────────────
-  var radarCtx = document.getElementById('radarChart');
-  if (radarCtx) {
-    new Chart(radarCtx, {
-      type: 'radar',
-      data: {
-        labels: ['Sito Web', 'Mobile', 'SEO', 'Google Business', 'Social', 'Branding', 'GEO AI', 'Advertising', 'Desktop'],
-        datasets: [{
-          label: 'Punteggio',
-          data: [
-            chartScores.score_sito || 0,
-            chartScores.score_mobile || 0,
-            chartScores.score_seo || 0,
-            chartScores.score_gmb || 0,
-            chartScores.score_social || 0,
-            chartScores.score_branding || 0,
-            chartScores.score_geo || 0,
-            chartScores.score_ads || 0,
-            chartScores.score_desktop || 0
-          ],
-          backgroundColor: 'rgba(249,1,0,0.15)',
-          borderColor: '#F90100',
-          borderWidth: 2,
-          pointBackgroundColor: '#F90100',
-          pointBorderColor: '#fff',
-          pointRadius: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          r: {
-            min: 0, max: 100,
-            ticks: { color: '#666', stepSize: 20, font: { size: 10 } },
-            grid: { color: '#2a2a2a' },
-            angleLines: { color: '#2a2a2a' },
-            pointLabels: { color: '#aaa', font: { size: 11 } }
-          }
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: function(c) { return c.raw + '/100'; }
-            }
-          }
-        }
-      }
-    });
-  }
 
   // ── COMPETITOR CHART ─────────────────────────────────────────────────
   var compCtx = document.getElementById('competitorChart');

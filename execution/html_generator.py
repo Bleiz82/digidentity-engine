@@ -194,6 +194,11 @@ def _markdown_to_html(text: str) -> str:
     for line in lines:
         stripped = line.strip()
 
+        # Heading h1 (# singolo) — render come h3 nelle sezioni
+        if stripped.startswith('# ') and not stripped.startswith('## '):
+            html_lines.append(f'<h3>{stripped[2:].strip()}</h3>')
+            continue
+
         # Heading h3
         if stripped.startswith('### '):
             if in_paragraph:
@@ -756,9 +761,7 @@ def generate_free_html(
     else:
         nav_html = '<a href="#dashboard" class="nav-link active">Dashboard</a>'
     nav_html += '\n    <a href="#upgrade" class="nav-link" style="color:#FFD700;border-color:rgba(255,215,0,0.4);">Premium</a>'
-    # Pulsante download PDF
-    pdf_url = f"/api/reports/diagnosi/free/{lead_id}/pdf" if lead_id else "#"
-    nav_html += f'\n    <a href="{pdf_url}" class="nav-link" style="color:#fff;background:#F90100;border-color:#F90100;padding:6px 14px;border-radius:6px;" download>⬇ Scarica PDF</a>'
+    # Pulsante download PDF rimosso — PDF inviato solo via email
 
     # Score map per JS
     score_map = {
@@ -846,4 +849,338 @@ def save_free_html(html: str, lead_id: str, output_dir: str = "/app/reports/free
     filepath = out_path / f"free_{lead_id}.html"
     filepath.write_text(html, encoding="utf-8")
     logger.info(f"HTML free salvato: {filepath}")
+    return str(filepath)
+
+
+# ═══════════════════════════════════════════════════════════════
+# GEO AUDIT — HTML INTERATTIVO (stile premium)
+# ═══════════════════════════════════════════════════════════════
+
+def generate_geo_html(risultati: dict, url_sito: str, audit_id: str, analisi: dict) -> str:
+    """Genera il report GEO interattivo in stile premium dark."""
+    from datetime import datetime
+    from pathlib import Path
+
+    TEMPLATE_DIR = Path(__file__).parent / "html_templates"
+    template_path = TEMPLATE_DIR / "geo_template.html"
+    if not template_path.exists():
+        raise FileNotFoundError(f"Template GEO non trovato: {template_path}")
+    template = template_path.read_text(encoding="utf-8")
+
+    geo_score = risultati.get("geo_score", 0)
+    moduli = risultati.get("moduli", {})
+
+    # Brand name from URL
+    from engine.brand_mentions import estrai_nome_brand
+    brand_name = estrai_nome_brand(url_sito)
+    
+    # City (se disponibile nei risultati)
+    city = risultati.get("city", risultati.get("citta", ""))
+
+    # Score per modulo
+    scores = {
+        "citabilita": moduli.get("citabilita", {}).get("score", 0),
+        "crawler": moduli.get("crawler", {}).get("score", 0),
+        "brand": moduli.get("brand", {}).get("score", 0),
+        "schema": moduli.get("schema", {}).get("score", 0),
+        "contenuto": moduli.get("contenuto", {}).get("score", 0),
+    }
+
+    # Score color e verdict
+    if geo_score >= 70:
+        score_color = "#22C55E"
+        score_emoji = "✅"
+        verdict_text = "BUONO — Ben posizionato per le AI generative"
+    elif geo_score >= 50:
+        score_color = "#F59E0B"
+        score_emoji = "⚠️"
+        verdict_text = "DISCRETO — Margini di miglioramento significativi"
+    elif geo_score >= 30:
+        score_color = "#F97316"
+        score_emoji = "🔶"
+        verdict_text = "CRITICO — Poco visibile alle AI. Serve intervenire"
+    else:
+        score_color = "#EF4444"
+        score_emoji = "🔴"
+        verdict_text = "MOLTO CRITICO — Quasi invisibile alle AI generative"
+
+    # Module cards HTML
+    module_defs = [
+        ("citabilita", "Citabilità AI", "25%"),
+        ("crawler", "Accesso Crawler AI", "15%"),
+        ("brand", "Autorità del Brand", "25%"),
+        ("schema", "Dati Strutturati", "15%"),
+        ("contenuto", "Qualità Contenuto E-E-A-T", "20%"),
+    ]
+    cards_html = ""
+    for key, label, weight in module_defs:
+        sc = scores.get(key, 0)
+        color = "#22C55E" if sc >= 70 else "#F59E0B" if sc >= 50 else "#EF4444"
+        cards_html += f"""<div class="module-card">
+        <div class="mod-score" style="color:{color};">{sc}</div>
+        <div class="mod-name">{label}</div>
+        <div class="mod-weight">Peso: {weight}</div>
+      </div>\n"""
+
+    # Data analisi
+    data_raw = risultati.get("data_analisi", datetime.now().isoformat())
+    try:
+        dt = datetime.fromisoformat(data_raw.replace("Z", "+00:00"))
+        data_fmt = dt.strftime("%d/%m/%Y alle %H:%M")
+    except Exception:
+        data_fmt = data_raw[:10] if len(data_raw) >= 10 else data_raw
+
+    # Markdown to HTML per analisi
+    analisi_html = {}
+    for key in ["executive_summary", "citabilita", "crawler", "brand", "schema", "contenuto", "piano_azione", "benchmark"]:
+        raw = analisi.get(key, "")
+        if isinstance(raw, str) and raw.strip():
+            analisi_html[key] = _markdown_to_html(raw)
+        else:
+            analisi_html[key] = "<p>Analisi non disponibile.</p>"
+
+    # Robots.txt ottimizzato
+    from engine.report_generator import genera_robots_ottimizzato, genera_llmstxt
+    crawler_bloccati = moduli.get("crawler", {}).get("crawler_bloccati", [])
+    robots_ottimizzato = genera_robots_ottimizzato(crawler_bloccati)
+    llmstxt = genera_llmstxt(url_sito, brand_name)
+
+    # Crawler table
+    crawler_data = moduli.get("crawler", {})
+    bot_list = crawler_data.get("bot_details", crawler_data.get("dettagli_bot", []))
+    if bot_list:
+        crawler_table = '<table class="geo-table"><tr><th>Bot AI</th><th>Azienda</th><th>Accesso</th></tr>'
+        for bot in bot_list:
+            nome = bot.get("nome", bot.get("name", ""))
+            azienda = bot.get("azienda", bot.get("company", ""))
+            accesso = bot.get("accesso", bot.get("access", ""))
+            icon = "✅ OK" if accesso in ["OK", "allowed", True, "✅"] else "❌ Bloccato"
+            crawler_table += f"<tr><td>{nome}</td><td>{azienda}</td><td>{icon}</td></tr>"
+        crawler_table += "</table>"
+    else:
+        crawler_table = "<p>Dati crawler non disponibili in formato tabellare. Vedi analisi AI sopra.</p>"
+
+    # Priorità HTML
+    priorita_list = risultati.get("priorita", [])
+    if priorita_list:
+        priorita_html = ""
+        for i, p in enumerate(priorita_list[:3], 1):
+            titolo = p.get("titolo", p.get("title", f"Problema {i}"))
+            desc = p.get("descrizione", p.get("description", ""))
+            modulo = p.get("modulo", p.get("module", ""))
+            priorita_html += f"""<div class="timeline-item" style="border-color:#EF4444;">
+              <p class="tl-title">{i}. {titolo}</p>
+              <p class="tl-desc">{desc}</p>
+              <p style="color:var(--di-gray-600);font-size:0.8rem;">Modulo: {modulo}</p>
+            </div>"""
+    else:
+        priorita_html = "<p>Le priorità sono dettagliate nell'analisi AI sopra.</p>"
+
+    # Schema templates (JSON-LD)
+    schema_localbusiness = """{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": """" + brand_name + """",
+  "url": """" + url_sito + """",
+  "telephone": "[INSERISCI TELEFONO]",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "[INSERISCI VIA]",
+    "addressLocality": """" + city + """",
+    "addressRegion": "[REGIONE]",
+    "postalCode": "[CAP]",
+    "addressCountry": "IT"
+  },
+  "openingHoursSpecification": {
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+    "opens": "09:00",
+    "closes": "18:00"
+  }
+}"""
+
+    schema_faqpage = """{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "[DOMANDA 1]",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "[RISPOSTA 1]"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "[DOMANDA 2]",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "[RISPOSTA 2]"
+      }
+    }
+  ]
+}"""
+
+    schema_organization = """{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": """" + brand_name + """",
+  "url": """" + url_sito + """",
+  "logo": "[URL_LOGO]",
+  "sameAs": [
+    "[URL_FACEBOOK]",
+    "[URL_INSTAGRAM]",
+    "[URL_LINKEDIN]"
+  ],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "[TELEFONO]",
+    "contactType": "customer service",
+    "availableLanguage": "Italian"
+  }
+}"""
+
+    # Checklist HTML
+    def _chk(ok, text):
+        if ok:
+            return f'<div class="check-item"><span class="chk-y">✓</span> {text}</div>'
+        return f'<div class="check-item"><span class="chk-n">✗</span> {text}</div>'
+
+    crawler_details = moduli.get("crawler", {})
+    has_llmstxt = crawler_details.get("has_llmstxt", False)
+    
+    checklist_crawler = ""
+    checklist_crawler += _chk(True, "robots.txt permette GPTBot")
+    checklist_crawler += _chk(True, "robots.txt permette ClaudeBot")
+    checklist_crawler += _chk(True, "robots.txt permette Google-Extended")
+    checklist_crawler += _chk(has_llmstxt, "llms.txt pubblicato nella root")
+    checklist_crawler += _chk(has_llmstxt, "llms.txt aggiornato con dati corretti")
+
+    schema_details = moduli.get("schema", {})
+    has_local = schema_details.get("has_localbusiness", False)
+    has_org = schema_details.get("has_organization", False)
+    has_faq = schema_details.get("has_faqpage", False)
+
+    checklist_schema = ""
+    checklist_schema += _chk(has_local, "Schema LocalBusiness nel &lt;head&gt;")
+    checklist_schema += _chk(has_org, "Schema Organization nel &lt;head&gt;")
+    checklist_schema += _chk(has_faq, "Schema FAQPage sulla pagina FAQ")
+    checklist_schema += _chk(False, "Validato su Rich Results Test")
+
+    checklist_citabilita = ""
+    checklist_citabilita += _chk(False, "Contenuto in blocchi 130-170 parole")
+    checklist_citabilita += _chk(False, "FAQ con 10+ domande e risposte")
+    checklist_citabilita += _chk(False, "Dati quantitativi (prezzi, durate)")
+    checklist_citabilita += _chk(False, "Titoli H2/H3 come domande dirette")
+    checklist_citabilita += _chk(False, "NAP (Nome/Indirizzo/Tel) nel footer")
+
+    checklist_brand = ""
+    checklist_brand += _chk(False, "Google My Business ottimizzato 100%")
+    checklist_brand += _chk(False, "20+ recensioni Google ≥ 4.5 stelle")
+    checklist_brand += _chk(False, "LinkedIn pagina aziendale")
+    checklist_brand += _chk(False, "NAP coerente su tutte le directory")
+
+    checklist_eeat = ""
+    checklist_eeat += _chk(False, "Bio professionale completa")
+    checklist_eeat += _chk(False, "Certificazioni e formazione elencate")
+    checklist_eeat += _chk(False, "Blog attivo (min. 1 articolo/mese)")
+    checklist_eeat += _chk(False, "Privacy Policy GDPR aggiornata")
+    checklist_eeat += _chk(True, "HTTPS attivo e certificato valido")
+    checklist_eeat += _chk(False, "Pagina contatti con indirizzo fisico")
+
+    # Score proiezioni
+    score_fase1 = min(geo_score + 15, 100)
+    score_fase2 = min(score_fase1 + 13, 100)
+    score_fase3 = min(score_fase2 + 15, 100)
+    score_target = min(geo_score + 45, 100)
+
+    # Letture moduli per sezione strategica
+    def _lettura(score, mod_name):
+        if score >= 70:
+            return f"in buona forma. Mantieni e rafforza."
+        elif score >= 50:
+            return f"sufficiente ma con margini importanti di crescita."
+        elif score >= 30:
+            return f"critico — richiede intervento prioritario."
+        else:
+            return f"molto critico — il collo di bottiglia principale da risolvere."
+
+    # Sostituzioni template
+    replacements = {
+        "{url_sito}": url_sito,
+        "{brand_name}": brand_name,
+        "{city}": city,
+        "{data_analisi}": data_fmt,
+        "{geo_score}": str(geo_score),
+        "{score_deg}": str(int(geo_score * 3.6)),
+        "{score_color}": score_color,
+        "{score_emoji}": score_emoji,
+        "{verdict_text}": verdict_text,
+        "{module_cards}": cards_html,
+        "{anno}": str(datetime.now().year),
+        # Score moduli
+        "{score_citabilita}": str(scores["citabilita"]),
+        "{score_crawler}": str(scores["crawler"]),
+        "{score_brand}": str(scores["brand"]),
+        "{score_schema}": str(scores["schema"]),
+        "{score_contenuto}": str(scores["contenuto"]),
+        # Score deg per mini-ring
+        "{score_citabilita_deg}": str(int(scores["citabilita"] * 3.6)),
+        "{score_crawler_deg}": str(int(scores["crawler"] * 3.6)),
+        "{score_brand_deg}": str(int(scores["brand"] * 3.6)),
+        "{score_schema_deg}": str(int(scores["schema"] * 3.6)),
+        "{score_contenuto_deg}": str(int(scores["contenuto"] * 3.6)),
+        # Analisi Claude
+        "{analisi_executive_summary}": analisi_html["executive_summary"],
+        "{analisi_citabilita}": analisi_html["citabilita"],
+        "{analisi_crawler}": analisi_html["crawler"],
+        "{analisi_brand}": analisi_html["brand"],
+        "{analisi_schema}": analisi_html["schema"],
+        "{analisi_contenuto}": analisi_html["contenuto"],
+        "{analisi_piano_azione}": analisi_html["piano_azione"],
+        "{analisi_benchmark}": analisi_html["benchmark"],
+        # Risorse
+        "{robots_ottimizzato}": robots_ottimizzato,
+        "{llmstxt}": llmstxt,
+        "{schema_localbusiness}": schema_localbusiness,
+        "{schema_faqpage}": schema_faqpage,
+        "{schema_organization}": schema_organization,
+        # Tabelle e liste
+        "{crawler_table}": crawler_table,
+        "{priorita_html}": priorita_html,
+        # Checklist
+        "{checklist_crawler}": checklist_crawler,
+        "{checklist_schema}": checklist_schema,
+        "{checklist_citabilita}": checklist_citabilita,
+        "{checklist_brand}": checklist_brand,
+        "{checklist_eeat}": checklist_eeat,
+        # Piano 90gg
+        "{score_fase1}": str(score_fase1),
+        "{score_fase2}": str(score_fase2),
+        "{score_fase3}": str(score_fase3),
+        "{score_target}": str(score_target),
+        "{delta_fase1}": str(score_fase1 - geo_score),
+        "{delta_fase2}": str(score_fase2 - score_fase1),
+        "{delta_fase3}": str(score_fase3 - score_fase2),
+        "{delta_totale}": str(score_target - geo_score),
+        # Letture strategiche
+        "{lettura_crawler}": _lettura(scores["crawler"], "Crawler"),
+        "{lettura_citabilita}": _lettura(scores["citabilita"], "Citabilità"),
+        "{lettura_brand}": _lettura(scores["brand"], "Brand"),
+        "{lettura_schema}": _lettura(scores["schema"], "Schema"),
+        "{lettura_contenuto}": _lettura(scores["contenuto"], "Contenuto"),
+    }
+
+    html = template
+    for key, val in replacements.items():
+        html = html.replace(key, str(val))
+
+    # Salva file
+    out_dir = Path("/app/reports/geo")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    filepath = out_dir / f"geo_{audit_id}.html"
+    filepath.write_text(html, encoding="utf-8")
+
+    logger.info(f"[GEO HTML] Report interattivo salvato: {filepath}")
     return str(filepath)

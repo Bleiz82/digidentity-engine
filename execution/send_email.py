@@ -291,7 +291,8 @@ def send_geo_report_email(
     url_sito: str,
     pdf_path: str,
     piano: str,
-    geo_score: int
+    geo_score: int,
+    html_url: str = ""
 ) -> bool:
     """
     Invia l'email con il report GEO Audit allegato.
@@ -317,20 +318,20 @@ def send_geo_report_email(
     <head>
         <meta charset="UTF-8">
         <style>
-            .container {{ background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; }}
-            .header {{ background-color: #0f172a; padding: 40px; text-align: center; border-bottom: 3px solid #0ea5e9; }}
+            .container {{ background-color: #0a0a0a; color: #e2e8f0; font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; }}
+            .header {{ background-color: #0a0a0a; padding: 40px; text-align: center; border-bottom: 3px solid #F90100; }}
             .content {{ padding: 40px; line-height: 1.6; }}
-            .score-box {{ background-color: rgba(14, 165, 233, 0.1); border: 2px solid #0ea5e9; border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center; }}
+            .score-box {{ background-color: rgba(249, 1, 0, 0.08); border: 2px solid #F90100; border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center; }}
             .score-num {{ font-size: 64px; font-weight: 800; color: {score_color}; margin: 0; line-height: 1; }}
             .score-text {{ font-size: 14px; font-weight: 700; color: {score_color}; margin-top: 5px; }}
-            .footer {{ background-color: #1e293b; padding: 30px; text-align: center; font-size: 12px; color: #94a3b8; }}
+            .footer {{ background-color: #111111; padding: 30px; text-align: center; font-size: 12px; color: #94a3b8; }}
         </style>
     </head>
-    <body style="margin: 0; padding: 20px; background-color: #f1f5f9;">
+    <body style="margin: 0; padding: 20px; background-color: #1a1a1a;">
         <div class="container">
             <div class="header">
                 <img src="{logo_url}" width="200" alt="DigIdentity Agency">
-                <p style="margin: 15px 0 0; color: #0ea5e9; font-weight: 700; font-size: 12px; letter-spacing: 2px;">GEO AUDIT — AI OPTIMIZATION</p>
+                <p style="margin: 15px 0 0; color: #F90100; font-weight: 700; font-size: 12px; letter-spacing: 2px;">GEO AUDIT — AI OPTIMIZATION</p>
             </div>
             <div class="content">
                 <h1 style="color: #ffffff; font-size: 24px; margin-top: 0;">L'analisi è completata!</h1>
@@ -350,8 +351,13 @@ def send_geo_report_email(
                     <li>Piano di intervento prioritario</li>
                 </ul>
 
+                {"" if not html_url else f'''<div style="text-align: center; margin: 30px 0;">
+                    <a href="{html_url}" style="display: inline-block; background-color: #F90100; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 16px; letter-spacing: 0.5px;">Visualizza Report Interattivo</a>
+                    <p style="margin-top: 10px; font-size: 12px; color: #94a3b8;">Versione web con navigazione, grafici e analisi AI dettagliate</p>
+                </div>'''}
+
                 <div style="background-color: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e; padding: 15px; margin-top: 30px; border-radius: 4px;">
-                    <p style="margin: 0; font-size: 14px; color: #ffffff;">💡 <strong>Prossimo passo:</strong> Implementa i suggerimenti a pagina 3 del report per aumentare drasticamente le probabilità che la tua attività venga consigliata dalle AI.</p>
+                    <p style="margin: 0; font-size: 14px; color: #ffffff;">💡 <strong>Prossimo passo:</strong> Implementa i suggerimenti nel report per aumentare drasticamente le probabilità che la tua attività venga consigliata dalle AI.</p>
                 </div>
             </div>
             <div class="footer">

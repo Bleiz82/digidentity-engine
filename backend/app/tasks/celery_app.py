@@ -24,8 +24,8 @@ celery_app.conf.update(
     timezone="Europe/Rome",
     enable_utc=True,
     task_track_started=True,
-    task_time_limit=600,  # 10 minuti max per task
-    task_soft_time_limit=540,  # Warning a 9 minuti
+    task_time_limit=1800,  # 30 minuti max per task
+    task_soft_time_limit=1500,  # Warning a 25 minuti
     worker_prefetch_multiplier=1,
     worker_max_tasks_per_child=50,
 )

@@ -48,6 +48,22 @@ Il quinto paragrafo presenta la consulenza operativa di DigIdentity Agency come 
 
 ---
 
-Lunghezza totale: 1800-2200 parole.
+
+
+---
+
+### IL CASO DI UN'ATTIVITÀ SIMILE: COSA CAMBIA CON IL DIGITALE E L'AI
+
+Scrivi 4-5 paragrafi raccontando un caso studio realistico e credibile di un'attività dello stesso settore (o molto simile) in una realtà locale italiana comparabile. Non inventare nomi reali — usa un formato tipo "Un'attività di [settore] in un comune di [dimensione simile] nella provincia di [zona simile]".
+
+Racconta la situazione di partenza — problemi simili a quelli emersi nell'analisi di questa attività: poca visibilità online, scheda Google trascurata, nessuna strategia social, competitor che guadagnano terreno. Poi racconta cosa è successo nei primi 90 giorni dopo aver implementato un piano simile a quello proposto in questa diagnosi: ottimizzazione Google Business, contenuti costanti, gestione recensioni, presenza social strutturata.
+
+Inserisci numeri credibili e realistici per il settore: aumento percentuale delle chiamate ricevute, crescita delle recensioni, miglioramento del posizionamento locale, incremento dei contatti dal sito. Non esagerare — usa cifre plausibili per una PMI locale italiana (es. +40% chiamate, da 15 a 45 recensioni in 3 mesi, dalla pagina 3 alla top 5 per le keyword locali principali).
+
+Dedica un paragrafo specifico al ruolo dell'AI nel business locale: come i motori AI (ChatGPT, Gemini, Perplexity) stanno cambiando il modo in cui i clienti trovano le attività locali, perché chi non si prepara ora rischia di diventare invisibile nei prossimi 2-3 anni, e come l'integrazione dell'AI nei processi aziendali — dalla gestione delle risposte alle recensioni alla creazione di contenuti, dalla chat sul sito all'analisi dei dati — può trasformare un'attività locale in un business più efficiente e competitivo. Usa esempi concreti e specifici per il settore di questa attività.
+
+Chiudi collegando il caso studio alla situazione di questa attività: "La situazione di partenza era molto simile alla tua — e il percorso che hanno fatto è esattamente quello che questo piano ti propone." Accenna che in fase di consulenza con DigIdentity Agency si approfondiscono budget, ROI dettagliato e personalizzazione delle strategie AI per la specifica realtà aziendale.
+
+Lunghezza totale: 2400-2800 parole.
 Output: prosa pura in italiano, nessun elenco puntato, nessun HTML.
 Usa solo i dati presenti in {dati_sezione}. Se manca un dato, dichiaralo esplicitamente.

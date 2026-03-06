@@ -23,8 +23,8 @@ SECTIONS = [
     {"id": "08_branding_ai", "max_tokens": 6000, "model": "standard"},
     {"id": "geo_ai_visibility", "max_tokens": 4500, "model": "standard"},
     {"id": "09_ads", "max_tokens": 5000, "model": "standard"},
-    {"id": "10_piano_90_giorni", "max_tokens": 9000, "model": "standard"},
-    {"id": "11_relazione_punteggio", "max_tokens": 6000, "model": "standard"},
+    {"id": "10_piano_90_giorni", "max_tokens": 12000, "model": "standard"},
+    {"id": "11_relazione_punteggio", "max_tokens": 9000, "model": "standard"},
 ]
 
 MAX_RETRIES = 3

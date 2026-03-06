@@ -54,7 +54,29 @@ Concludi spiegando che migliorare la presenza digitale è un processo graduale, 
 
 ---
 
-Lunghezza totale: 1600-2000 parole.
+
+
+---
+
+### CALENDARIO EDITORIALE 12 SETTIMANE
+
+Crea un calendario editoriale settimanale per 12 settimane (i 3 mesi del piano) specifico per questa attività, basato sui dati disponibili. Per ogni settimana indica:
+
+- Il canale prioritario (Google Business post, Facebook, Instagram — scegli in base a dove l'attività è presente o dovrebbe essere presente secondo i dati)
+- Il tipo di contenuto (foto lavoro completato, testimonianza cliente, consiglio pratico, dietro le quinte, promozione stagionale, prima/dopo, presentazione servizio, risposta a domanda frequente)
+- L'argomento specifico collegato al settore e alla realtà di questa attività — non generico
+
+Organizza il calendario in 3 blocchi da 4 settimane corrispondenti ai 3 mesi del piano. Per ogni blocco scrivi un paragrafo introduttivo che spiega la logica editoriale di quel mese — perché quei contenuti in quella sequenza.
+
+Mese 1: contenuti che mostrano chi sei e cosa fai — costruire familiarità e fiducia. Frequenza minima: 2 pubblicazioni a settimana.
+Mese 2: contenuti che dimostrano competenza e risultati — educare il cliente e differenziarsi dai competitor. Frequenza: 2-3 pubblicazioni a settimana.
+Mese 3: contenuti che spingono all'azione — offerte, inviti alla consulenza, casi di successo, urgenza stagionale. Frequenza: 3 pubblicazioni a settimana.
+
+Per ogni settimana scrivi una riga in prosa con: "Settimana X — [canale]: [tipo contenuto] su [argomento specifico]". Non usare tabelle né elenchi puntati — scrivi tutto in prosa fluente.
+
+Chiudi con un paragrafo che spiega come mantenere il ritmo senza stress — batch content (preparare i contenuti di una settimana in una sola sessione), riutilizzo dei contenuti tra canali, e l'importanza della costanza rispetto alla perfezione.
+
+Lunghezza totale: 2200-2800 parole.
 Output: prosa pura in italiano, nessun elenco puntato, nessun HTML.
 Ogni azione deve essere specifica per questa attività, non generica.
 Usa solo i dati presenti in {dati_sezione}. Se manca un dato, dichiaralo esplicitamente.

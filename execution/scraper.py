@@ -227,6 +227,46 @@ def scrape_lead(
             results["sector"] = sector
 
         logger.info(f"[SCRAPER] SerpAPI completato: {len(results['competitors'])} competitor, {len(results['citations'])} citazioni")
+
+        # Fallback: se nessun competitor trovato, cerca su SerpAPI Google Maps
+        if not results["competitors"] and sector and city:
+            try:
+                logger.info(f"[SCRAPER] Competitor vuoti, fallback SerpAPI Google Maps: '{sector} {city}'")
+                gps = results.get("google_places", {})
+                gps_lat = gps.get("lat")
+                gps_lng = gps.get("lng")
+                maps_params = {
+                    "engine": "google_maps",
+                    "q": f"{sector} {city}",
+                    "hl": "it",
+                    "gl": "it",
+                    "api_key": settings.SERPAPI_KEY,
+                }
+                if gps_lat and gps_lng:
+                    maps_params["ll"] = f"@{gps_lat},{gps_lng},13z"
+                
+                import httpx
+                from urllib.parse import urlencode
+                maps_url = "https://serpapi.com/search?" + urlencode(maps_params, safe="@,")
+                maps_resp = httpx.get(maps_url, timeout=15)
+                maps_resp.raise_for_status()
+                maps_data = maps_resp.json()
+                
+                for place in maps_data.get("local_results", [])[:8]:
+                    if company_name.lower() not in place.get("title", "").lower():
+                        _add_competitor(results["competitors"], {
+                            "name": place.get("title"),
+                            "rating": place.get("rating"),
+                            "reviews_count": place.get("reviews"),
+                            "address": place.get("address"),
+                            "website": place.get("website"),
+                            "phone": place.get("phone"),
+                        }, "serpapi_maps")
+                
+                logger.info(f"[SCRAPER] SerpAPI Maps fallback: {len(results['competitors'])} competitor trovati")
+            except Exception as e:
+                logger.warning(f"[SCRAPER] Errore SerpAPI Maps fallback: {e}")
+
     except Exception as e:
         logger.warning(f"[SCRAPER] Errore SerpAPI: {e}")
         results["errors"].append(f"SerpAPI: {str(e)}")

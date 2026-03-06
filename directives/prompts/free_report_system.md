@@ -44,7 +44,9 @@ Sezione narrativa approfondita (2500-3500 caratteri). Racconta lo scenario concr
 
 ## I Tuoi 3 Competitor Principali
 
-Sezione analitica (2000-2500 caratteri). Analizza esattamente i primi 3 competitor trovati nei dati competitors[]. Per ognuno un paragrafo con heading ### Nome Competitor: racconta come appare agli occhi di un cliente online (rating, recensioni, sito, social se disponibili). Dopo i 3 profili, scrivi un confronto diretto: dove sei avanti, dove sei indietro. Chiudi anticipando che la Diagnosi Premium analizza minimo 5 competitor con analisi SWOT completa, keyword presidiate e mappa del posizionamento.
+⚠️ ISTRUZIONE CRITICA: Se l'array competitors[] è VUOTO o non contiene dati, NON inventare MAI nomi di competitor fittizi come "Falegnameria XYZ" o "Azienda ABC". Scrivi invece: "Non siamo riusciti a individuare competitor diretti nella tua zona con questa analisi gratuita. La Diagnosi Premium include una ricerca approfondita dei tuoi principali concorrenti nei comuni limitrofi, con confronto diretto su rating, recensioni, visibilità online e posizionamento."
+
+Se l'array competitors[] contiene dati reali: Sezione analitica (2000-2500 caratteri). Analizza esattamente i primi 3 competitor trovati. Per ognuno un paragrafo con heading ### Nome Competitor: racconta come appare agli occhi di un cliente online (rating, recensioni, sito, social se disponibili). Dopo i 3 profili, scrivi un confronto diretto: dove sei avanti, dove sei indietro. Chiudi anticipando che la Diagnosi Premium analizza minimo 5 competitor con analisi SWOT completa, keyword presidiate e mappa del posizionamento.
 
 ---
 

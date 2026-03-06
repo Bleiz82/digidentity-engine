@@ -157,20 +157,7 @@ def task_free_report(self, lead_id: str):
         stripe.api_key = settings.STRIPE_SECRET_KEY
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "eur",
-                    "product_data": {
-                        "name": "DigIdentity — Report Premium",
-                        "description": (
-                            f"Piano Strategico Digitale completo per "
-                            f"{company_name} — 40-50 pagine"
-                        ),
-                    },
-                    "unit_amount": 9900,
-                },
-                "quantity": 1,
-            }],
+            line_items=[{"price": settings.STRIPE_PRICE_ID_PREMIUM, "quantity": 1}],
             mode="payment",
             success_url=(
                 f"{settings.APP_BASE_URL}/api/payment/success"
@@ -179,6 +166,7 @@ def task_free_report(self, lead_id: str):
             cancel_url=f"{settings.APP_BASE_URL}/api/payment/cancel",
             metadata={
                 "lead_id": lead_id,
+                "type": "premium",
                 "company_name": company_name,
                 "email": email,
             },
@@ -302,7 +290,7 @@ def task_free_report(self, lead_id: str):
             "score_social": scores["score_social"],
             "score_sito_web": scores["score_sito_web"], 
             "score_seo": scores["score_seo"],
-            "score_competitivo": scores["score_competitvo"] if "score_competitvo" in scores else scores["score_competitivo"], 
+            "score_competitivo": scores["score_competitivo"], 
             "score_totale": scores["punteggio_globale"],
         }).eq("id", lead_id).execute()
     except Exception as e:
@@ -334,7 +322,8 @@ def task_free_report(self, lead_id: str):
             for attempt in range(max_retries):
                 try:
                     db.table("reports").insert({
-                        "lead_id": lead_id, "report_type": "free", "ai_model": ai_model,
+                        "lead_id": lead_id,
+                "type": "premium", "report_type": "free", "ai_model": ai_model,
                         "ai_tokens_input": ai_input, "ai_tokens_output": ai_output,
                         "ai_total_tokens": ai_total, "ai_cost_usd": ai_cost,
                         "pdf_path": pdf_path, "pdf_filename": os.path.basename(pdf_path),
@@ -357,6 +346,7 @@ def task_free_report(self, lead_id: str):
     return {
         "status": "success",
         "lead_id": lead_id,
+                "type": "premium",
         "company_name": company_name,
         "email": email,
         "pdf_path": pdf_path,

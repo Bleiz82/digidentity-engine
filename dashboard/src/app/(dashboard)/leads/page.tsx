@@ -23,7 +23,7 @@ export default function LeadsPage() {
         try {
             const res = await fetch('https://api.digidentityagency.it/api/payment/internal/genera-premium', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Internal-Key': 'dIgId_int3rn4L_X9kM2pV7nQ4wL6jR8' },
+                headers: { 'Content-Type': 'application/json', 'X-Internal-Key': process.env.NEXT_PUBLIC_INTERNAL_API_KEY || '' },
                 body: JSON.stringify({ lead_id: leadId })
             })
             const data = await res.json()
@@ -43,7 +43,7 @@ export default function LeadsPage() {
         try {
             const res = await fetch('https://api.digidentityagency.it/api/payment/internal/genera-free', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Internal-Key': 'dIgId_int3rn4L_X9kM2pV7nQ4wL6jR8' },
+                headers: { 'Content-Type': 'application/json', 'X-Internal-Key': process.env.NEXT_PUBLIC_INTERNAL_API_KEY || '' },
                 body: JSON.stringify({ lead_id: leadId })
             })
             const data = await res.json()

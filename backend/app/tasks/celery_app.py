@@ -13,7 +13,7 @@ celery_app = Celery(
     "digidentity_engine",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.tasks.free_report_task", "app.tasks.premium_report_task"]
+    include=["app.tasks.free_report_task", "app.tasks.premium_report_task", "app.tasks.geo_audit_task"]
 )
 
 # Configurazione

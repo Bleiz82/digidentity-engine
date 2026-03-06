@@ -389,7 +389,7 @@ def generate_premium_html(
     raw_05 = section_map.get("05_google_business_reputazione", "")
     sez_05_gmb, sez_05_rep = _split_section_05(raw_05)
     sez_05 = _markdown_to_html(sez_05_gmb)
-    sez_05_rep_html = _markdown_to_html(sez_05_rep) if sez_05_rep else _markdown_to_html(raw_05)
+    sez_05_rep_html = _markdown_to_html(sez_05_rep) if sez_05_rep else ""
 
     sez_06 = _markdown_to_html(section_map.get("06_competitor", ""))
     sez_07 = _markdown_to_html(section_map.get("07_social_bio", ""))
@@ -398,7 +398,7 @@ def generate_premium_html(
     raw_08 = section_map.get("08_branding_ai", "")
     sez_08_brand, sez_08_ai = _split_section_08(raw_08)
     sez_08_brand_html = _markdown_to_html(sez_08_brand)
-    sez_08_ai_html = _markdown_to_html(sez_08_ai) if sez_08_ai else _markdown_to_html(raw_08)
+    sez_08_ai_html = _markdown_to_html(sez_08_ai) if sez_08_ai else ""
 
     sez_09 = _markdown_to_html(section_map.get("09_ads", ""))
     sez_10 = _markdown_to_html(section_map.get("10_piano_90_giorni", ""))

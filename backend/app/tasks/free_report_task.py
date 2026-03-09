@@ -323,7 +323,7 @@ def task_free_report(self, lead_id: str):
                 try:
                     db.table("reports").insert({
                         "lead_id": lead_id,
-                "type": "premium", "report_type": "free", "ai_model": ai_model,
+                "report_type": "free", "ai_model": ai_model,
                         "ai_tokens_input": ai_input, "ai_tokens_output": ai_output,
                         "ai_total_tokens": ai_total, "ai_cost_usd": ai_cost,
                         "pdf_path": pdf_path, "pdf_filename": os.path.basename(pdf_path),

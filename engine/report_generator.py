@@ -59,6 +59,36 @@ def markdown_to_html(text: str) -> str:
     # Code block: ```...```
     text = re.sub(r'```[\w]*\n(.*?)```', r'<pre style="background:#0d0d1a;border-radius:6px;padding:10px;font-family:JetBrains Mono,monospace;font-size:10px;color:#e2e8f0;white-space:pre-wrap;margin:8px 0;">\1</pre>', text, flags=re.DOTALL)
     
+    # Tabelle markdown
+    import re as _re
+    _tbl_lines = text.split("\n")
+    _new_lines = []
+    _in_table = False
+    _header_done = False
+    for _line in _tbl_lines:
+        _s = _line.strip()
+        if _s.startswith("|") and _s.endswith("|") and _s.count("|") >= 3:
+            if not _in_table:
+                _in_table = True
+                _header_done = False
+                _new_lines.append('<table class="geo-table" style="width:100%;border-collapse:collapse;margin:12px 0;font-size:11.5px;">')
+                _cols = [c.strip() for c in _s.split("|") if c.strip()]
+                _new_lines.append("<tr>" + "".join(f'<th style="background:#F90100;color:#fff;padding:8px 10px;text-align:left;font-weight:700;font-size:11px;border:1px solid #333;">{c}</th>' for c in _cols) + "</tr>")
+            elif _re.match(r"^[\|\s\-:]+$", _s):
+                _header_done = True
+            else:
+                _cols = [c.strip() for c in _s.split("|") if c.strip()]
+                _new_lines.append("<tr>" + "".join(f'<td style="padding:7px 10px;color:#e2e8f0;border:1px solid #222;background:#1a1a1a;font-size:11.5px;">{c}</td>' for c in _cols) + "</tr>")
+        else:
+            if _in_table:
+                _new_lines.append("</table>")
+                _in_table = False
+                _header_done = False
+            _new_lines.append(_line)
+    if _in_table:
+        _new_lines.append("</table>")
+    text = "\n".join(_new_lines)
+
     # Lista puntata: - item o * item
     text = re.sub(r'^[\-\*] (.+)$', r'<li style="color:#e2e8f0;font-size:12px;margin-bottom:3px;">\1</li>', text, flags=re.MULTILINE)
     text = re.sub(r'(<li.*?</li>\n?)+', r'<ul style="padding-left:16px;margin:8px 0;">\g<0></ul>', text)

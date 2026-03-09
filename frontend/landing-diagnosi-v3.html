@@ -759,8 +759,12 @@ footer{border-top:1px solid var(--dark3);padding:3rem 2rem;text-align:center}
       <div class="form-success" id="formSuccess">
         <div class="check-circle">✓</div>
         <h3>Diagnosi in elaborazione!</h3>
-        <p>La nostra AI sta analizzando la tua attività. Riceverai il report completo via <strong>email</strong> e <strong>WhatsApp</strong> entro 2 minuti.</p>
-        <p style="margin-top:1rem;font-family:var(--font-mono);font-size:.8rem;color:var(--gray2)">Controlla anche la cartella spam. Se non ricevi nulla entro 5 minuti, scrivici su WhatsApp al 392 1990215.</p>
+        <p>La nostra AI sta analizzando la tua attività.<br>Riceverai il report completo via <strong>email</strong> entro pochi minuti.</p>
+        <div style="margin:1.5rem auto;max-width:320px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:0%;background:linear-gradient(90deg,var(--red),#ff4444);border-radius:3px;animation:progressBar 90s ease-out forwards"></div>
+        </div>
+        <p style="font-family:var(--font-mono);font-size:.8rem;color:var(--gray2)">Controlla anche la cartella spam.<br>Se non ricevi nulla entro 5 minuti, scrivici a <a href="mailto:digidentityagency@gmail.com" style="color:var(--red);text-decoration:none">digidentityagency@gmail.com</a></p>
+        <style>@keyframes progressBar{0%{width:0%}30%{width:60%}60%{width:80%}90%{width:92%}100%{width:96%}}</style>
       </div>
     </div>
   </section>

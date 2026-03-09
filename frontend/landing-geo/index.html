@@ -604,7 +604,7 @@
             "@type": "Organization",
             "name": "DigIdentity Agency",
             "url": "https://digidentityagency.it",
-            "logo": "https://digidentityagency.it/wp-content/uploads/2023/05/DigIdentity_Agency_dark-removebg-preview.png"
+            "logo": "https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_dark_removebg.png"
         },
         "areaServed": { "@type": "Country", "name": "IT" },
         "serviceType": "Generative Engine Optimization Audit",
@@ -632,7 +632,7 @@
     <nav class="top-bar" id="topBar">
         <div class="top-bar-inner">
             <a href="https://digidentityagency.it">
-                <img src="https://digidentityagency.it/wp-content/uploads/2023/05/DigIdentity_Agency_dark-removebg-preview.png" alt="DigIdentity Agency">
+                <img src="https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_dark_removebg.png" alt="DigIdentity Agency">
             </a>
             <a href="#form-section" class="top-bar-cta">Richiedi il tuo GEO Audit →</a>
         </div>
@@ -835,32 +835,56 @@
                 <div class="accent-line"></div>
                 <p>Un report professionale di 50+ pagine, generato dall'AI in 3 minuti. Non un template generico: un'analisi scritta su misura per la tua azienda.</p>
             </div>
-            <div class="preview-grid">
-                <div class="preview-card tilt-3d fade-up">
-                    <img src="https://digidentityagency.it/wp-content/uploads/geo-preview-dashboard.png" alt="GEO Audit Dashboard con Score 0-100" loading="lazy"
-                         onerror="this.style.height='180px';this.style.background='linear-gradient(135deg,#1a1a1a,#2a0a0a)';this.style.display='flex';this.alt='Dashboard GEO Score';">
-                    <div class="preview-info">
-                        <h3>Dashboard & GEO Score</h3>
-                        <p>Score globale 0-100 con breakdown visivo per ciascuno dei 5 moduli. Verdict immediato con colori e icone.</p>
+            <!-- LIVE REPORT DEMO -->
+            <div class="fade-up" style="text-align:center;margin-top:3rem">
+                <a href="https://api.digidentityagency.it/api/reports/geo/2d2900d9-7258-480e-a783-75d2ec25b7b0/view" target="_blank" rel="noopener" class="demo-report-cta">
+                    <div class="demo-report-box">
+                        <div class="demo-scan-line"></div>
+                        <div class="demo-content">
+                            <div class="demo-badge">CASE STUDY REALE</div>
+                            <div class="demo-score-ring">
+                                <svg viewBox="0 0 120 120" width="100" height="100">
+                                    <circle cx="60" cy="60" r="52" fill="none" stroke="#222" stroke-width="8"/>
+                                    <circle cx="60" cy="60" r="52" fill="none" stroke="#F90100" stroke-width="8" stroke-dasharray="327" stroke-dashoffset="200" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:center;animation:scoreReveal 2s ease-out forwards"/>
+                                </svg>
+                                <span class="demo-score-num">39</span>
+                            </div>
+                            <h3 style="color:#fff;font-size:1.5rem;margin:1rem 0 0.3rem">Sardegna Restauri S.r.l.s.</h3>
+                            <p style="color:#999;font-size:0.95rem;margin-bottom:1.5rem">Analisi GEO completa — 50+ pagine di audit reale</p>
+                            <div class="demo-modules">
+                                <span class="demo-mod"><span class="demo-mod-dot" style="background:#f44336"></span>Citabilità 10</span>
+                                <span class="demo-mod"><span class="demo-mod-dot" style="background:#4caf50"></span>Crawler 85</span>
+                                <span class="demo-mod"><span class="demo-mod-dot" style="background:#f44336"></span>Brand 10</span>
+                                <span class="demo-mod"><span class="demo-mod-dot" style="background:#ffc107"></span>Schema 45</span>
+                                <span class="demo-mod"><span class="demo-mod-dot" style="background:#4caf50"></span>Contenuto 79</span>
+                            </div>
+                            <div class="demo-cta-btn">
+                                <span>ESPLORA IL REPORT COMPLETO</span>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="preview-card tilt-3d fade-up">
-                    <img src="https://digidentityagency.it/wp-content/uploads/geo-preview-modules.png" alt="5 Moduli di Analisi GEO dettagliati" loading="lazy"
-                         onerror="this.style.height='180px';this.style.background='linear-gradient(135deg,#1a1a1a,#0a1a2a)';this.style.display='flex';this.alt='5 Moduli GEO';">
-                    <div class="preview-info">
-                        <h3>5 Moduli di Analisi Dettagliata</h3>
-                        <p>Citabilità AI, Brand Authority, E-E-A-T, Fondamenta Tecniche, Dati Strutturati — ogni modulo con score, analisi e raccomandazioni.</p>
-                    </div>
-                </div>
-                <div class="preview-card tilt-3d fade-up">
-                    <img src="https://digidentityagency.it/wp-content/uploads/geo-preview-action.png" alt="Piano d'azione GEO a 90 giorni" loading="lazy"
-                         onerror="this.style.height='180px';this.style.background='linear-gradient(135deg,#1a1a1a,#0a2a0a)';this.style.display='flex';this.alt='Piano Azione 90gg';">
-                    <div class="preview-info">
-                        <h3>Piano d'Azione a 90 Giorni</h3>
-                        <p>Quick wins, fondamenta, autorità, leadership — ogni azione con impatto GEO stimato, tempo richiesto e priorità. Più file pronti: robots.txt, llms.txt, JSON-LD.</p>
-                    </div>
-                </div>
+                </a>
             </div>
+            <style>
+            @keyframes scoreReveal{from{stroke-dashoffset:327}to{stroke-dashoffset:200}}
+            @keyframes scanLine{0%{top:-2px}100%{top:calc(100% + 2px)}}
+            @keyframes pulseGlow{0%,100%{box-shadow:0 0 30px rgba(249,1,0,0.15)}50%{box-shadow:0 0 60px rgba(249,1,0,0.3)}}
+            .demo-report-cta{text-decoration:none;display:block}
+            .demo-report-box{position:relative;max-width:520px;margin:0 auto;background:linear-gradient(145deg,#0f0f0f,#1a1a1a);border:1px solid #222;border-radius:20px;padding:3rem 2.5rem;overflow:hidden;transition:all 0.4s ease;animation:pulseGlow 3s ease infinite}
+            .demo-report-box:hover{transform:translateY(-8px) scale(1.02);border-color:#F90100;box-shadow:0 20px 60px rgba(249,1,0,0.25)}
+            .demo-scan-line{position:absolute;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,#F90100,transparent);opacity:0.6;animation:scanLine 3s linear infinite}
+            .demo-content{position:relative;z-index:1}
+            .demo-badge{display:inline-block;background:rgba(249,1,0,0.15);color:#F90100;font-size:0.7rem;font-weight:700;letter-spacing:2px;padding:6px 16px;border-radius:20px;border:1px solid rgba(249,1,0,0.3);margin-bottom:1.5rem}
+            .demo-score-ring{position:relative;display:inline-block;margin-bottom:0.5rem}
+            .demo-score-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2.2rem;font-weight:800;color:#F90100}
+            .demo-modules{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:2rem}
+            .demo-mod{display:flex;align-items:center;gap:5px;background:#111;padding:5px 12px;border-radius:8px;font-size:0.8rem;color:#ccc;border:1px solid #222}
+            .demo-mod-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+            .demo-cta-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#F90100,#cc0000);color:#fff;padding:14px 32px;border-radius:12px;font-weight:700;font-size:0.95rem;letter-spacing:0.5px;transition:all 0.3s ease}
+            .demo-report-box:hover .demo-cta-btn{transform:translateX(4px);box-shadow:0 8px 25px rgba(249,1,0,0.4)}
+            @media(max-width:600px){.demo-report-box{padding:2rem 1.5rem}.demo-modules{gap:6px}.demo-mod{font-size:0.7rem;padding:4px 8px}}
+            </style>
         </div>
     </section>
 

@@ -73,6 +73,7 @@ app.add_middleware(
         "https://diagnosi.digidentityagency.it",
         "https://www.diagnosi.digidentityagency.it",
         "https://admin.digidentityagency.it",
+        "https://geoaudit.digidentityagency.it",
         settings.APP_BASE_URL,
     ],
     allow_credentials=True,

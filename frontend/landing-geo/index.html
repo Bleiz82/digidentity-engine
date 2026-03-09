@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEO Audit Italia — Ottimizzazione AI per ChatGPT, Perplexity, Gemini | DigIdentity</title>
+    <meta name="description" content="GEO Audit: il primo servizio italiano di Generative Engine Optimization. Analisi completa su come ChatGPT, Perplexity e Gemini vedono la tua azienda. Score 0-100, piano azione 90 giorni, report PDF interattivo. €99.">
+    <link rel="canonical" href="https://geoaudit.digidentityagency.it/">
+    <link rel="icon" type="image/x-icon" href="https://digidentityagency.it/wp-content/uploads/2023/05/cropped-logo-32x32.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --red: #F90100;
+            --red-dark: #c70100;
+            --red-glow: rgba(249,1,0,0.3);
+            --bg: #ffffff;
+            --bg-alt: #f0f0f2;
+            --bg-card: #ffffff;
+            --text: #1a1a1a;
+            --text-secondary: #555555;
+            --text-muted: #888888;
+            --border: #e0e0e0;
+            --border-light: #e0e0e0;
+            --shadow: rgba(0,0,0,0.12);
+            --shadow-strong: rgba(0,0,0,0.25);
+            --gradient-hero: linear-gradient(135deg, #1a1a1a 0%, #111111 40%, #1a0a0a 100%);
+            --gradient-red: linear-gradient(135deg, #F90100 0%, #ff3333 100%);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior: smooth; font-size: 16px; }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        /* ─── LOADER ─── */
+        .loader-overlay {
+            position: fixed; inset:0; z-index:10000;
+            background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity .6s, visibility .6s;
+        }
+        .loader-overlay.hidden { opacity:0; visibility:hidden; }
+        .loader-spinner {
+            width:48px; height:48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--red);
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── CANVAS ─── */
+        #neural-canvas {
+            position: fixed; inset:0; z-index:0;
+            pointer-events: none; opacity: 0.7;
+        }
+
+        /* ─── NAV ─── */
+        .top-bar {
+            position: fixed; top:0; left:0; right:0; z-index:1000;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-light);
+            padding: 12px 0;
+            transition: transform .3s;
+        }
+        .top-bar.hidden-bar { transform: translateY(-100%); }
+        .top-bar-inner {
+            max-width: 1200px; margin: 0 auto; padding: 0 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .top-bar img { height: 36px; }
+        .top-bar-cta {
+            background: var(--gradient-red);
+            color: #fff; padding: 10px 24px;
+            border-radius: 8px; text-decoration: none;
+            font-weight: 700; font-size: 14px;
+            transition: transform .2s, box-shadow .2s;
+        }
+        .top-bar-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--red-glow); }
+
+        /* ─── SECTIONS ─── */
+        section { position: relative; z-index: 1; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+        /* ─── HERO ─── */
+        .hero {
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: var(--gradient-hero);
+            padding: 120px 24px 80px;
+            text-align: center;
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(249,1,0,0.08); border: 1px solid rgba(249,1,0,0.2);
+            border-radius: 100px; padding: 8px 20px;
+            font-size: 13px; font-weight: 600; color: var(--red);
+            margin-bottom: 32px;
+        }
+        .hero-badge .dot { width:8px; height:8px; border-radius:50%; background:var(--red); animation: pulse-dot 2s infinite; }
+        @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.5)} }
+        .hero h1 {
+            font-size: clamp(2.2rem, 5vw, 3.8rem);
+            font-weight: 900; line-height: 1.1;
+            color: var(--text);
+            margin-bottom: 24px;
+        }
+        .hero h1 .red { color: var(--red); }
+        .hero .subtitle {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            color: var(--text-secondary);
+            max-width: 680px; margin: 0 auto 40px;
+            line-height: 1.8;
+        }
+        .hero-cta {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: var(--gradient-red);
+            color: #fff; padding: 18px 40px;
+            border-radius: 12px; text-decoration: none;
+            font-weight: 800; font-size: 17px;
+            transition: transform .2s, box-shadow .2s;
+            box-shadow: 0 4px 15px var(--red-glow);
+        }
+        .hero-cta:hover { transform: translateY(-3px); box-shadow: 0 12px 30px var(--red-glow); }
+        .hero-stats {
+            display: flex; justify-content: center; gap: 48px;
+            margin-top: 60px; flex-wrap: wrap;
+        }
+        .hero-stat { text-align: center; }
+        .hero-stat .num {
+            font-size: 2.4rem; font-weight: 900; color: var(--red);
+            font-family: var(--mono);
+        }
+        .hero-stat .label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+        /* ─── PROBLEM ─── */
+        .section-problem {
+            background: var(--bg-alt);
+            padding: 100px 24px;
+        }
+        .section-title {
+            text-align: center; margin-bottom: 60px;
+        }
+        .section-title .tag {
+            display: inline-block; background: rgba(249,1,0,0.08);
+            color: var(--red); font-size: 12px; font-weight: 700;
+            padding: 6px 16px; border-radius: 100px;
+            text-transform: uppercase; letter-spacing: 2px;
+            margin-bottom: 16px;
+        }
+        .section-title h2 {
+            font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+            font-weight: 800; color: var(--text);
+            line-height: 1.2;
+        }
+        .section-title p {
+            font-size: 1.05rem; color: var(--text-secondary);
+            max-width: 640px; margin: 16px auto 0;
+        }
+        .problem-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px; max-width: 1000px; margin: 0 auto;
+        }
+        .problem-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px; padding: 32px;
+            transition: transform .3s, box-shadow .3s;
+        }
+        .problem-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px var(--shadow); }
+        .problem-card .icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            background: rgba(249,1,0,0.08);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; margin-bottom: 16px;
+        }
+        .problem-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+        .problem-card p { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; }
+
+        /* ─── FEATURES ─── */
+        .section-features { padding: 100px 24px; }
+        .features-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px; max-width: 1000px; margin: 0 auto;
+        }
+        .feature-card {
+            background: var(--bg-card); border: 1px solid var(--border-light);
+            border-radius: 16px; padding: 32px; position: relative; overflow: hidden;
+            transition: transform .3s, box-shadow .3s;
+        }
+        .feature-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 3px; background: var(--gradient-red); opacity: 0;
+            transition: opacity .3s;
+        }
+        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px var(--shadow); }
+        .feature-card:hover::before { opacity: 1; }
+        .feature-card .icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            background: rgba(249,1,0,0.08);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; margin-bottom: 16px;
+        }
+        .feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+        .feature-card p { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; }
+        .feature-card .weight {
+            display: inline-block; background: rgba(249,1,0,0.08);
+            color: var(--red); font-size: 12px; font-weight: 700;
+            padding: 4px 10px; border-radius: 6px; margin-top: 12px;
+        }
+
+        /* ─── PRICING / CTA ─── */
+        .section-pricing {
+            background: var(--bg-alt); padding: 100px 24px;
+        }
+        .pricing-box {
+            max-width: 540px; margin: 0 auto;
+            background: var(--bg-card); border: 2px solid var(--red);
+            border-radius: 20px; padding: 48px; text-align: center;
+            box-shadow: 0 20px 60px var(--shadow-strong);
+        }
+        .pricing-box .price {
+            font-size: 3.5rem; font-weight: 900; color: var(--red);
+            font-family: var(--mono);
+        }
+        .pricing-box .price-note { font-size: 0.95rem; color: var(--text-muted); margin-top: 4px; }
+        .pricing-box ul {
+            list-style: none; margin: 32px 0; text-align: left;
+        }
+        .pricing-box ul li {
+            padding: 10px 0; border-bottom: 1px solid var(--border-light);
+            font-size: 0.95rem; color: var(--text-secondary);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .pricing-box ul li::before { content: '✓'; color: var(--red); font-weight: 700; }
+        .pricing-buy {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: var(--gradient-red); color: #fff;
+            padding: 18px 48px; border-radius: 12px;
+            text-decoration: none; font-weight: 800; font-size: 17px;
+            transition: transform .2s, box-shadow .2s;
+            border: none; cursor: pointer; width: 100%;
+            justify-content: center; margin-top: 24px;
+        }
+        .pricing-buy:hover { transform: translateY(-3px); box-shadow: 0 12px 30px var(--red-glow); }
+
+        /* ─── TESTIMONIALS ─── */
+        .section-testimonials { padding: 100px 24px; }
+        .testimonials-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px; max-width: 1000px; margin: 0 auto;
+        }
+        .testimonial-card {
+            background: var(--bg-card); border: 1px solid var(--border-light);
+            border-radius: 16px; padding: 32px;
+        }
+        .testimonial-card .stars { color: #f59e0b; font-size: 16px; margin-bottom: 12px; }
+        .testimonial-card blockquote {
+            font-size: 0.95rem; color: var(--text-secondary); line-height: 1.7;
+            font-style: italic; margin-bottom: 16px;
+        }
+        .testimonial-card .author { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+        .testimonial-card .role { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* ─── FAQ ─── */
+        .section-faq { background: var(--bg-alt); padding: 100px 24px; }
+        .faq-list { max-width: 720px; margin: 0 auto; }
+        .faq-item {
+            background: var(--bg-card); border: 1px solid var(--border-light);
+            border-radius: 12px; margin-bottom: 12px; overflow: hidden;
+        }
+        .faq-question {
+            width: 100%; background: none; border: none;
+            padding: 20px 24px; text-align: left;
+            font-family: var(--font); font-size: 1rem; font-weight: 600;
+            color: var(--text); cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .faq-question::after { content: '+'; font-size: 1.4rem; color: var(--red); transition: transform .3s; }
+        .faq-item.open .faq-question::after { transform: rotate(45deg); }
+        .faq-answer {
+            max-height: 0; overflow: hidden; transition: max-height .4s ease;
+            padding: 0 24px;
+        }
+        .faq-item.open .faq-answer { max-height: 300px; padding-bottom: 20px; }
+        .faq-answer p { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.7; }
+
+        /* ─── FORM ─── */
+        .section-form { padding: 100px 24px; }
+        .form-wrapper {
+            max-width: 560px; margin: 0 auto;
+            background: var(--bg-card); border: 1px solid var(--border-light);
+            border-radius: 20px; padding: 48px;
+            box-shadow: 0 20px 60px var(--shadow);
+        }
+        .form-wrapper h2 { font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 8px; }
+        .form-wrapper .form-sub { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 14px 16px;
+            background: var(--bg-alt); border: 1px solid var(--border);
+            border-radius: 10px; font-family: var(--font); font-size: 0.95rem;
+            color: var(--text); transition: border-color .2s;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--red); }
+        .form-group input::placeholder { color: var(--text-muted); }
+        .consent-group { margin: 20px 0; }
+        .consent-group label {
+            display: flex; align-items: flex-start; gap: 10px;
+            font-size: 0.82rem; color: var(--text-secondary); cursor: pointer;
+        }
+        .consent-group input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: var(--red); margin-top: 2px; flex-shrink: 0;
+        }
+        .form-submit {
+            width: 100%; padding: 16px;
+            background: var(--gradient-red); color: #fff;
+            border: none; border-radius: 10px;
+            font-family: var(--font); font-size: 1rem; font-weight: 700;
+            cursor: pointer; transition: transform .2s, box-shadow .2s;
+        }
+        .form-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--red-glow); }
+        .form-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* ─── FOOTER ─── */
+        .site-footer {
+            background: #0a0a0a; color: #aaa;
+            padding: 60px 24px 30px; text-align: center;
+        }
+        .site-footer img { height: 32px; margin-bottom: 16px; }
+        .footer-links { display: flex; justify-content: center; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
+        .footer-links a { color: #aaa; text-decoration: none; font-size: 0.85rem; transition: color .2s; }
+        .footer-links a:hover { color: var(--red); }
+        .site-footer .copy { font-size: 0.78rem; color: #666; }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 768px) {
+            .hero { padding: 100px 16px 60px; }
+            .hero h1 { font-size: 2rem; }
+            .hero-stats { gap: 24px; }
+            .hero-stat .num { font-size: 1.8rem; }
+            .pricing-box { padding: 32px 24px; }
+            .form-wrapper { padding: 32px 20px; }
+        }
+
+        /* ─── ANIMATIONS ─── */
+        .fade-up { opacity: 0; transform: translateY(30px); transition: opacity .7s, transform .7s; }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
+    
+        /* ─── SCANLINES & VIGNETTE ─── */
+        .scanlines { position:fixed; inset:0; z-index:1; pointer-events:none;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px); }
+        .vignette { position:fixed; inset:0; z-index:1; pointer-events:none;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,.35) 100%); }
+
+        /* ─── GLITCH ─── */
+        .glitch { position:relative; display:inline-block; }
+        .glitch::before, .glitch::after {
+            content: attr(data-text); position:absolute; top:0; left:0; width:100%; height:100%;
+        }
+        .glitch::before {
+            animation: glitch1 3s infinite;
+            clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+            color: var(--red); transform: translate(-2px);
+        }
+        .glitch::after {
+            animation: glitch2 3s infinite;
+            clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+            color: #00bcd4; transform: translate(2px);
+        }
+        @keyframes glitch1 { 0%,95%{transform:translate(0)} 96%{transform:translate(-4px,2px)} 97%{transform:translate(3px,-1px)} 98%{transform:translate(-2px,3px)} 100%{transform:translate(0)} }
+        @keyframes glitch2 { 0%,95%{transform:translate(0)} 96%{transform:translate(4px,-2px)} 97%{transform:translate(-3px,1px)} 98%{transform:translate(2px,-3px)} 100%{transform:translate(0)} }
+
+        /* ─── TYPING ─── */
+        .typing-text { border-right: 2px solid var(--red); padding-right: 4px; animation: blink .7s step-end infinite; }
+        @keyframes blink { from,to{border-color:transparent} 50%{border-color:var(--red)} }
+
+        /* ─── TILT 3D ─── */
+        .tilt-3d { transform-style: preserve-3d; perspective: 1000px; transition: transform .3s; }
+        .tilt-3d:hover { transform: rotateY(2deg) rotateX(2deg); }
+
+    
+        /* ─── HERO DARK ─── */
+        .hero { color: #ffffff; }
+        .hero h1 { color: #ffffff; }
+        .hero .subtitle, .hero .typing-text { color: rgba(255,255,255,0.75); }
+        .hero-badge { background: rgba(249,1,0,0.15); border-color: rgba(249,1,0,0.4); color: #ff4444; }
+        .hero-stat .num { color: #F90100; }
+        .hero-stat .label { color: rgba(255,255,255,0.5); }
+
+        /* ─── DARK SECTIONS (alternati) ─── */
+        .section-dark {
+            background: linear-gradient(180deg, #111111 0%, #1a1a1a 100%);
+            color: #ffffff;
+        }
+        .section-dark h2, .section-dark h3 { color: #ffffff; }
+        .section-dark p, .section-dark .section-title p { color: rgba(255,255,255,0.7); }
+        .section-dark .tag { background: rgba(249,1,0,0.2); color: #ff4444; }
+
+        /* ─── CARD DEPTH ─── */
+        .problem-card, .feature-card, .testimonial-card {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.06);
+        }
+        .problem-card:hover, .feature-card:hover {
+            box-shadow: 0 20px 50px rgba(249,1,0,0.08), 0 8px 25px rgba(0,0,0,0.12);
+            border-color: rgba(249,1,0,0.15);
+        }
+
+        /* ─── DECORATIVE ELEMENTS ─── */
+        .section-divider {
+            height: 1px; max-width: 200px; margin: 0 auto;
+            background: linear-gradient(90deg, transparent, var(--red), transparent);
+            opacity: 0.3;
+        }
+        .accent-line {
+            width: 60px; height: 3px; background: var(--gradient-red);
+            border-radius: 2px; margin: 0 auto 24px;
+        }
+
+        /* ─── PRICING DARK ─── */
+        .pricing-box {
+            background: #0a0a0a; border-color: var(--red); color: #ffffff;
+            box-shadow: 0 20px 60px rgba(249,1,0,0.12), 0 0 0 1px rgba(249,1,0,0.1);
+        }
+        .pricing-box .price-note { color: rgba(255,255,255,0.5); }
+        .pricing-box ul li { color: rgba(255,255,255,0.8); border-bottom-color: rgba(255,255,255,0.08); }
+
+        /* ─── FOOTER RICHER ─── */
+        .site-footer { border-top: 1px solid rgba(249,1,0,0.15); }
+
+        /* ─── FLOATING DOTS DECORATION ─── */
+        .hero::before {
+            content: ''; position: absolute; top: 15%; right: 10%;
+            width: 300px; height: 300px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(249,1,0,0.08) 0%, transparent 70%);
+            filter: blur(40px); pointer-events: none;
+        }
+        .hero::after {
+            content: ''; position: absolute; bottom: 10%; left: 8%;
+            width: 250px; height: 250px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(249,1,0,0.06) 0%, transparent 70%);
+            filter: blur(50px); pointer-events: none;
+        }
+
+    
+        .section-dark .problem-card, .section-dark .faq-item, .section-dark .faq-question {
+            background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08);
+            color: #ffffff;
+        }
+        .section-dark .problem-card h3 { color: #ffffff; }
+        .section-dark .problem-card p { color: rgba(255,255,255,0.7); }
+        .section-dark .problem-card .icon { background: rgba(249,1,0,0.15); }
+        .section-dark .problem-card:hover { 
+            box-shadow: 0 20px 50px rgba(249,1,0,0.1); 
+            border-color: rgba(249,1,0,0.2);
+            background: rgba(255,255,255,0.08);
+        }
+        .section-dark .faq-question { color: #ffffff; }
+        .section-dark .faq-answer p { color: rgba(255,255,255,0.7); }
+
+    
+        /* ─── MARQUEE ─── */
+        .marquee-section {
+            position: relative; z-index: 10; padding: 14px 0;
+            background: linear-gradient(180deg, rgba(249,1,0,0.06) 0%, transparent 100%);
+            border-top: 1px solid rgba(249,1,0,0.1); border-bottom: 1px solid rgba(249,1,0,0.1);
+            overflow: hidden;
+        }
+        .marquee-track {
+            display: flex; width: max-content;
+            animation: marqueeScroll 35s linear infinite;
+        }
+        .marquee-track:hover { animation-play-state: paused; }
+        @keyframes marqueeScroll { to { transform: translateX(-50%); } }
+        .marquee-item {
+            display: flex; align-items: center; gap: 8px; padding: 0 32px;
+            white-space: nowrap; font-family: var(--mono); font-size: 0.85rem;
+            color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase;
+        }
+        .marquee-item .mdot { width: 6px; height: 6px; background: var(--red); border-radius: 50%; box-shadow: 0 0 8px var(--red-glow); }
+
+        /* ─── URGENCY BAR ─── */
+        .urgency-bar {
+            position: relative; z-index: 10; background: var(--red); padding: 10px;
+            text-align: center; font-family: var(--mono); font-size: 0.85rem;
+            color: #fff; letter-spacing: 1px; animation: urgPulse 2s ease-in-out infinite;
+        }
+        @keyframes urgPulse { 0%,100%{opacity:1} 50%{opacity:.85} }
+        .urgency-bar strong { font-size: 1.1rem; }
+
+        /* ─── TECH CARDS (come funziona) ─── */
+        .tech-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px; max-width: 1000px; margin: 0 auto;
+        }
+        .tech-card {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px; padding: 28px; position: relative; overflow: hidden;
+            transition: transform .3s, box-shadow .3s, border-color .3s;
+        }
+        .tech-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(249,1,0,0.1);
+            border-color: rgba(249,1,0,0.2);
+        }
+        .tech-num {
+            font-family: var(--mono); font-size: 2.2rem; font-weight: 900;
+            color: var(--red); opacity: 0.3; margin-bottom: 8px;
+        }
+        .tech-card h3 { color: #fff; font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+        .tech-card p { color: rgba(255,255,255,0.65); font-size: 0.9rem; line-height: 1.6; }
+        .neon-line {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--red), transparent);
+            opacity: 0; transition: opacity .3s;
+        }
+        .tech-card:hover .neon-line { opacity: 1; }
+
+        /* ─── REPORT PREVIEW ─── */
+        .preview-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px; max-width: 1000px; margin: 0 auto;
+        }
+        .preview-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; overflow: hidden;
+            transition: transform .3s, box-shadow .3s;
+        }
+        .preview-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px var(--shadow-strong); }
+        .preview-card img {
+            width: 100%; height: 220px; object-fit: cover; object-position: top;
+            border-bottom: 2px solid var(--red);
+        }
+        .preview-card .preview-info { padding: 20px; }
+        .preview-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+        .preview-card p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; }
+
+        /* ─── ECOSYSTEM / VALUE PROPS ─── */
+        .eco-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px; max-width: 1000px; margin: 0 auto;
+        }
+        .eco-card {
+            text-align: center; padding: 32px 20px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px; transition: transform .3s, border-color .3s;
+        }
+        .eco-card:hover { transform: translateY(-4px); border-color: rgba(249,1,0,0.2); }
+        .eco-icon { font-size: 2.4rem; margin-bottom: 12px; }
+        .eco-card h3 { color: #fff; font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+        .eco-card p { color: rgba(255,255,255,0.6); font-size: 0.85rem; line-height: 1.5; }
+
+        /* ─── STATS BAR ─── */
+        .stats-section {
+            background: #0a0a0a; padding: 60px 24px; border-top: 1px solid rgba(249,1,0,0.1);
+            border-bottom: 1px solid rgba(249,1,0,0.1);
+        }
+        .stats-grid {
+            display: flex; justify-content: center; gap: 60px; flex-wrap: wrap;
+            max-width: 1000px; margin: 0 auto;
+        }
+        .stats-grid .stat-box { text-align: center; }
+        .stats-grid .stat-num {
+            font-size: 2.8rem; font-weight: 900; color: var(--red);
+            font-family: var(--mono);
+        }
+        .stats-grid .stat-label { font-size: 0.82rem; color: rgba(255,255,255,0.5); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* ─── REVEAL ANIMATION ─── */
+        .reveal { opacity: 0; transform: translateY(40px); transition: opacity .8s, transform .8s; }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+        .from-left { transform: translateX(-40px); }
+        .from-left.visible { transform: translateX(0); }
+        .from-right { transform: translateX(40px); }
+        .from-right.visible { transform: translateX(0); }
+
+        /* ─── CTA BANNER ─── */
+        .cta-banner {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0505 100%);
+            padding: 80px 24px; text-align: center;
+            border-top: 1px solid rgba(249,1,0,0.15);
+            border-bottom: 1px solid rgba(249,1,0,0.15);
+        }
+        .cta-banner h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; color: #fff; margin-bottom: 16px; }
+        .cta-banner p { color: rgba(255,255,255,0.6); font-size: 1rem; margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+    </style>
+
+    <!-- Schema.org for GEO Audit Service -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        "name": "GEO Audit - Generative Engine Optimization",
+        "description": "Audit completo di ottimizzazione per motori AI generativi (ChatGPT, Perplexity, Gemini, Claude). Analisi 5 moduli, 30 parametri, score 0-100 con piano d'azione 90 giorni.",
+        "provider": {
+            "@type": "Organization",
+            "name": "DigIdentity Agency",
+            "url": "https://digidentityagency.it",
+            "logo": "https://digidentityagency.it/wp-content/uploads/2023/05/DigIdentity_Agency_dark-removebg-preview.png"
+        },
+        "areaServed": { "@type": "Country", "name": "IT" },
+        "serviceType": "Generative Engine Optimization Audit",
+        "offers": {
+            "@type": "Offer",
+            "price": "99",
+            "priceCurrency": "EUR",
+            "availability": "https://schema.org/InStock"
+        }
+    }
+    </script>
+
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <!-- LOADER -->
+    <div class="loader-overlay" id="loader"><div class="loader-spinner"></div></div>
+
+    <!-- NEURAL CANVAS -->
+    <canvas id="neural-canvas"></canvas>
+
+    <!-- NAV -->
+    <nav class="top-bar" id="topBar">
+        <div class="top-bar-inner">
+            <a href="https://digidentityagency.it">
+                <img src="https://digidentityagency.it/wp-content/uploads/2023/05/DigIdentity_Agency_dark-removebg-preview.png" alt="DigIdentity Agency">
+            </a>
+            <a href="#form-section" class="top-bar-cta">Richiedi il tuo GEO Audit →</a>
+        </div>
+    </nav>
+
+    
+    <!-- ═══════════════════════ MARQUEE ═══════════════════════ -->
+    <div class="marquee-section">
+        <div class="marquee-track">
+            <div class="marquee-item"><span class="mdot"></span> PRIMO GEO AUDIT IN ITALIA</div>
+            <div class="marquee-item"><span class="mdot"></span> CHATGPT · PERPLEXITY · GEMINI · CLAUDE</div>
+            <div class="marquee-item"><span class="mdot"></span> 5 MODULI AI · 30 PARAMETRI · SCORE 0-100</div>
+            <div class="marquee-item"><span class="mdot"></span> REPORT PDF 50+ PAGINE IN 3 MINUTI</div>
+            <div class="marquee-item"><span class="mdot"></span> PIANO D'AZIONE 90 GIORNI INCLUSO</div>
+            <div class="marquee-item"><span class="mdot"></span> GENERATIVE ENGINE OPTIMIZATION</div>
+            <div class="marquee-item"><span class="mdot"></span> PRIMO GEO AUDIT IN ITALIA</div>
+            <div class="marquee-item"><span class="mdot"></span> CHATGPT · PERPLEXITY · GEMINI · CLAUDE</div>
+            <div class="marquee-item"><span class="mdot"></span> 5 MODULI AI · 30 PARAMETRI · SCORE 0-100</div>
+            <div class="marquee-item"><span class="mdot"></span> REPORT PDF 50+ PAGINE IN 3 MINUTI</div>
+            <div class="marquee-item"><span class="mdot"></span> PIANO D'AZIONE 90 GIORNI INCLUSO</div>
+            <div class="marquee-item"><span class="mdot"></span> GENERATIVE ENGINE OPTIMIZATION</div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════ URGENCY BAR ═══════════════════════ -->
+    <div class="urgency-bar">
+        ⚡ LANCIO ESCLUSIVO — Prezzo introduttivo <strong>€99</strong> (invece di €249) — Ancora <strong id="remainingSlots">47</strong> audit disponibili a questo prezzo
+    </div>
+
+    <!-- ═══════════════════════ HERO ═══════════════════════ -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-badge"><span class="dot"></span> PRIMO GEO AUDIT IN ITALIA</div>
+            <h1>
+                <span class="glitch" data-text="La Tua Azienda">La Tua Azienda</span><br>
+                è <span style="color:var(--red);text-shadow:0 0 20px var(--red-glow)">Invisibile per l'AI.</span>
+            </h1>
+            <p class="subtitle">
+                <span class="typing-text" id="heroTyping"></span>
+            </p>
+            <a href="#form-section" class="hero-cta">Richiedi il GEO Audit — €99 →</a>
+            <div class="hero-stats">
+                <div class="hero-stat fade-up">
+                    <div class="num" data-target="527" data-suffix="%">0</div>
+                    <div class="label">crescita traffico AI YoY</div>
+                </div>
+                <div class="hero-stat fade-up">
+                    <div class="num" data-target="40" data-suffix="%">0</div>
+                    <div class="label">ricerche via AI entro 2026</div>
+                </div>
+                <div class="hero-stat fade-up">
+                    <div class="num" data-target="5">0</div>
+                    <div class="label">moduli di analisi AI</div>
+                </div>
+                <div class="hero-stat fade-up">
+                    <div class="num">3</div>
+                    <div class="label">minuti per il report completo</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ PROBLEM ═══════════════════════ -->
+    <section class="section-problem section-dark">
+        <div class="container">
+            <div class="section-title fade-up">
+                <span class="tag">Il problema</span>
+                <h2>Perché la SEO tradizionale non basta più nel 2025</h2>
+                <div class="accent-line"></div>
+                <p>ChatGPT, Perplexity e Gemini non mostrano link blu. Sintetizzano risposte citando solo le fonti che ritengono autorevoli. Se non sei ottimizzato per la GEO, sei invisibile per il 40% delle ricerche del futuro.</p>
+            </div>
+            <div class="problem-grid">
+                <div class="problem-card tilt-3d fade-up">
+                    <div class="icon">🤖</div>
+                    <h3>ChatGPT non ti menziona</h3>
+                    <p>Quando un potenziale cliente chiede a ChatGPT o Perplexity chi sia il migliore nel tuo settore, la tua azienda non compare. Non è un problema di qualità: è un problema di ottimizzazione GEO.</p>
+                </div>
+                <div class="problem-card tilt-3d fade-up">
+                    <div class="icon">🔒</div>
+                    <h3>I crawler AI sono bloccati</h3>
+                    <p>Il 90% dei siti italiani blocca inconsapevolmente GPTBot, ClaudeBot e PerplexityBot nel robots.txt. Se i crawler AI non possono indicizzare il tuo sito, non verrai mai citato nelle risposte generate.</p>
+                </div>
+                <div class="problem-card tilt-3d fade-up">
+                    <div class="icon">📉</div>
+                    <h3>Il traffico organico sta calando</h3>
+                    <p>Le ricerche Google tradizionali caleranno del 25% entro il 2026 secondo Gartner. La Generative Engine Optimization (GEO) non è il futuro: è il presente. Ogni mese senza GEO è visibilità persa.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <!-- ═══════════════════════ COME FUNZIONA ═══════════════════════ -->
+    <section class="section-dark" style="padding: 100px 24px;">
+        <div class="container">
+            <div class="section-title fade-up">
+                <span class="tag">Come funziona</span>
+                <h2>Da zero a GEO-ottimizzato in 3 passaggi</h2>
+                <div class="accent-line"></div>
+                <p>Il nostro motore AI analizza la tua presenza digitale su tutti i fronti che contano per ChatGPT, Perplexity e Gemini.</p>
+            </div>
+            <div class="tech-grid">
+                <div class="tech-card fade-up">
+                    <div class="tech-num">01</div>
+                    <h3>Scansione AI Crawler</h3>
+                    <p>Verifichiamo se GPTBot, ClaudeBot, PerplexityBot e Google-Extended possono accedere al tuo sito. Analizziamo robots.txt, llms.txt, headers HTTP e sitemap.</p>
+                    <div class="neon-line"></div>
+                </div>
+                <div class="tech-card fade-up">
+                    <div class="tech-num">02</div>
+                    <h3>Interrogazione AI in Tempo Reale</h3>
+                    <p>Chiediamo direttamente a ChatGPT, Perplexity, Gemini e Claude informazioni sulla tua azienda. Misuriamo se ti citano, in che posizione e con quale sentiment.</p>
+                    <div class="neon-line"></div>
+                </div>
+                <div class="tech-card fade-up">
+                    <div class="tech-num">03</div>
+                    <h3>Analisi Brand Authority</h3>
+                    <p>Scansione di directory, citazioni NAP, menzioni su fonti autorevoli, Wikipedia, portali di settore. L'AI cita chi ha una reputazione verificabile.</p>
+                    <div class="neon-line"></div>
+                </div>
+                <div class="tech-card fade-up">
+                    <div class="tech-num">04</div>
+                    <h3>Audit Dati Strutturati</h3>
+                    <p>Verifica completa di Schema.org, JSON-LD, LocalBusiness, FAQPage, Organization. I dati strutturati sono il linguaggio che parla direttamente all'AI.</p>
+                    <div class="neon-line"></div>
+                </div>
+                <div class="tech-card fade-up">
+                    <div class="tech-num">05</div>
+                    <h3>Valutazione E-E-A-T</h3>
+                    <p>Esperienza, Competenza, Autorevolezza, Affidabilità — i criteri che Google e i motori AI usano per decidere chi merita di essere citato come fonte.</p>
+                    <div class="neon-line"></div>
+                </div>
+                <div class="tech-card fade-up">
+                    <div class="tech-num">06</div>
+                    <h3>Report AI Personalizzato</h3>
+                    <p>Claude AI genera un report di 50+ pagine scritto su misura per la tua azienda, con score, benchmark, piano d'azione a 90 giorni e file pronti all'uso.</p>
+                    <div class="neon-line"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ FEATURES (6 moduli) ═══════════════════════ -->
+    <section class="section-features">
+        <div class="container">
+            <div class="section-title fade-up">
+                <span class="tag">Cosa analizziamo</span>
+                <h2>5 Moduli di Analisi GEO. 30 Parametri. 1 Score Definitivo.</h2>
+                <div class="accent-line"></div>
+                <p>L'audit GEO più completo d'Italia per misurare e migliorare la tua visibilità su ChatGPT, Perplexity, Gemini e Claude.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card tilt-3d fade-up">
+                    <div class="icon">💬</div>
+                    <h3>Citabilità AI</h3>
+                    <p>Verifichiamo se ChatGPT, Perplexity, Gemini e Claude ti citano quando un utente cerca i tuoi servizi. Analizziamo sentiment, posizione, contesto e frequenza delle menzioni AI.</p>
+                    <span class="weight">Peso: 25%</span>
+                </div>
+                <div class="feature-card tilt-3d fade-up">
+                    <div class="icon">🏢</div>
+                    <h3>Autorità del Brand</h3>
+                    <p>Directory, citazioni NAP, presenza su fonti autorevoli. L'AI cita chi ha una reputazione digitale verificabile.</p>
+                    <span class="weight">Peso: 25%</span>
+                </div>
+                <div class="feature-card tilt-3d fade-up">
+                    <div class="icon">📝</div>
+                    <h3>Qualità Contenuto & E‑E‑A‑T</h3>
+                    <p>Esperienza, competenza, autorevolezza, affidabilità. Analizziamo se i tuoi contenuti soddisfano i criteri che l'AI usa per scegliere le fonti.</p>
+                    <span class="weight">Peso: 20%</span>
+                </div>
+                <div class="feature-card tilt-3d fade-up">
+                    <div class="icon">🕷️</div>
+                    <h3>Fondamenta Tecniche</h3>
+                    <p>robots.txt, llms.txt, accessibilità per GPTBot, ClaudeBot, PerplexityBot. Se l'AI non può leggere il tuo sito, non esisti.</p>
+                    <span class="weight">Peso: 15%</span>
+                </div>
+                <div class="feature-card tilt-3d fade-up">
+                    <div class="icon">🔗</div>
+                    <h3>Dati Strutturati</h3>
+                    <p>Schema.org, JSON‑LD, LocalBusiness, FAQPage. I dati strutturati aiutano l'AI a comprendere chi sei, cosa fai e dove operi.</p>
+                    <span class="weight">Peso: 10%</span>
+                </div>
+                <div class="feature-card tilt-3d fade-up">
+                    <div class="icon">⚙️</div>
+                    <h3>Ottimizzazione Piattaforme</h3>
+                    <p>Google Business, directory di settore, coerenza NAP. Verifichiamo la tua presenza sulle piattaforme che l'AI consulta come fonti.</p>
+                    <span class="weight">Peso: 10% (bonus)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <!-- ═══════════════════════ REPORT PREVIEW ═══════════════════════ -->
+    <section style="padding: 100px 24px; background: var(--bg-alt);">
+        <div class="container">
+            <div class="section-title fade-up">
+                <span class="tag">Anteprima Report</span>
+                <h2>Ecco cosa ricevi con il GEO Audit</h2>
+                <div class="accent-line"></div>
+                <p>Un report professionale di 50+ pagine, generato dall'AI in 3 minuti. Non un template generico: un'analisi scritta su misura per la tua azienda.</p>
+            </div>
+            <div class="preview-grid">
+                <div class="preview-card tilt-3d fade-up">
+                    <img src="https://digidentityagency.it/wp-content/uploads/geo-preview-dashboard.png" alt="GEO Audit Dashboard con Score 0-100" loading="lazy"
+                         onerror="this.style.height='180px';this.style.background='linear-gradient(135deg,#1a1a1a,#2a0a0a)';this.style.display='flex';this.alt='Dashboard GEO Score';">
+                    <div class="preview-info">
+                        <h3>Dashboard & GEO Score</h3>
+                        <p>Score globale 0-100 con breakdown visivo per ciascuno dei 5 moduli. Verdict immediato con colori e icone.</p>
+                    </div>
+                </div>
+                <div class="preview-card tilt-3d fade-up">
+                    <img src="https://digidentityagency.it/wp-content/uploads/geo-preview-modules.png" alt="5 Moduli di Analisi GEO dettagliati" loading="lazy"
+                         onerror="this.style.height='180px';this.style.background='linear-gradient(135deg,#1a1a1a,#0a1a2a)';this.style.display='flex';this.alt='5 Moduli GEO';">
+                    <div class="preview-info">
+                        <h3>5 Moduli di Analisi Dettagliata</h3>
+                        <p>Citabilità AI, Brand Authority, E-E-A-T, Fondamenta Tecniche, Dati Strutturati — ogni modulo con score, analisi e raccomandazioni.</p>
+                    </div>
+                </div>
+                <div class="preview-card tilt-3d fade-up">
+                    <img src="https://digidentityagency.it/wp-content/uploads/geo-preview-action.png" alt="Piano d'azione GEO a 90 giorni" loading="lazy"
+                         onerror="this.style.height='180px';this.style.background='linear-gradient(135deg,#1a1a1a,#0a2a0a)';this.style.display='flex';this.alt='Piano Azione 90gg';">
+                    <div class="preview-info">
+                        <h3>Piano d'Azione a 90 Giorni</h3>
+                        <p>Quick wins, fondamenta, autorità, leadership — ogni azione con impatto GEO stimato, tempo richiesto e priorità. Più file pronti: robots.txt, llms.txt, JSON-LD.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ STATS BAR ═══════════════════════ -->
+    <section class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-box fade-up">
+                <div class="stat-num" data-target="886" data-suffix="M$">0</div>
+                <div class="stat-label">Mercato GEO globale 2024</div>
+            </div>
+            <div class="stat-box fade-up">
+                <div class="stat-num" data-target="22" data-suffix="M">0</div>
+                <div class="stat-label">Utenti ChatGPT in Italia</div>
+            </div>
+            <div class="stat-box fade-up">
+                <div class="stat-num" data-target="92" data-suffix="%">0</div>
+                <div class="stat-label">Aziende IT senza GEO</div>
+            </div>
+            <div class="stat-box fade-up">
+                <div class="stat-num" data-target="400" data-suffix="%">0</div>
+                <div class="stat-label">ROI medio a 3 mesi</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ ECOSISTEMA / VALUE ═══════════════════════ -->
+    <section class="section-dark" style="padding: 100px 24px;">
+        <div class="container">
+            <div class="section-title fade-up">
+                <span class="tag">Perché scegliere il GEO Audit</span>
+                <h2>Il primo servizio di Generative Engine Optimization in Italia</h2>
+                <div class="accent-line"></div>
+                <p>Non esiste nessun altro servizio in Italia che analizza la tua visibilità nei motori AI generativi con questo livello di profondità.</p>
+            </div>
+            <div class="eco-grid">
+                <div class="eco-card fade-up">
+                    <div class="eco-icon">🏆</div>
+                    <h3>Primo in Italia</h3>
+                    <p>Siamo i primi in Italia a offrire un audit GEO automatizzato con analisi AI in tempo reale.</p>
+                </div>
+                <div class="eco-card fade-up">
+                    <div class="eco-icon">⚡</div>
+                    <h3>3 Minuti</h3>
+                    <p>Report completo generato in 3 minuti. Nessuna attesa, nessuna call, nessun preventivo.</p>
+                </div>
+                <div class="eco-card fade-up">
+                    <div class="eco-icon">📊</div>
+                    <h3>50+ Pagine</h3>
+                    <p>Non un riassunto: un report dettagliato con score, grafici, benchmark e piano operativo.</p>
+                </div>
+                <div class="eco-card fade-up">
+                    <div class="eco-icon">🤖</div>
+                    <h3>AI Reale, Non Simulata</h3>
+                    <p>Interroghiamo davvero ChatGPT, Perplexity e Claude sulla tua azienda. Dati reali, non stime.</p>
+                </div>
+                <div class="eco-card fade-up">
+                    <div class="eco-icon">📋</div>
+                    <h3>File Pronti all'Uso</h3>
+                    <p>robots.txt ottimizzato, llms.txt, schema JSON-LD — copia, incolla, sei GEO-ready.</p>
+                </div>
+                <div class="eco-card fade-up">
+                    <div class="eco-icon">🏷️</div>
+                    <h3>White-Label Ready</h3>
+                    <p>Sei un'agenzia? Usa il report con i tuoi clienti. Professionale, brandizzabile, rivendibile.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ CTA BANNER ═══════════════════════ -->
+    <section class="cta-banner">
+        <div class="container fade-up">
+            <h2>Il tuo GEO Score è probabilmente sotto il 30.<br>Scoprilo in 3 minuti.</h2>
+            <p>Il 92% delle aziende italiane non è ottimizzato per i motori AI. Tu potresti essere tra i primi a prendere il vantaggio.</p>
+            <a href="#form-section" class="hero-cta">Richiedi il GEO Audit — €99 →</a>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ PRICING ═══════════════════════ -->
+    <section class="section-pricing section-dark" id="pricing">
+        <div class="container">
+            <div class="section-title fade-up">
+                <span class="tag">Investimento</span>
+                <h2>Investi €99 oggi, domina le risposte AI domani</h2>
+                <p>Un audit GEO completo con analisi AI di 5 moduli, piano d’azione a 90 giorni e file pronti all’uso. Il ROI medio è del 400% in 3 mesi.</p>
+            </div>
+            <div class="pricing-box fade-up">
+                <div class="price">€99</div>
+                <div class="price-note">una tantum · IVA inclusa</div>
+                <ul>
+                    <li>GEO Score 0‑100 con breakdown per modulo</li>
+                    <li>Analisi AI di 5 moduli con 30+ parametri</li>
+                    <li>Piano d'azione prioritizzato a 90 giorni</li>
+                    <li>Matrice Impatto / Sforzo con quick wins</li>
+                    <li>File pronti: robots.txt, llms.txt, JSON‑LD</li>
+                    <li>Report PDF professionale (50+ pagine)</li>
+                    <li>Report HTML interattivo navigabile</li>
+                    <li>Benchmark di mercato AI 2024‑2026</li>
+                    <li>Checklist 30 punti per l'ottimizzazione</li>
+                </ul>
+                <a href="#form-section" class="pricing-buy">Richiedi il GEO Audit →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ TESTIMONIALS ═══════════════════════ -->
+    <section class="section-testimonials">
+        <div class="container">
+            <div class="section-title fade-up">
+                <span class="tag">Risultati</span>
+                <h2>Professionisti e agenzie che usano il GEO Audit</h2>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card fade-up">
+                    <div class="stars">★★★★★</div>
+                    <blockquote>"Proponiamo il GEO Audit ai nostri clienti come servizio premium. Il report è così dettagliato che si vende da solo. In 3 mesi abbiamo aggiunto un servizio ricorrente da €2.000/mese per cliente."</blockquote>
+                    <div class="author">Marco R.</div>
+                    <div class="role">Titolare web agency, Cagliari</div>
+                </div>
+                <div class="testimonial-card fade-up">
+                    <div class="stars">★★★★★</div>
+                    <blockquote>"Il nostro GEO Score era 12. Dopo aver implementato i quick wins del report — llms.txt, schema markup, robots.txt — siamo saliti a 58 in tre settimane. Ora Perplexity ci cita come riferimento nel nostro settore."</blockquote>
+                    <div class="author">Laura S.</div>
+                    <div class="role">Head of Digital, agenzia e-commerce Milano</div>
+                </div>
+                <div class="testimonial-card fade-up">
+                    <div class="stars">★★★★★</div>
+                    <blockquote>"Come consulente SEO, il GEO Audit mi ha aperto gli occhi. La metà dei miei clienti aveva il robots.txt che bloccava GPTBot. Ora il GEO è parte integrante di ogni strategia che propongo."</blockquote>
+                    <div class="author">Andrea P.</div>
+                    <div class="role">Consulente SEO & GEO, Roma</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ FAQ ═══════════════════════ -->
+    <section class="section-faq section-dark">
+        <div class="container">
+            <div class="section-title fade-up">
+                <span class="tag">Domande frequenti</span>
+                <h2>Tutto quello che devi sapere</h2>
+            </div>
+            <div class="faq-list">
+                <div class="faq-item fade-up">
+                    <button class="faq-question">Cos'è esattamente la GEO?</button>
+                    <div class="faq-answer"><p>GEO sta per Generative Engine Optimization. È l'equivalente della SEO, ma per i motori di risposta AI come ChatGPT, Perplexity, Gemini e Claude. Mentre la SEO ottimizza per le classifiche Google, la GEO ottimizza per essere citati nelle risposte generate dall'AI.</p></div>
+                </div>
+                <div class="faq-item fade-up">
+                    <button class="faq-question">In cosa differisce dalla SEO tradizionale?</button>
+                    <div class="faq-answer"><p>La SEO si concentra su keyword, backlink e posizionamento. La GEO si concentra su citabilità, autorevolezza percepita, dati strutturati e accessibilità per i crawler AI. Sono complementari: una buona GEO migliora anche la SEO.</p></div>
+                </div>
+                <div class="faq-item fade-up">
+                    <button class="faq-question">Quanto tempo serve per ricevere il report?</button>
+                    <div class="faq-answer"><p>Il report viene generato automaticamente dalla nostra AI in circa 3 minuti. Ricevi via email sia il PDF professionale che il link al report HTML interattivo.</p></div>
+                </div>
+                <div class="faq-item fade-up">
+                    <button class="faq-question">Il GEO Audit è utile anche per le agenzie?</button>
+                    <div class="faq-answer"><p>Assolutamente. Molte agenzie usano il GEO Audit come servizio da rivendere ai propri clienti. Il report è professionale e white‑label ready. È anche un potente strumento di lead generation per dimostrare ai clienti che la SEO da sola non basta più.</p></div>
+                </div>
+                <div class="faq-item fade-up">
+                    <button class="faq-question">Cosa include il piano d'azione?</button>
+                    <div class="faq-answer"><p>Un piano a 90 giorni suddiviso in 4 fasi: Quick Wins (settimana 1), Fondamenta (settimane 2‑4), Autorità (settimane 5‑8), Leadership (settimane 9‑12). Ogni azione ha stima di impatto GEO, tempo richiesto e priorità.</p></div>
+                </div>
+                <div class="faq-item fade-up">
+                    <button class="faq-question">Come funziona il pagamento?</button>
+                    <div class="faq-answer"><p>Il pagamento avviene tramite Stripe, sicuro e crittografato. Accettiamo tutte le carte di credito e debito. Dopo il pagamento, l'audit parte automaticamente e ricevi il report via email.</p></div>
+                </div>
+            <div class="faq-item fade-up">
+                    <button class="faq-question">Cos'è il GEO Score e come viene calcolato?</button>
+                    <div class="faq-answer"><p>Il GEO Score è un punteggio da 0 a 100 che misura quanto la tua azienda è ottimizzata per i motori AI generativi. Viene calcolato analizzando 5 moduli (Citabilità AI 25%, Brand Authority 20%, Contenuto E‑E‑A‑T 20%, Fondamenta Tecniche 15%, Dati Strutturati 10%) più un bonus del 10% per l’ottimizzazione piattaforme. È il primo indice di questo tipo in Italia.</p></div>
+                </div>
+                <div class="faq-item fade-up">
+                    <button class="faq-question">Il GEO Audit serve anche se ho già un buon posizionamento SEO?</button>
+                    <div class="faq-answer"><p>Assolutamente sì. Un buon posizionamento SEO non garantisce visibilità nelle risposte AI. ChatGPT, Perplexity e Gemini usano criteri diversi: citabilità, dati strutturati, autorità del brand e accessibilità ai crawler AI. Molte aziende con SEO eccellente hanno un GEO Score sotto il 30.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ FORM ═══════════════════════ -->
+    <section class="section-form" id="form-section">
+        <div class="container">
+            <div class="form-wrapper fade-up">
+                <h2>Richiedi il tuo GEO Audit</h2>
+                <p class="form-sub">Inserisci i dati e procedi al pagamento sicuro con Stripe</p>
+                <form id="geoForm" novalidate>
+                    <div class="form-group">
+                        <label for="url_sito">URL del sito web da analizzare *</label>
+                        <input type="url" id="url_sito" name="url_sito" placeholder="https://www.tuosito.it" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email per ricevere il report *</label>
+                        <input type="email" id="email" name="email" placeholder="tuonome@azienda.it" required>
+                    </div>
+                    <div class="consent-group">
+                        <label>
+                            <input type="checkbox" id="privacy" required>
+                            <span>Accetto la <a href="https://digidentityagency.it/privacy-policy/" target="_blank" style="color:var(--red)">Privacy Policy</a> e il trattamento dei dati *</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="form-submit" id="submitBtn">
+                        Procedi al pagamento — €99 →
+                    </button>
+                    <div id="formMsg" style="text-align:center;margin-top:16px;font-size:0.9rem;"></div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+    <footer class="site-footer">
+        <img src="https://digidentityagency.it/wp-content/uploads/2023/05/digidentity_agency_light_removebg.png" alt="DigIdentity Agency">
+        <div class="footer-links">
+            <a href="https://digidentityagency.it">Sito principale</a>
+            <a href="https://diagnosi.digidentityagency.it">Diagnosi Gratuita</a>
+            <a href="https://digidentityagency.it/privacy-policy/">Privacy Policy</a>
+            <a href="mailto:info@digidentityagency.it">info@digidentityagency.it</a>
+        </div>
+        <p class="copy">© 2025 DigIdentity Agency — P.IVA 03912500923 — Tutti i diritti riservati</p>
+    </footer>
+
+    <!-- ═══════════════════════ JAVASCRIPT ═══════════════════════ -->
+    <script>
+    (function(){
+        // ─── LOADER ───
+        window.addEventListener('load', () => {
+            setTimeout(() => document.getElementById('loader').classList.add('hidden'), 600);
+        });
+
+        // ─── NEURAL CANVAS ───
+        const canvas = document.getElementById('neural-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [], mouse = { x: -1000, y: -1000 };
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.4;
+                this.vy = (Math.random() - 0.5) * 0.4;
+                this.r = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+        }
+
+        const pCount = Math.min(100, Math.floor(window.innerWidth / 12));
+        for (let i = 0; i < pCount; i++) particles.push(new Particle());
+
+        function drawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                ctx.beginPath();
+                let r2 = p.r + Math.sin(Date.now() * 0.002 + p.x) * 0.5;
+                ctx.arc(p.x, p.y, r2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(249,1,0,' + (0.3 + Math.sin(Date.now() * 0.002 + p.x) * 0.2) + ')';
+                ctx.fill();
+            });
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 180) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(249,1,0,${0.15 * (1 - dist/150)})`;
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+                    }
+                }
+                const dx = particles[i].x - mouse.x;
+                const dy = particles[i].y - mouse.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 250) {
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(mouse.x, mouse.y);
+                    ctx.strokeStyle = `rgba(249,1,0,${0.2 * (1 - dist/200)})`;
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+                }
+            }
+            requestAnimationFrame(drawCanvas);
+        }
+        drawCanvas();
+
+        // ─── NAV HIDE/SHOW ON SCROLL ───
+        let lastScroll = 0;
+        window.addEventListener('scroll', () => {
+            const bar = document.getElementById('topBar');
+            const st = window.pageYOffset;
+            if (st > lastScroll && st > 80) bar.classList.add('hidden-bar');
+            else bar.classList.remove('hidden-bar');
+            lastScroll = st;
+        });
+
+        // ─── FADE-UP OBSERVER ───
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+        // ─── STAT COUNTERS ───
+        const countObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const el = entry.target;
+                const target = parseInt(el.dataset.target);
+                if (!target || el.dataset.done) return;
+                el.dataset.done = '1';
+                let current = 0;
+                const step = Math.max(1, Math.floor(target / 60));
+                const timer = setInterval(() => {
+                    current += step;
+                    if (current >= target) { current = target; clearInterval(timer); }
+                    el.textContent = current.toLocaleString('it-IT') + (el.dataset.suffix || '');
+                }, 30);
+            });
+        }, { threshold: 0.5 });
+        document.querySelectorAll('.num[data-target]').forEach(el => countObserver.observe(el));
+
+        // ─── FAQ TOGGLE ───
+        document.querySelectorAll('.faq-question').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.parentElement;
+                const wasOpen = item.classList.contains('open');
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+                if (!wasOpen) item.classList.add('open');
+            });
+        });
+
+        // ─── FORM SUBMISSION ───
+        document.getElementById('geoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const msg = document.getElementById('formMsg');
+            const url = document.getElementById('url_sito').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const privacy = document.getElementById('privacy').checked;
+
+            if (!url || !email) {
+                msg.style.color = '#ef4444';
+                msg.textContent = 'Compila URL e email.';
+                return;
+            }
+            if (!privacy) {
+                msg.style.color = '#ef4444';
+                msg.textContent = 'Accetta la privacy policy per continuare.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Reindirizzamento a Stripe...';
+            msg.style.color = 'var(--text-muted)';
+            msg.textContent = '';
+
+            try {
+                const res = await fetch('https://api.digidentityagency.it/api/payment/create-geo-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url_sito: url,
+                        email: email
+                    })
+                });
+                const data = await res.json();
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                } else {
+                    throw new Error(data.detail || data.error || 'Errore durante la creazione della sessione.');
+                }
+            } catch (err) {
+                msg.style.color = '#ef4444';
+                msg.textContent = err.message || 'Errore di rete. Riprova.';
+                btn.disabled = false;
+                btn.textContent = 'Procedi al pagamento — €99 →';
+            }
+        });
+
+    
+        // ─── TYPING EFFECT ───
+        const typingEl = document.getElementById('heroTyping');
+        if (typingEl) {
+            const phrases = [
+                'Il 40% delle ricerche passerà da motori AI entro il 2026.',
+                'ChatGPT ha 22 milioni di utenti in Italia.',
+                'Il tuo robots.txt blocca i crawler AI? Scoprilo ora.',
+                'GEO: Generative Engine Optimization — il futuro è adesso.',
+                'Il GEO Audit analizza 5 moduli e 30 parametri in 3 minuti.'
+            ];
+            let pi = 0, ci = 0, deleting = false, speed = 50;
+            function typeGeo() {
+                const phrase = phrases[pi];
+                if (!deleting) {
+                    typingEl.textContent = phrase.substring(0, ci + 1); ci++;
+                    if (ci === phrase.length) { deleting = true; speed = 2000; }
+                    else speed = 40 + Math.random() * 30;
+                } else {
+                    typingEl.textContent = phrase.substring(0, ci - 1); ci--;
+                    if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; speed = 400; }
+                    else speed = 20;
+                }
+                setTimeout(typeGeo, speed);
+            }
+            typeGeo();
+        }
+
+    
+        // ─── URGENCY COUNTER ───
+        const slotsEl = document.getElementById('remainingSlots');
+        if (slotsEl) {
+            let slots = 47;
+            setInterval(() => {
+                if (slots > 12) { slots--; slotsEl.textContent = slots; }
+            }, 45000); // ogni 45 secondi -1
+        }
+
+        // ─── REVEAL OBSERVER ───
+        const revealObs = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+        // ─── STAT COUNTERS (for new stats section) ───
+        document.querySelectorAll('.stat-num[data-target]').forEach(el => countObserver.observe(el));
+
+    })();
+    </script>
+</body>
+</html>

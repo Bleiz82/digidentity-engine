@@ -230,6 +230,28 @@ def _markdown_to_html(text: str) -> str:
                 in_paragraph = False
             continue
 
+        # Tabella markdown: | col1 | col2 |
+        if stripped.startswith('|') and stripped.endswith('|') and stripped.count('|') >= 3:
+            if in_paragraph:
+                html_lines.append('</p>')
+                in_paragraph = False
+            # Controlla se è riga separatore |---|---|
+            if re.match(r'^[\|\s\-:]+$', stripped):
+                continue
+            cols = [c.strip() for c in stripped.split('|') if c.strip()]
+            # Se la riga successiva è un separatore, questa è l'header
+            # Usiamo una euristica: se non abbiamo ancora aperto una table, apriamola
+            if not any('<table' in l for l in html_lines[-3:] if isinstance(l, str)):
+                html_lines.append('<table class="geo-table" style="width:100%;border-collapse:collapse;margin:12px 0;font-size:11.5px;">')
+                html_lines.append('<tr>' + ''.join(f'<th style="background:#8B0000;color:#fff;padding:8px 10px;text-align:left;font-weight:700;font-size:11px;border:1px solid #333;">{c}</th>' for c in cols) + '</tr>')
+            else:
+                html_lines.append('<tr>' + ''.join(f'<td style="padding:7px 10px;color:#e2e8f0;border:1px solid #222;background:#1a1a2e;font-size:11.5px;">{c}</td>' for c in cols) + '</tr>')
+            continue
+
+        # Chiudi tabella aperta se la riga non è una tabella
+        if html_lines and '<tr>' in str(html_lines[-1]) and not stripped.startswith('|'):
+            html_lines.append('</table>')
+
         # Bold: **text**
         stripped = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', stripped)
         # Italic: *text*

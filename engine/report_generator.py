@@ -502,7 +502,7 @@ async def genera_pdf_report(
         from weasyprint import HTML
         # Inietta CSS per PDF: body bianco, contenuto dark
         html_for_pdf = open(percorso_html, "r", encoding="utf-8").read()
-        pdf_fix = "<style>body{background:#fff!important}.section h1,.section h2,.section h3,.section h4,.section h5,.ai-box h1,.ai-box h2,.ai-box h3,.ai-box h4{color:#111!important}body::before,body::after,.grid-overlay{display:none!important}.report-nav{display:none!important}*{animation:none!important}</style>"
+        pdf_fix = "<style>body{background:#fff!important}.section h1,.section h2,.section h3,.section h4,.section h5,.ai-box h1,.ai-box h2,.ai-box h3,.ai-box h4{color:#111!important}body::before,body::after,.grid-overlay{display:none!important}.report-nav{display:none!important}.geo-table th{background:#8B0000!important;color:#fff!important}.geo-table td{background:#fff!important;color:#222!important;border-color:#ddd!important}*{animation:none!important}</style>"
         html_for_pdf = html_for_pdf.replace("</head>", pdf_fix + "</head>")
         _tmp = percorso_html.replace(".html","_print.html")
         open(_tmp,"w",encoding="utf-8").write(html_for_pdf)

@@ -210,7 +210,11 @@ Lunghezza: 1100-1400 parole. Scrivi in modo molto dettagliato con sottosezioni n
         "piano_azione": f"""Sei un consulente GEO senior italiano. Basandoti su questo audit completo per {url_sito}:
 
 GEO Score: {dati.get('geo_score', 0)}/100
+Titolo sito: {dati.get('moduli', {}).get('contenuto', {}).get('titolo_sito', 'N/D')}
+Descrizione reale del sito (dal scraping): {dati.get('moduli', {}).get('contenuto', {}).get('descrizione_sito', 'N/D')}
 Priorità identificate: {json.dumps(dati.get('priorita', []), ensure_ascii=False)}
+
+IMPORTANTE: Basa le tue raccomandazioni ESCLUSIVAMENTE sulla descrizione reale del sito sopra. NON inventare servizi o settori basandoti sul nome del dominio. Se il sito è di un\'impresa edile, parla di edilizia e ristrutturazioni, non di restauro beni culturali.
 
 Crea un piano d'azione dettagliato in italiano con:
 1. INTERVENTI IMMEDIATI (0-7 giorni): azioni quick win ad alto impatto
@@ -223,6 +227,11 @@ Tono: concreto, con stime di tempo e impatto per ogni azione.
 Lunghezza: 1300-1600 parole. Scrivi in modo estremamente dettagliato con timeline, tabelle impatto/sforzo, KPI misurabili, esempi concreti per il settore e raccomandazioni operative step-by-step.""",
 
         "benchmark": f"""Sei un esperto di GEO italiano con conoscenza del mercato italiano. Per il sito {url_sito} con GEO Score {dati.get('geo_score', 0)}/100:
+
+Titolo sito: {dati.get('moduli', {}).get('contenuto', {}).get('titolo_sito', 'N/D')}
+Descrizione reale (dal scraping): {dati.get('moduli', {}).get('contenuto', {}).get('descrizione_sito', 'N/D')}
+
+IMPORTANTE: Basa il benchmark sul settore REALE dell\'azienda come descritto sopra, NON sul nome del dominio.
 
 Scrivi una sezione di benchmark in italiano che include:
 1. Posizionamento del sito rispetto alla media italiana del settore rilevato

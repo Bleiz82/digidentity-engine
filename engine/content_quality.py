@@ -174,4 +174,6 @@ async def analizza_contenuto(url: str) -> dict:
         "lingua_rilevata": lingua,
         "freshness": freshness,
         "raccomandazioni": raccomandazioni,
+        "descrizione_sito": testo[:500] if testo else "",
+        "titolo_sito": soup.title.string.strip() if soup.title and soup.title.string else "",
     }

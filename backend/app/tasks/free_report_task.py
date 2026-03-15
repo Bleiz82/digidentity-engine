@@ -166,7 +166,6 @@ def task_free_report(self, lead_id: str):
             cancel_url=f"{settings.APP_BASE_URL}/api/payment/cancel",
             metadata={
                 "lead_id": lead_id,
-                "type": "premium",
                 "company_name": company_name,
                 "email": email,
             },
@@ -346,7 +345,6 @@ def task_free_report(self, lead_id: str):
     return {
         "status": "success",
         "lead_id": lead_id,
-                "type": "premium",
         "company_name": company_name,
         "email": email,
         "pdf_path": pdf_path,

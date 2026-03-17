@@ -1,0 +1,461 @@
+"""
+Agent Webhooks - Endpoint per ricevere messaggi dai canali + risposta AI.
+"""
+
+from fastapi import APIRouter, HTTPException, Request
+from backend.app.services.agent.webhook_service import process_inbound
+from backend.app.services.agent.conversation_service import get_inbox, toggle_ai, close_conversation, get_conversation
+from backend.app.services.agent.message_service import get_messages, mark_as_read, save_message
+from backend.app.services.agent.contact_service import search_contacts, get_contact_by_id, update_contact, get_contact_context
+from backend.app.services.agent.ai_service import generate_ai_response
+from backend.app.services.agent.channel_dispatcher import send_channel_response
+import logging
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/agent", tags=["agent"])
+
+
+# ============================================
+# WEBHOOK INBOUND + AI RESPONSE
+# ============================================
+
+async def _handle_inbound(channel, request):
+    try:
+        payload = await request.json()
+        result = await process_inbound(channel, payload)
+
+        conv = result["conversation"]
+        contact = result["contact"]
+        response_data = {
+            "status": "ok",
+            "contact_id": contact["id"],
+            "conversation_id": conv["id"],
+            "message_id": result["message"]["id"],
+            "ai_response": None,
+            "ai_tokens": None,
+            "channel_delivery": None,
+        }
+
+        if conv.get("ai_enabled", True):
+            ai_result = await generate_ai_response(
+                conversation_id=conv["id"],
+                contact_id=contact["id"],
+                user_message=result["message"].get("content", ""),
+                channel_type=channel,
+            )
+            response_data["ai_response"] = ai_result["response"]
+            response_data["ai_tokens"] = ai_result.get("tokens_used")
+
+            # Invia la risposta al canale reale
+            delivery = await send_channel_response(
+                channel_type=channel,
+                contact=contact,
+                message=ai_result["response"],
+                conversation=conv,
+            )
+            response_data["channel_delivery"] = delivery
+            logger.info(f"Channel delivery [{channel}]: {delivery.get('status')}")
+
+        return response_data
+    except Exception as e:
+        logger.error(f"Errore webhook {channel}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/webhook/whatsapp")
+async def whatsapp_verify(request: Request):
+    """Verifica webhook Meta (challenge handshake)."""
+    from backend.app.core.config import settings
+    params = request.query_params
+    mode = params.get("hub.mode")
+    token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge")
+    if mode == "subscribe" and token == settings.WHATSAPP_VERIFY_TOKEN:
+        logger.info("WhatsApp webhook verificato")
+        return int(challenge)
+    logger.warning("WhatsApp verifica fallita: token non valido")
+    raise HTTPException(status_code=403, detail="Forbidden")
+
+
+@router.post("/webhook/whatsapp")
+async def whatsapp_webhook(request: Request):
+    """Riceve messaggi da WhatsApp Cloud API e li processa."""
+    try:
+        body = await request.json()
+
+        # Meta manda diversi tipi di update
+        if body.get("object") != "whatsapp_business_account":
+            return {"status": "ok"}
+
+        for entry in body.get("entry", []):
+            for change in entry.get("changes", []):
+                value = change.get("value", {})
+                messages = value.get("messages", [])
+                contacts = value.get("contacts", [])
+
+                if not messages:
+                    # Status update (delivered, read, etc.) - ignora per ora
+                    statuses = value.get("statuses", [])
+                    if statuses:
+                        logger.info("WhatsApp status update: " + statuses[0].get("status", ""))
+                    return {"status": "ok"}
+
+                msg = messages[0]
+                wa_contact = contacts[0] if contacts else {}
+
+                phone = msg.get("from", "")
+                contact_name = wa_contact.get("profile", {}).get("name", "")
+                msg_type = msg.get("type", "text")
+                wa_msg_id = msg.get("id", "")
+
+                content = ""
+                content_type = "text"
+                media_id = None
+                filename = None
+
+                if msg_type == "text":
+                    content = msg.get("text", {}).get("body", "")
+                elif msg_type == "image":
+                    content_type = "image"
+                    content = msg.get("image", {}).get("caption", "")
+                    media_id = msg.get("image", {}).get("id")
+                elif msg_type == "audio":
+                    content_type = "audio"
+                    media_id = msg.get("audio", {}).get("id")
+                elif msg_type == "voice":
+                    content_type = "audio"
+                    media_id = msg.get("voice", {}).get("id")
+                elif msg_type == "video":
+                    content_type = "video"
+                    content = msg.get("video", {}).get("caption", "")
+                    media_id = msg.get("video", {}).get("id")
+                elif msg_type == "document":
+                    content_type = "document"
+                    content = msg.get("document", {}).get("caption", "")
+                    media_id = msg.get("document", {}).get("id")
+                    filename = msg.get("document", {}).get("filename")
+                elif msg_type == "location":
+                    content_type = "location"
+                    loc = msg.get("location", {})
+                    content = str(loc.get("latitude", "")) + "," + str(loc.get("longitude", ""))
+                elif msg_type == "contacts":
+                    content_type = "contact"
+                    content = str(msg.get("contacts", []))
+                elif msg_type == "sticker":
+                    content = "[Sticker]"
+                elif msg_type == "reaction":
+                    return {"status": "ok"}
+                else:
+                    content = "[" + msg_type + "]"
+
+                # Normalizza telefono
+                if phone and not phone.startswith("+"):
+                    phone = "+" + phone
+
+                normalized_payload = {
+                    "phone": phone,
+                    "contact_name": contact_name,
+                    "content": content,
+                    "content_type": content_type,
+                    "media_id": media_id,
+                    "media_url": None,
+                    "filename": filename,
+                    "message_id": wa_msg_id,
+                }
+
+                result = await process_inbound("whatsapp", normalized_payload)
+                conv = result["conversation"]
+                contact = result["contact"]
+
+                response_data = {
+                    "status": "ok",
+                    "contact_id": contact["id"],
+                    "conversation_id": conv["id"],
+                    "message_id": result["message"]["id"],
+                    "ai_response": None,
+                    "channel_delivery": None,
+                }
+
+                if conv.get("ai_enabled", True):
+                    ai_result = await generate_ai_response(
+                        conversation_id=conv["id"],
+                        contact_id=contact["id"],
+                        user_message=content,
+                        channel_type="whatsapp",
+                    )
+                    response_data["ai_response"] = ai_result["response"]
+
+                    delivery = await send_channel_response(
+                        channel_type="whatsapp",
+                        contact=contact,
+                        message=ai_result["response"],
+                        conversation=conv,
+                    )
+                    response_data["channel_delivery"] = delivery
+                    logger.info("WhatsApp delivery: " + delivery.get("status", "unknown"))
+
+                return response_data
+
+        return {"status": "ok"}
+
+    except Exception as e:
+        logger.error("Errore webhook WhatsApp: " + str(e))
+        import traceback
+        traceback.print_exc()
+        return {"status": "ok"}
+
+@router.post("/webhook/chatbot")
+async def chatbot_webhook(request: Request):
+    return await _handle_inbound("chatbot", request)
+
+@router.post("/webhook/email")
+async def email_webhook(request: Request):
+    return await _handle_inbound("email", request)
+
+@router.post("/webhook/sms")
+async def sms_webhook(request: Request):
+    return await _handle_inbound("sms", request)
+
+@router.post("/webhook/telegram")
+async def telegram_webhook(request: Request):
+    """Riceve update da Telegram Bot API, parsa e processa."""
+    try:
+        update = await request.json()
+        message = update.get("message") or update.get("edited_message")
+        if not message:
+            return {"status": "ok", "detail": "update ignorato"}
+
+        chat = message.get("chat", {})
+        from_user = message.get("from", {})
+
+        content = ""
+        content_type = "text"
+        media_url = None
+        file_id = None
+        filename = None
+
+        if "text" in message:
+            content = message["text"]
+        elif "photo" in message:
+            content_type = "image"
+            content = message.get("caption", "")
+            file_id = message["photo"][-1]["file_id"]
+        elif "voice" in message:
+            content_type = "audio"
+            file_id = message["voice"]["file_id"]
+        elif "audio" in message:
+            content_type = "audio"
+            file_id = message["audio"]["file_id"]
+            filename = message["audio"].get("file_name", "audio.mp3")
+        elif "video" in message:
+            content_type = "video"
+            file_id = message["video"]["file_id"]
+        elif "document" in message:
+            content_type = "document"
+            content = message.get("caption", "")
+            file_id = message["document"]["file_id"]
+            filename = message["document"].get("file_name", "document")
+        elif "sticker" in message:
+            content = "[Sticker]"
+        elif "location" in message:
+            content_type = "location"
+            loc = message["location"]
+            content = str(loc.get("latitude", "")) + "," + str(loc.get("longitude", ""))
+
+        # /start -> messaggio di benvenuto gestito dall'AI
+        if content == "/start":
+            content = "Ciao!"
+
+        user_name = from_user.get("first_name", "")
+        if from_user.get("last_name"):
+            user_name += f" {from_user['last_name']}"
+        user_name = user_name.strip() or f"Telegram_{chat['id']}"
+
+        # Chiama direttamente process_inbound con payload normalizzato
+        normalized_payload = {
+            "telegram_id": str(chat["id"]),
+            "user_name": user_name,
+            "content": content,
+            "content_type": content_type,
+            "media_url": media_url,
+            "file_id": file_id,
+            "filename": filename,
+            "message_id": str(message.get("message_id", "")),
+        }
+
+        result = await process_inbound("telegram", normalized_payload)
+        conv = result["conversation"]
+        contact = result["contact"]
+
+        response_data = {
+            "status": "ok",
+            "contact_id": contact["id"],
+            "conversation_id": conv["id"],
+            "message_id": result["message"]["id"],
+            "ai_response": None,
+            "channel_delivery": None,
+        }
+
+        if conv.get("ai_enabled", True):
+            ai_result = await generate_ai_response(
+                conversation_id=conv["id"],
+                contact_id=contact["id"],
+                user_message=content,
+                channel_type="telegram",
+            )
+            response_data["ai_response"] = ai_result["response"]
+
+            delivery = await send_channel_response(
+                channel_type="telegram",
+                contact=contact,
+                message=ai_result["response"],
+                conversation=conv,
+            )
+            response_data["channel_delivery"] = delivery
+            logger.info(f"Telegram delivery: {delivery.get('status')}")
+
+        return response_data
+
+    except Exception as e:
+        logger.error(f"Errore webhook Telegram: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "ok"}
+
+
+# ============================================
+# INBOX & CONVERSATIONS (Dashboard API)
+# ============================================
+
+@router.get("/inbox")
+async def get_inbox_list(
+    status: str = None,
+    channel: str = None,
+    ai_enabled: bool = None,
+    limit: int = 50,
+    offset: int = 0,
+):
+    try:
+        result = await get_inbox(
+            status=status,
+            channel=channel,
+            ai_enabled=ai_enabled,
+            limit=limit,
+            offset=offset,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Errore inbox: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/conversations/{conversation_id}")
+async def get_conversation_detail(conversation_id: str):
+    conv = await get_conversation(conversation_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversazione non trovata")
+    return conv
+
+
+@router.get("/conversations/{conversation_id}/messages")
+async def get_conversation_messages(conversation_id: str, limit: int = 50, offset: int = 0):
+    return await get_messages(conversation_id, limit=limit, offset=offset)
+
+
+@router.post("/conversations/{conversation_id}/messages")
+async def send_human_message(conversation_id: str, request: Request):
+    try:
+        payload = await request.json()
+        conv = await get_conversation(conversation_id)
+        if not conv:
+            raise HTTPException(status_code=404, detail="Conversazione non trovata")
+        msg = await save_message(
+            conversation_id=conversation_id,
+            contact_id=conv["contact_id"],
+            direction="outbound",
+            sender_type="human",
+            content=payload.get("content", ""),
+            content_type=payload.get("content_type", "text"),
+            channel_type=conv["channel_type"],
+        )
+        return {"status": "ok", "message": msg}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Errore invio messaggio: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/conversations/{conversation_id}/takeover")
+async def human_takeover(conversation_id: str):
+    conv = await toggle_ai(conversation_id, active=False)
+    return {"status": "ok", "conversation": conv}
+
+
+@router.post("/conversations/{conversation_id}/handback")
+async def ai_handback(conversation_id: str):
+    conv = await toggle_ai(conversation_id, active=True)
+    return {"status": "ok", "conversation": conv}
+
+
+@router.post("/conversations/{conversation_id}/close")
+async def close_conv(conversation_id: str):
+    conv = await close_conversation(conversation_id)
+    return {"status": "ok", "conversation": conv}
+
+
+@router.post("/conversations/{conversation_id}/read")
+async def mark_read(conversation_id: str):
+    await mark_as_read(conversation_id)
+    return {"status": "ok"}
+
+
+# ============================================
+# CONTACTS (Dashboard API)
+# ============================================
+
+@router.get("/contacts")
+async def list_contacts(
+    q: str = None,
+    lead_status: str = None,
+    channel: str = None,
+    has_diagnosis: bool = None,
+    has_geo_audit: bool = None,
+    limit: int = 50,
+    offset: int = 0,
+):
+    return await search_contacts(
+        query=q,
+        lead_status=lead_status,
+        channel=channel,
+        has_diagnosis=has_diagnosis,
+        has_geo_audit=has_geo_audit,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/contacts/{contact_id}")
+async def get_contact(contact_id: str):
+    contact = await get_contact_by_id(contact_id)
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contatto non trovato")
+    return contact
+
+
+@router.get("/contacts/{contact_id}/context")
+async def get_contact_ctx(contact_id: str):
+    context = await get_contact_context(contact_id)
+    if not context:
+        raise HTTPException(status_code=404, detail="Contatto non trovato")
+    return context
+
+
+@router.patch("/contacts/{contact_id}")
+async def patch_contact(contact_id: str, request: Request):
+    data = await request.json()
+    contact = await update_contact(contact_id, data)
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contatto non trovato")
+    return contact

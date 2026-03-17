@@ -47,10 +47,32 @@ class Settings:
     # --- Redis / Celery ---
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 
+    # --- OpenAI ---
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+
     # --- App ---
     APP_BASE_URL: str = os.getenv("APP_BASE_URL", "http://127.0.0.1:8080")
     APP_ENV: str = os.getenv("APP_ENV", "development")
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+
+    # --- WhatsApp Cloud API ---
+    WHATSAPP_ACCESS_TOKEN: str = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    WHATSAPP_PHONE_NUMBER_ID: str = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    WHATSAPP_BUSINESS_ACCOUNT_ID: str = os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
+    WHATSAPP_VERIFY_TOKEN: str = os.getenv("WHATSAPP_VERIFY_TOKEN", "")
+    WHATSAPP_API_VERSION: str = os.getenv("WHATSAPP_API_VERSION", "v21.0")
+
+    # --- Email Inbound ---
+    EMAIL_INBOUND_ADDRESS: str = os.getenv("EMAIL_INBOUND_ADDRESS", "digidentityagency@gmail.com")
+
+    # --- Telegram ---
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+
+    # --- Meta Messenger / Instagram ---
+    META_PAGE_ACCESS_TOKEN: str = os.getenv("META_PAGE_ACCESS_TOKEN", "")
+    META_PAGE_ID: str = os.getenv("META_PAGE_ID", "")
+    INSTAGRAM_ACCOUNT_ID: str = os.getenv("INSTAGRAM_ACCOUNT_ID", "")
 
     @property
     def is_production(self) -> bool:
@@ -63,3 +85,5 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
+    # --- WhatsApp Cloud API ---

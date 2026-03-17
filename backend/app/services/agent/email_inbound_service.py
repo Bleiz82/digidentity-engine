@@ -1,0 +1,220 @@
+"""
+Email Inbound Service - Controlla Gmail via IMAP e processa email.
+Solo email da contatti esistenti o risposte a messaggi di Digy.
+"""
+
+import imaplib
+import email
+import logging
+from email.header import decode_header
+from datetime import datetime, timezone
+from backend.app.core.config import settings
+from backend.app.core.supabase_client import get_supabase
+from backend.app.services.agent.webhook_service import process_inbound
+from backend.app.services.agent.ai_service import generate_ai_response
+from backend.app.services.agent.channel_dispatcher import send_email_message
+
+logger = logging.getLogger(__name__)
+
+PROCESSED_UIDS = set()
+DIGY_LABEL = "Digy"
+
+
+def decode_mime_header(header_value):
+    """Decodifica header MIME."""
+    if not header_value:
+        return ""
+    decoded = decode_header(header_value)
+    parts = []
+    for part, charset in decoded:
+        if isinstance(part, bytes):
+            parts.append(part.decode(charset or "utf-8", errors="ignore"))
+        else:
+            parts.append(part)
+    return " ".join(parts)
+
+
+def extract_email_body(msg):
+    """Estrae il body testuale da un messaggio email."""
+    body = ""
+    if msg.is_multipart():
+        for part in msg.walk():
+            content_type = part.get_content_type()
+            if content_type == "text/plain":
+                payload = part.get_payload(decode=True)
+                if payload:
+                    charset = part.get_content_charset() or "utf-8"
+                    body = payload.decode(charset, errors="ignore")
+                    break
+            elif content_type == "text/html" and not body:
+                payload = part.get_payload(decode=True)
+                if payload:
+                    charset = part.get_content_charset() or "utf-8"
+                    body = payload.decode(charset, errors="ignore")
+    else:
+        payload = msg.get_payload(decode=True)
+        if payload:
+            charset = msg.get_content_charset() or "utf-8"
+            body = payload.decode(charset, errors="ignore")
+    # Pulisci HTML se necessario
+    if "<html" in body.lower():
+        try:
+            from bs4 import BeautifulSoup
+            body = BeautifulSoup(body, "html.parser").get_text(separator=" ", strip=True)
+        except ImportError:
+            pass
+    # Tronca se troppo lungo
+    if len(body) > 2000:
+        body = body[:2000] + "... [troncato]"
+    return body.strip()
+
+
+def extract_sender(msg):
+    """Estrae email e nome del mittente."""
+    from_header = decode_mime_header(msg.get("From", ""))
+    from_name = ""
+    from_email = ""
+    if "<" in from_header and ">" in from_header:
+        from_name = from_header.split("<")[0].strip().strip('"')
+        from_email = from_header.split("<")[1].split(">")[0].strip()
+    else:
+        from_email = from_header.strip()
+    return from_email, from_name
+
+
+def is_known_contact(from_email):
+    """Controlla se il mittente e un contatto esistente in Supabase."""
+    try:
+        supabase = get_supabase()
+        result = supabase.table("contacts").select("id,nome").eq("email", from_email).limit(1).execute()
+        if result.data:
+            return True
+        # Controlla anche nella tabella leads
+        result = supabase.table("leads").select("id").eq("email", from_email).limit(1).execute()
+        if result.data:
+            return True
+        return False
+    except Exception:
+        return False
+
+
+def is_reply_to_digy(msg):
+    """Controlla se e una risposta a un messaggio inviato da Digy."""
+    subject = decode_mime_header(msg.get("Subject", ""))
+    in_reply_to = msg.get("In-Reply-To", "")
+    references = msg.get("References", "")
+    if "Re:" in subject and "DigIdentity" in subject:
+        return True
+    if in_reply_to or references:
+        return True
+    return False
+
+
+
+def _apply_digy_label(mail, uid):
+    try:
+        label_str = '"Digy"'
+        mail.store(uid, "+X-GM-LABELS", label_str)
+        logger.info("Email " + str(uid) + " -> etichetta Digy applicata")
+    except Exception as e:
+        logger.error("Errore etichetta Digy: " + str(e))
+
+
+async def check_email_inbound():
+    """Controlla Gmail via IMAP per nuove email da processare."""
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        return
+    try:
+        mail = imaplib.IMAP4_SSL("imap.gmail.com")
+        mail.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        mail.select("INBOX")
+
+        # Cerca email non lette
+        status, data = mail.search(None, "UNSEEN")
+        if status != "OK" or not data[0]:
+            mail.logout()
+            return
+
+        uids = data[0].split()
+        for uid in uids[-10:]:  # max 10 per ciclo
+            uid_str = uid.decode()
+            if uid_str in PROCESSED_UIDS:
+                continue
+
+            status, msg_data = mail.fetch(uid, "(RFC822)")
+            if status != "OK":
+                continue
+
+            raw_email = msg_data[0][1]
+            msg = email.message_from_bytes(raw_email)
+
+            from_email, from_name = extract_sender(msg)
+            subject = decode_mime_header(msg.get("Subject", ""))
+
+            # Ignora email da se stessi
+            if from_email == settings.SMTP_USER:
+                PROCESSED_UIDS.add(uid_str)
+                continue
+
+            # Ignora email di sistema / notifiche
+            skip_senders = ["noreply@", "no-reply@", "mailer-daemon@", "postmaster@", "notifications@"]
+            should_skip = False
+            for skip in skip_senders:
+                if skip in from_email.lower():
+                    should_skip = True
+                    break
+            if should_skip:
+                PROCESSED_UIDS.add(uid_str)
+                continue
+
+            # Processa solo se: contatto noto OPPURE risposta a Digy
+            if not is_known_contact(from_email) and not is_reply_to_digy(msg):
+                PROCESSED_UIDS.add(uid_str)
+                # Segna come letta ma non processare
+                mail.store(uid, "+FLAGS", "\\Seen")
+                continue
+
+            body = extract_email_body(msg)
+            if not body:
+                PROCESSED_UIDS.add(uid_str)
+                continue
+
+            logger.info("Email inbound da " + from_email + ": " + subject[:50])
+
+            # Processa come conversazione
+            payload = {
+                "from_email": from_email,
+                "from_name": from_name or from_email.split("@")[0],
+                "subject": subject,
+                "body": body,
+            }
+
+            try:
+                result = await process_inbound("email", payload)
+                conv = result["conversation"]
+                contact = result["contact"]
+
+                # Genera risposta AI se abilitato
+                if conv.get("ai_enabled", True):
+                    ai_result = await generate_ai_response(
+                        conversation_id=conv["id"],
+                        contact_id=contact["id"],
+                        user_message=body,
+                        channel_type="email",
+                    )
+                    # Invia risposta via email
+                    reply_subject = "Re: " + subject if not subject.startswith("Re:") else subject
+                    await send_email_message(from_email, reply_subject, ai_result["response"])
+                    logger.info("Email AI risposta inviata a " + from_email)
+
+                _apply_digy_label(mail, uid)
+
+            except Exception as e:
+                logger.error("Errore processing email da " + from_email + ": " + str(e))
+
+            PROCESSED_UIDS.add(uid_str)
+
+        mail.logout()
+
+    except Exception as e:
+        logger.error("Errore check_email_inbound: " + str(e))

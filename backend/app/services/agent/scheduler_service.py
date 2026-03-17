@@ -8,6 +8,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from backend.app.core.supabase_client import get_supabase
 from backend.app.services.agent.channel_dispatcher import send_whatsapp_message, send_whatsapp_template, send_email_message, send_telegram_message
+from backend.app.services.agent.email_inbound_service import check_email_inbound
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +142,7 @@ async def scheduler_loop():
     while True:
         try:
             await check_appointment_reminders()
+            await check_email_inbound()
             reminder_counter += 1
             if reminder_counter >= 5:  # ogni 5 minuti check followup
                 await check_followups()

@@ -74,6 +74,13 @@ class Settings:
     META_PAGE_ID: str = os.getenv("META_PAGE_ID", "")
     INSTAGRAM_ACCOUNT_ID: str = os.getenv("INSTAGRAM_ACCOUNT_ID", "")
 
+
+    # --- Google Calendar OAuth2 ---
+    GOOGLE_CALENDAR_CLIENT_ID: str = os.getenv("GOOGLE_CALENDAR_CLIENT_ID", "")
+    GOOGLE_CALENDAR_CLIENT_SECRET: str = os.getenv("GOOGLE_CALENDAR_CLIENT_SECRET", "")
+    GOOGLE_CALENDAR_REFRESH_TOKEN: str = os.getenv("GOOGLE_CALENDAR_REFRESH_TOKEN", "")
+    GOOGLE_CALENDAR_ID: str = os.getenv("GOOGLE_CALENDAR_ID", "primary")
+
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
@@ -85,5 +92,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-
-    # --- WhatsApp Cloud API ---

@@ -172,8 +172,9 @@ async def handle_aggiorna_contatto(contact_id, args):
     return json.dumps({"status": "nessun dato da aggiornare"})
 
 
-async def handle_verifica_disponibilita(args: dict, supabase) -> str:
+async def handle_verifica_disponibilita(contact_id, args):
     """Verifica disponibilita incrociando regole Stefano + Google Calendar + Supabase."""
+    supabase = get_supabase()
     modalita = args.get("modalita", "videocall")
     
     if modalita not in DISPONIBILITA:
@@ -300,6 +301,11 @@ async def handle_crea_appuntamento(contact_id, args):
             data_label = data_ora
 
         # ── Crea evento su Google Calendar ──
+        appointment_id = apt.get("id")
+        nome = contact.get("nome", "Cliente")
+        email = contact.get("email", "")
+        telefono = contact.get("telefono", "")
+        tipo_attivita = contact.get("tipo_attivita", "")
         try:
             gcal_modalita = "videocall" if modalita == "videocall" else "in presenza"
             gcal_summary = f"Consulenza {gcal_modalita} - {nome}"
@@ -316,7 +322,6 @@ async def handle_crea_appuntamento(contact_id, args):
                 add_meet=(modalita == "videocall"),
             )
             
-            # Salva google_event_id e meet_link in Supabase
             update_data = {}
             if gcal_event.get("id"):
                 update_data["google_event_id"] = gcal_event["id"]

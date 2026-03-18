@@ -96,12 +96,31 @@ async def process_telegram_inbound(payload):
     )
 
 
+
+async def process_messenger_inbound(payload):
+    return await _process_channel(
+        channel="messenger",
+        contact_kwargs={"channel": "messenger", "channel_user_id": str(payload.get("channel_id", "")), "user_name": payload.get("sender_name", "")},
+        message_kwargs={"direction": "inbound", "sender_type": "contact", "content": payload.get("message_text", ""), "content_type": "text", "sender_name": payload.get("sender_name", "")},
+    )
+
+
+async def process_instagram_inbound(payload):
+    return await _process_channel(
+        channel="instagram",
+        contact_kwargs={"channel": "instagram", "channel_user_id": str(payload.get("channel_id", "")), "user_name": payload.get("sender_name", "")},
+        message_kwargs={"direction": "inbound", "sender_type": "contact", "content": payload.get("message_text", ""), "content_type": "text", "sender_name": payload.get("sender_name", "")},
+    )
+
+
 CHANNEL_PROCESSORS = {
     "whatsapp": process_whatsapp_inbound,
     "chatbot": process_chatbot_inbound,
     "email": process_email_inbound,
     "sms": process_sms_inbound,
     "telegram": process_telegram_inbound,
+    "messenger": process_messenger_inbound,
+    "instagram": process_instagram_inbound,
 }
 
 

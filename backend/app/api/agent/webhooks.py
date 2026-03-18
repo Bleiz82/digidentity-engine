@@ -2,6 +2,7 @@
 Agent Webhooks - Endpoint per ricevere messaggi dai canali + risposta AI.
 """
 
+from fastapi.responses import Response, JSONResponse
 from fastapi import APIRouter, HTTPException, Request
 from backend.app.services.agent.webhook_service import process_inbound
 from backend.app.services.agent.conversation_service import get_inbox, toggle_ai, close_conversation, get_conversation
@@ -459,3 +460,140 @@ async def patch_contact(contact_id: str, request: Request):
     if not contact:
         raise HTTPException(status_code=404, detail="Contatto non trovato")
     return contact
+
+
+# ═══════════════════════════════════════
+# META MESSENGER / INSTAGRAM WEBHOOK
+# ═══════════════════════════════════════
+
+@router.get("/webhook/meta")
+async def meta_verify(request: Request):
+    """Verifica webhook Meta (Messenger + Instagram Direct)."""
+    params = request.query_params
+    mode = params.get("hub.mode")
+    token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge")
+
+    if mode == "subscribe" and token == "digidentity_meta_secure_2026":
+        logger.info("Meta webhook verificato OK")
+        return Response(content=challenge, media_type="text/plain")
+    
+    logger.warning(f"Meta webhook verifica fallita: mode={mode}, token={token}")
+    return JSONResponse(status_code=403, content={"error": "Verifica fallita"})
+
+
+@router.post("/webhook/meta")
+async def meta_webhook(request: Request):
+    """Ricevi messaggi da Messenger e Instagram Direct."""
+    try:
+        body = await request.json()
+        logger.info(f"Meta webhook ricevuto: {body.get('object', 'unknown')}")
+
+        if body.get("object") not in ("page", "instagram"):
+            return {"status": "ignored"}
+
+        entries = body.get("entry", [])
+        for entry in entries:
+            messaging_list = entry.get("messaging", [])
+            
+            for event in messaging_list:
+                sender_id = event.get("sender", {}).get("id", "")
+                recipient_id = event.get("recipient", {}).get("id", "")
+                timestamp = event.get("timestamp", 0)
+                
+                # Determina canale
+                if body.get("object") == "instagram":
+                    channel = "instagram"
+                    channel_id_field = "instagram_id"
+                else:
+                    channel = "messenger"
+                    channel_id_field = "messenger_id"
+                
+                # Messaggio di testo
+                message = event.get("message", {})
+                if not message or message.get("is_echo"):
+                    continue
+                
+                text = message.get("text", "")
+                
+                # Gestisci allegati (immagini, audio, video, file)
+                attachments = message.get("attachments", [])
+                attachment_url = ""
+                attachment_type = ""
+                if attachments and not text:
+                    att = attachments[0]
+                    attachment_type = att.get("type", "")
+                    attachment_url = att.get("payload", {}).get("url", "")
+                    if not text:
+                        text = f"[{attachment_type}]"
+                
+                if not text and not attachment_url:
+                    continue
+                
+                # Normalizza payload per il sistema
+                normalized_payload = {
+                    "channel": channel,
+                    "channel_id": sender_id,
+                    "channel_id_field": channel_id_field,
+                    "sender_name": "",  # Meta non manda il nome nel webhook
+                    "message_text": text,
+                    "message_id": message.get("mid", ""),
+                    "timestamp": timestamp,
+                    "attachment_url": attachment_url,
+                    "attachment_type": attachment_type,
+                    "extra": {
+                        "recipient_id": recipient_id,
+                    }
+                }
+                
+                # Prova a recuperare il nome del sender via Graph API
+                try:
+                    from backend.app.core.config import settings
+                    import httpx
+                    token = settings.META_PAGE_ACCESS_TOKEN
+                    if token and channel == "messenger":
+                        async with httpx.AsyncClient() as client:
+                            resp = await client.get(
+                                f"https://graph.facebook.com/{sender_id}",
+                                params={"fields": "first_name,last_name", "access_token": token}
+                            )
+                            if resp.status_code == 200:
+                                data = resp.json()
+                                nome = data.get("first_name", "")
+                                cognome = data.get("last_name", "")
+                                normalized_payload["sender_name"] = f"{nome} {cognome}".strip()
+                except Exception as e:
+                    logger.debug(f"Meta: impossibile recuperare nome sender: {e}")
+                
+                result = await process_inbound(channel, normalized_payload)
+                conv = result["conversation"]
+                contact = result["contact"]
+
+                logger.info(f"Meta {channel} messaggio da {sender_id}: {text[:50]}")
+
+                # Genera risposta AI e invia
+                if conv.get("ai_enabled", True):
+                    try:
+                        ai_result = await generate_ai_response(
+                            conversation_id=conv["id"],
+                            contact_id=contact["id"],
+                            user_message=text,
+                            channel_type=channel,
+                        )
+
+                        delivery = await send_channel_response(
+                            channel_type=channel,
+                            contact=contact,
+                            message=ai_result["response"],
+                            conversation=conv,
+                        )
+                        logger.info(f"Meta {channel} AI delivery: {delivery.get('status')}")
+                    except Exception as ai_err:
+                        logger.error(f"Meta {channel} AI errore: {ai_err}")
+
+        return {"status": "ok"}
+    
+    except Exception as e:
+        logger.error(f"Meta webhook errore: {e}")
+        return {"status": "ok"}  # Sempre 200 per Meta
+

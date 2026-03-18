@@ -13,7 +13,10 @@ import {
     Settings,
     LogOut,
     Fingerprint,
-    Globe
+    Globe,
+    MessageSquare,
+    Contact,
+    CalendarDays
 } from 'lucide-react'
 
 const menuItems = [
@@ -26,6 +29,12 @@ const menuItems = [
     { href: '/provincie', label: 'Mappa Provincie', icon: MapPin },
     { href: '/costi-ai', label: 'Costi AI', icon: Cpu },
     { href: '/impostazioni', label: 'Impostazioni', icon: Settings },
+]
+
+const agentMenuItems = [
+    { href: '/inbox', label: 'Inbox', icon: MessageSquare },
+    { href: '/contatti', label: 'Contatti Agent', icon: Contact },
+    { href: '/calendario', label: 'Calendario', icon: CalendarDays },
 ]
 
 export default function Sidebar() {
@@ -55,6 +64,28 @@ export default function Sidebar() {
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {menuItems.map((item) => {
                     const isActive = pathname === item.href
+                    const Icon = item.icon
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
+                                ? 'bg-[#F90100]/10 text-[#F90100] border border-[#F90100]/30'
+                                : 'text-[#9CA3AF] hover:text-white hover:bg-[#1F1F1F]'
+                                }`}
+                        >
+                            <Icon className="w-5 h-5" />
+                            {item.label}
+                        </Link>
+                    )
+                })}
+
+                <div className="pt-4 pb-2 px-4">
+                    <p className="text-xs font-semibold text-[#F90100] uppercase tracking-wider">Digy Agent</p>
+                </div>
+
+                {agentMenuItems.map((item) => {
+                    const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
                     const Icon = item.icon
                     return (
                         <Link

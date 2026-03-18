@@ -2,7 +2,7 @@
 Agent Webhooks - Endpoint per ricevere messaggi dai canali + risposta AI.
 """
 
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import PlainTextResponse, Response, JSONResponse
 from fastapi import APIRouter, HTTPException, Request
 from backend.app.services.agent.webhook_service import process_inbound
 from backend.app.services.agent.conversation_service import get_inbox, toggle_ai, close_conversation, get_conversation
@@ -74,7 +74,7 @@ async def whatsapp_verify(request: Request):
     challenge = params.get("hub.challenge")
     if mode == "subscribe" and token == settings.WHATSAPP_VERIFY_TOKEN:
         logger.info("WhatsApp webhook verificato")
-        return int(challenge)
+        return PlainTextResponse(content=challenge, status_code=200)
     logger.warning("WhatsApp verifica fallita: token non valido")
     raise HTTPException(status_code=403, detail="Forbidden")
 

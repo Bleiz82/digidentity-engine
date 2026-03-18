@@ -1,5 +1,6 @@
 """
 Contact Service - Risolve o crea contatti da qualsiasi canale.
+Con match automatico engine_lead_id.
 """
 
 from typing import Optional, Dict, Any
@@ -21,6 +22,89 @@ CHANNEL_ID_FIELD = {
 }
 
 
+def _try_match_engine_lead(supabase, contact: dict) -> dict:
+    """
+    Cerca un lead nella tabella leads per email o telefono.
+    Se trova un match, aggiorna il contatto con engine_lead_id e i dati del lead.
+    Ritorna i campi da aggiornare (vuoto se nessun match).
+    """
+    if contact.get("engine_lead_id"):
+        return {}
+
+    lead = None
+
+    # Match per email
+    email = contact.get("email")
+    if email and email.strip():
+        result = supabase.table("leads").select("*").ilike("email", email.strip()).limit(1).execute()
+        if result.data and len(result.data) > 0:
+            lead = result.data[0]
+            logger.info(f"Lead match per email: {email} -> lead {lead['id']}")
+
+    # Match per telefono
+    if not lead:
+        telefono = contact.get("telefono")
+        if telefono and telefono.strip():
+            phone_clean = telefono.replace("+", "").replace(" ", "").replace("-", "")
+            # Prova match esatto
+            result = supabase.table("leads").select("*").eq("telefono", telefono).limit(1).execute()
+            if result.data and len(result.data) > 0:
+                lead = result.data[0]
+            else:
+                # Prova match parziale (ultime 10 cifre)
+                result = supabase.table("leads").select("*").ilike("telefono", f"%{phone_clean[-10:]}").limit(1).execute()
+                if result.data and len(result.data) > 0:
+                    lead = result.data[0]
+            if lead:
+                logger.info(f"Lead match per telefono: {telefono} -> lead {lead['id']}")
+
+    if not lead:
+        return {}
+
+    # Prepara aggiornamento contatto
+    update_data = {
+        "engine_lead_id": lead["id"],
+        "source": "engine",
+    }
+
+    # Importa dati dal lead se mancanti nel contatto
+    if not contact.get("nome") and lead.get("nome_contatto"):
+        update_data["nome"] = lead["nome_contatto"]
+    if not contact.get("email") and lead.get("email"):
+        update_data["email"] = lead["email"]
+    if not contact.get("telefono") and lead.get("telefono"):
+        update_data["telefono"] = lead["telefono"]
+    if not contact.get("nome_attivita") and lead.get("nome_azienda"):
+        update_data["nome_attivita"] = lead["nome_azienda"]
+    if not contact.get("tipo_attivita") and lead.get("settore_attivita"):
+        update_data["tipo_attivita"] = lead["settore_attivita"]
+    if not contact.get("indirizzo"):
+        parti = []
+        if lead.get("citta"):
+            parti.append(lead["citta"])
+        if lead.get("provincia"):
+            parti.append(f"({lead['provincia']})")
+        if parti:
+            update_data["indirizzo"] = " ".join(parti)
+
+    # Importa score diagnosi
+    if lead.get("score_totale") and lead["score_totale"] > 0:
+        update_data["has_diagnosi"] = True
+        update_data["diagnosi_score"] = lead["score_totale"]
+
+    # Importa status se il lead è più avanzato
+    lead_status = lead.get("status", "")
+    if lead_status in ("payment_confirmed", "converted", "premium_processing"):
+        update_data["lead_status"] = "qualified"
+        update_data["lead_score"] = max(contact.get("lead_score", 0), 7)
+    elif lead_status in ("free_report_sent", "analysis_complete"):
+        if contact.get("lead_status") == "new":
+            update_data["lead_status"] = "contacted"
+            update_data["lead_score"] = max(contact.get("lead_score", 0), 3)
+
+    return update_data
+
+
 async def resolve_contact(channel, channel_user_id, user_name=None, extra_data=None):
     supabase = get_supabase()
     field = CHANNEL_ID_FIELD.get(channel)
@@ -38,6 +122,13 @@ async def resolve_contact(channel, channel_user_id, user_name=None, extra_data=N
         }
         if user_name and not contact.get("nome"):
             update_data["nome"] = user_name
+
+        # Match automatico con lead engine (se non già collegato)
+        lead_match = _try_match_engine_lead(supabase, contact)
+        if lead_match:
+            update_data.update(lead_match)
+            logger.info(f"Contatto {contact['id']} collegato a lead {lead_match.get('engine_lead_id')}")
+
         supabase.table("contacts").update(update_data).eq("id", contact["id"]).execute()
         contact.update(update_data)
         return contact
@@ -66,6 +157,13 @@ async def resolve_contact(channel, channel_user_id, user_name=None, extra_data=N
             "ultimo_canale": channel,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
+
+        # Match automatico con lead engine
+        lead_match = _try_match_engine_lead(supabase, cross_contact)
+        if lead_match:
+            update_data.update(lead_match)
+            logger.info(f"Contatto {cross_contact['id']} collegato a lead {lead_match.get('engine_lead_id')}")
+
         supabase.table("contacts").update(update_data).eq("id", cross_contact["id"]).execute()
         cross_contact.update(update_data)
         return cross_contact
@@ -93,6 +191,15 @@ async def resolve_contact(channel, channel_user_id, user_name=None, extra_data=N
     if result.data and len(result.data) > 0:
         contact = result.data[0]
         logger.info(f"Nuovo contatto creato: {contact['id']} via {channel}")
+
+        # Match automatico con lead engine per il nuovo contatto
+        lead_match = _try_match_engine_lead(supabase, contact)
+        if lead_match:
+            lead_match["updated_at"] = datetime.now(timezone.utc).isoformat()
+            supabase.table("contacts").update(lead_match).eq("id", contact["id"]).execute()
+            contact.update(lead_match)
+            logger.info(f"Nuovo contatto {contact['id']} collegato a lead {lead_match.get('engine_lead_id')}")
+
         return contact
     raise Exception("Errore nella creazione del contatto")
 
@@ -149,9 +256,9 @@ async def get_contact_context(contact_id):
     apt_result = supabase.table("appointments").select("*").eq("contact_id", contact_id).in_("stato", ["confermato", "riprogrammato"]).order("data_ora", desc=False).limit(3).execute()
     context["appointments"] = apt_result.data or []
 
-    if contact.get("has_diagnosis") or contact.get("has_geo_audit"):
+    if contact.get("has_diagnosi") or contact.get("has_geo_audit"):
         context["scores"] = {
-            "diagnosis_score": contact.get("diagnosis_score"),
-            "geo_audit_score": contact.get("geo_audit_score"),
+            "diagnosi_score": contact.get("diagnosi_score"),
+            "geo_score": contact.get("geo_score"),
         }
     return context

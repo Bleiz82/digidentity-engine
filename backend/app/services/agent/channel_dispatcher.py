@@ -183,7 +183,7 @@ async def send_telegram_message(chat_id: str, message: str) -> dict:
 
 async def send_meta_message(recipient_id, message, channel_type="messenger"):
     """Invia messaggio via Meta Send API (Messenger o Instagram)."""
-    token = settings.META_PAGE_ACCESS_TOKEN
+    token = settings.INSTAGRAM_PAGE_ACCESS_TOKEN if channel_type == "instagram" and settings.INSTAGRAM_PAGE_ACCESS_TOKEN else settings.META_PAGE_ACCESS_TOKEN
     if not token:
         logger.warning("META_PAGE_ACCESS_TOKEN non configurato")
         return {"status": "skipped", "reason": "token_missing"}

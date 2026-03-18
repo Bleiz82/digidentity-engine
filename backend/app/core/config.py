@@ -73,6 +73,7 @@ class Settings:
     META_PAGE_ACCESS_TOKEN: str = os.getenv("META_PAGE_ACCESS_TOKEN", "")
     META_PAGE_ID: str = os.getenv("META_PAGE_ID", "")
     INSTAGRAM_ACCOUNT_ID: str = os.getenv("INSTAGRAM_ACCOUNT_ID", "")
+    INSTAGRAM_PAGE_ACCESS_TOKEN: str = os.getenv("INSTAGRAM_PAGE_ACCESS_TOKEN", "")
 
 
     # --- Google Calendar OAuth2 ---

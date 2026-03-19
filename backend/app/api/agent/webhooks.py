@@ -96,10 +96,23 @@ async def whatsapp_webhook(request: Request):
                 contacts = value.get("contacts", [])
 
                 if not messages:
-                    # Status update (delivered, read, etc.) - ignora per ora
+                    # Status update (delivered, read, etc.)
                     statuses = value.get("statuses", [])
-                    if statuses:
-                        logger.info("WhatsApp status update: " + statuses[0].get("status", ""))
+                    for st in statuses:
+                        wa_msg_id = st.get("id", "")
+                        status = st.get("status", "")
+                        if wa_msg_id and status in ("delivered", "read"):
+                            import httpx as _httpx
+                            _headers = {"apikey": settings.SUPABASE_KEY, "Authorization": f"Bearer {settings.SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "return=minimal"}
+                            _base = settings.SUPABASE_URL + "/rest/v1"
+                            async with _httpx.AsyncClient() as _client:
+                                if status == "delivered":
+                                    await _client.patch(f"{_base}/messages?channel_message_id=eq.{wa_msg_id}", json={"delivered": True}, headers=_headers)
+                                elif status == "read":
+                                    await _client.patch(f"{_base}/messages?channel_message_id=eq.{wa_msg_id}", json={"delivered": True, "read": True}, headers=_headers)
+                            logger.info(f"WhatsApp status: {wa_msg_id} -> {status}")
+                        else:
+                            logger.info(f"WhatsApp status update: {status}")
                     return {"status": "ok"}
 
                 msg = messages[0]
@@ -635,6 +648,19 @@ async def manual_send(conversation_id: str, request: Request):
 
     # Invia sul canale
     result = await send_channel_response(conv["channel_type"], contact, content, conv)
+    
+    # Aggiorna channel_message_id per tracking delivered/read
+    wa_msg_id = result.get("wa_message_id", "")
+    if wa_msg_id:
+        import httpx as _hx
+        _h = {"apikey": settings.SUPABASE_KEY, "Authorization": f"Bearer {settings.SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "return=minimal"}
+        async with _hx.AsyncClient() as _cl:
+            # Aggiorna l'ultimo messaggio outbound della conversazione
+            r = await _cl.get(f"{settings.SUPABASE_URL}/rest/v1/messages?conversation_id=eq.{conversation_id}&direction=eq.outbound&order=created_at.desc&limit=1&select=id", headers=_h)
+            msgs = r.json()
+            if msgs:
+                await _cl.patch(f"{settings.SUPABASE_URL}/rest/v1/messages?id=eq.{msgs[0]['id']}", json={"channel_message_id": wa_msg_id, "delivered": True}, headers=_h)
+    
     logger.info(f"Messaggio manuale inviato su {conv['channel_type']} per conv {conversation_id}: {result}")
     return {"status": "sent", "channel": conv["channel_type"], "result": result}
 
@@ -746,6 +772,16 @@ async def upload_and_send(conversation_id: str, request: Request):
     
     # Invia sul canale
     result = await send_channel_media(conv["channel_type"], contact, media_url, media_type, caption, file.filename or "")
+    
+    # Aggiorna channel_message_id per tracking delivered/read
+    wa_msg_id = result.get("wa_message_id", "")
+    if wa_msg_id:
+        async with httpx.AsyncClient() as _cl:
+            r = await _cl.get(f"{base}/messages?conversation_id=eq.{conversation_id}&direction=eq.outbound&order=created_at.desc&limit=1&select=id", headers=headers)
+            msgs = r.json()
+            if msgs:
+                await _cl.patch(f"{base}/messages?id=eq.{msgs[0]['id']}", json={"channel_message_id": wa_msg_id, "delivered": True}, headers={**headers, "Content-Type": "application/json", "Prefer": "return=minimal"})
+    
     logger.info(f"Media inviato su {conv['channel_type']} per conv {conversation_id}: {result}")
     
     return {"status": "sent", "media_url": media_url, "channel": conv["channel_type"], "result": result}

@@ -452,7 +452,7 @@ export default function ContattiPage() {
                                                     return (
                                                         <Link
                                                             key={conv.id}
-                                                            href="/inbox"
+                                                            href={`/inbox?conv=${conv.id}`}
                                                             className="flex items-center gap-3 bg-[#1F1F1F] rounded-xl p-3 hover:bg-[#2D2D2D] transition-colors"
                                                         >
                                                             <Icon className={`w-4 h-4 ${channelColors[conv.channel_type]?.split(' ')[0] || 'text-gray-400'}`} />

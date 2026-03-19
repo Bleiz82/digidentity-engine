@@ -58,6 +58,15 @@ export default function InboxPage() {
     const [filterStatus, setFilterStatus] = useState<string>('all')
     const [mobileShowChat, setMobileShowChat] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search)
+        const convId = params.get("conv")
+        if (convId && conversations.length > 0 && !selectedConv) {
+            setSelectedConv(convId)
+        }
+    }, [conversations])
+
     const inputRef = useRef<HTMLTextAreaElement>(null)
 
     useEffect(() => {

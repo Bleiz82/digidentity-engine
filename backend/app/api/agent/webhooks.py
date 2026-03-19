@@ -597,3 +597,43 @@ async def meta_webhook(request: Request):
         logger.error(f"Meta webhook errore: {e}")
         return {"status": "ok"}  # Sempre 200 per Meta
 
+
+
+# ── Invio manuale operatore ──────────────────────────────────────
+
+
+# ── Invio manuale operatore ──────────────────────────────────────
+@router.post("/conversations/{conversation_id}/send")
+async def manual_send(conversation_id: str, request: Request):
+    """Invia un messaggio manuale dall'operatore sul canale della conversazione."""
+    import httpx
+    from backend.app.core.config import settings
+    from backend.app.services.agent.channel_dispatcher import send_channel_response
+
+    body = await request.json()
+    content = body.get("content", "").strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Contenuto vuoto")
+
+    headers = {"apikey": settings.SUPABASE_KEY, "Authorization": f"Bearer {settings.SUPABASE_KEY}"}
+    base = settings.SUPABASE_URL + "/rest/v1"
+
+    async with httpx.AsyncClient() as client:
+        # Recupera conversazione
+        r = await client.get(f"{base}/conversations?id=eq.{conversation_id}&select=*", headers=headers)
+        convs = r.json()
+        if not convs:
+            raise HTTPException(status_code=404, detail="Conversazione non trovata")
+        conv = convs[0]
+
+        # Recupera contatto
+        r2 = await client.get(f"{base}/contacts?id=eq.{conv['contact_id']}&select=*", headers=headers)
+        contacts = r2.json()
+        if not contacts:
+            raise HTTPException(status_code=404, detail="Contatto non trovato")
+        contact = contacts[0]
+
+    # Invia sul canale
+    result = await send_channel_response(conv["channel_type"], contact, content, conv)
+    logger.info(f"Messaggio manuale inviato su {conv['channel_type']} per conv {conversation_id}: {result}")
+    return {"status": "sent", "channel": conv["channel_type"], "result": result}

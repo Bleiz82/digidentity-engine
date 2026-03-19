@@ -37,3 +37,4 @@ logs/
 
 # Stripe CLI
 stripe-cli
+uploads/

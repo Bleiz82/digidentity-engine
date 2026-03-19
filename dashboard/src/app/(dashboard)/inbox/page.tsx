@@ -18,7 +18,12 @@ import {
     Hash,
     Smartphone,
     Globe,
-    AtSign
+    AtSign,
+    Paperclip,
+    Mic,
+    FileText,
+    Download,
+    Image
 } from 'lucide-react'
 
 const channelIcons: Record<string, any> = {
@@ -52,6 +57,8 @@ export default function InboxPage() {
     const [loading, setLoading] = useState(true)
     const [loadingMessages, setLoadingMessages] = useState(false)
     const [newMessage, setNewMessage] = useState('')
+    const [uploadFile, setUploadFile] = useState<File | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
     const [sending, setSending] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const [filterChannel, setFilterChannel] = useState<string>('all')
@@ -151,7 +158,7 @@ export default function InboxPage() {
     }
 
     const sendManualMessage = async () => {
-        if (!newMessage.trim() || !selectedConv || sending) return
+        if ((!newMessage.trim() && !uploadFile) || !selectedConv || sending) return
 
         const conv = conversations.find(c => c.id === selectedConv)
         if (!conv) return
@@ -202,6 +209,7 @@ export default function InboxPage() {
                 .eq('id', selectedConv)
 
             setNewMessage('')
+            setUploadFile(null)
             fetchMessages(selectedConv)
             fetchConversations()
         } catch (err) {
@@ -483,11 +491,38 @@ export default function InboxPage() {
                                                             </span>
                                                         </div>
                                                     )}
-                                                    {msg.media_transcription && (
+                                                    {/* Media content */}
+                                                    {msg.content_type === 'audio' && msg.media_url && (
+                                                        <div className="mb-2">
+                                                            <div className="flex items-center gap-2 text-[10px] text-[#6B7280] mb-1 italic">
+                                                                <Mic className="w-3 h-3" />
+                                                                Messaggio vocale
+                                                            </div>
+                                                            <audio controls className="w-full max-w-[280px] h-8" style={{ filter: 'invert(1) hue-rotate(180deg)' }}>
+                                                                <source src={msg.media_url} />
+                                                            </audio>
+                                                        </div>
+                                                    )}
+                                                    {msg.content_type === 'audio' && !msg.media_url && msg.media_transcription && (
                                                         <div className="text-[10px] text-[#6B7280] mb-1 italic flex items-center gap-1">
-                                                            <Phone className="w-3 h-3" />
+                                                            <Mic className="w-3 h-3" />
                                                             Vocale trascritto
                                                         </div>
+                                                    )}
+                                                    {msg.content_type === 'image' && msg.media_url && (
+                                                        <div className="mb-2">
+                                                            <img src={msg.media_url} alt="Immagine" className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(msg.media_url ?? "", '_blank')} />
+                                                        </div>
+                                                    )}
+                                                    {msg.content_type === 'document' && msg.media_url && (
+                                                        <a href={msg.media_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-[#2D2D2D] rounded-lg px-3 py-2 mb-2 hover:bg-[#3D3D3D] transition-colors">
+                                                            <FileText className="w-5 h-5 text-blue-400" />
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-xs text-white truncate">Documento</p>
+                                                                <p className="text-[10px] text-[#6B7280]">Clicca per aprire</p>
+                                                            </div>
+                                                            <Download className="w-4 h-4 text-[#6B7280]" />
+                                                        </a>
                                                     )}
                                                     <p className="text-sm text-white whitespace-pre-wrap break-words">
                                                         {msg.media_transcription || msg.content}
@@ -518,7 +553,35 @@ export default function InboxPage() {
                                         <p className="text-sm">AI attiva — Disattiva l&apos;AI per rispondere manualmente</p>
                                     </div>
                                 ) : (
-                                    <div className="flex items-end gap-3">
+                                    <div className="flex flex-col gap-2">
+                                        {/* File preview */}
+                                        {uploadFile && (
+                                            <div className="flex items-center gap-2 bg-[#1F1F1F] rounded-lg px-3 py-2">
+                                                <FileText className="w-4 h-4 text-blue-400" />
+                                                <span className="text-xs text-white truncate flex-1">{uploadFile.name}</span>
+                                                <span className="text-[10px] text-[#6B7280]">{(uploadFile.size / 1024).toFixed(0)} KB</span>
+                                                <button onClick={() => setUploadFile(null)} className="text-[#6B7280] hover:text-red-400 text-xs">✕</button>
+                                            </div>
+                                        )}
+                                        <div className="flex items-end gap-2">
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            className="hidden"
+                                            accept="image/*,application/pdf,.doc,.docx,.txt,.csv"
+                                            onChange={(e) => {
+                                                const f = e.target.files?.[0]
+                                                if (f) setUploadFile(f)
+                                                e.target.value = ''
+                                            }}
+                                        />
+                                        <button
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="flex-shrink-0 w-11 h-11 bg-[#1F1F1F] border border-[#2D2D2D] rounded-xl flex items-center justify-center text-[#6B7280] hover:text-white hover:border-[#F90100]/50 transition-all"
+                                            title="Allega file"
+                                        >
+                                            <Paperclip className="w-5 h-5" />
+                                        </button>
                                         <textarea
                                             ref={inputRef}
                                             value={newMessage}
@@ -540,6 +603,7 @@ export default function InboxPage() {
                                                 <Send className="w-5 h-5" />
                                             )}
                                         </button>
+                                    </div>
                                     </div>
                                 )}
                             </div>

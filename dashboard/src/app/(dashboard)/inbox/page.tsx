@@ -165,37 +165,54 @@ export default function InboxPage() {
 
         setSending(true)
         try {
-            // Salva il messaggio in Supabase
-            const { error: msgError } = await supabase
-                .from('messages')
-                .insert({
-                    conversation_id: selectedConv,
-                    contact_id: conv.contact_id,
-                    direction: 'outbound',
-                    sender_type: 'operator',
-                    sender_name: 'Stefano',
-                    content: newMessage.trim(),
-                    content_type: 'text',
-                    channel_type: conv.channel_type,
-                    delivered: false,
-                    read: false,
-                    metadata: {}
+            // Se c'e' un file, usa l'endpoint upload
+            if (uploadFile) {
+                const formData = new FormData()
+                formData.append('file', uploadFile)
+                if (newMessage.trim()) formData.append('caption', newMessage.trim())
+                
+                const res = await fetch('https://agent.digidentityagency.it/api/agent/conversations/' + selectedConv + '/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                
+                if (!res.ok) {
+                    console.warn('Upload fallito')
+                }
+            } else {
+                // Invio testo normale
+                // Salva il messaggio in Supabase
+                const { error: msgError } = await supabase
+                    .from('messages')
+                    .insert({
+                        conversation_id: selectedConv,
+                        contact_id: conv.contact_id,
+                        direction: 'outbound',
+                        sender_type: 'operator',
+                        sender_name: 'Stefano',
+                        content: newMessage.trim(),
+                        content_type: 'text',
+                        channel_type: conv.channel_type,
+                        delivered: false,
+                        read: false,
+                        metadata: {}
+                    })
+
+                if (msgError) throw msgError
+
+                // Invia tramite API agent
+                const res = await fetch('https://agent.digidentityagency.it/api/agent/conversations/' + selectedConv + '/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: newMessage.trim(),
+                        sender_name: 'Stefano'
+                    })
                 })
 
-            if (msgError) throw msgError
-
-            // Invia tramite API agent
-            const res = await fetch('https://agent.digidentityagency.it/api/agent/conversations/' + selectedConv + '/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    content: newMessage.trim(),
-                    sender_name: 'Stefano'
-                })
-            })
-
-            if (!res.ok) {
-                console.warn('Invio canale fallito, messaggio salvato in DB')
+                if (!res.ok) {
+                    console.warn('Invio canale fallito, messaggio salvato in DB')
+                }
             }
 
             // Aggiorna conversazione
@@ -203,7 +220,7 @@ export default function InboxPage() {
                 .from('conversations')
                 .update({
                     last_message_at: new Date().toISOString(),
-                    last_message_preview: newMessage.trim().substring(0, 100),
+                    last_message_preview: uploadFile ? (uploadFile.name || 'File') : newMessage.trim().substring(0, 100),
                     total_messages: conv.total_messages + 1
                 })
                 .eq('id', selectedConv)

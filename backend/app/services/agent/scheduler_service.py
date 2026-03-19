@@ -12,7 +12,7 @@ from backend.app.services.agent.email_inbound_service import check_email_inbound
 
 logger = logging.getLogger(__name__)
 
-REMINDER_CHECK_INTERVAL = 60  # secondi
+REMINDER_CHECK_INTERVAL = 1200  # secondi
 FOLLOWUP_CHECK_INTERVAL = 300  # secondi
 
 

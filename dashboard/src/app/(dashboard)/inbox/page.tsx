@@ -58,6 +58,56 @@ export default function InboxPage() {
     const [loadingMessages, setLoadingMessages] = useState(false)
     const [newMessage, setNewMessage] = useState('')
     const [uploadFile, setUploadFile] = useState<File | null>(null)
+    const [isRecording, setIsRecording] = useState(false)
+    const [recordingTime, setRecordingTime] = useState(0)
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+    const audioChunksRef = useRef<Blob[]>([])
+    const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm'
+            const mr = new MediaRecorder(stream, { mimeType })
+            mediaRecorderRef.current = mr
+            audioChunksRef.current = []
+            mr.ondataavailable = (e: BlobEvent) => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
+            mr.onstop = async () => {
+                stream.getTracks().forEach(t => t.stop())
+                const blob = new Blob(audioChunksRef.current, { type: 'audio/ogg' })
+                const file = new File([blob], 'vocale.ogg', { type: 'audio/ogg' })
+                if (selectedConv && blob.size > 0) {
+                    setSending(true)
+                    try {
+                        const fd = new FormData()
+                        fd.append('file', file)
+                        fd.append('caption', 'Messaggio vocale')
+                        const res = await fetch('https://agent.digidentityagency.it/api/agent/conversations/' + selectedConv + '/upload', { method: 'POST', body: fd })
+                        if (res.ok) {
+                            const cv = conversations.find(c => c.id === selectedConv)
+                            if (cv) await supabase.from('conversations').update({ last_message_at: new Date().toISOString(), last_message_preview: 'Vocale', total_messages: cv.total_messages + 1 }).eq('id', selectedConv)
+                            fetchMessages(selectedConv)
+                            fetchConversations()
+                        }
+                    } catch (err) { console.error('Errore invio vocale:', err) }
+                    finally { setSending(false) }
+                }
+            }
+            mr.start()
+            setIsRecording(true)
+            setRecordingTime(0)
+            recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000)
+        } catch (err) { console.error('Errore microfono:', err) }
+    }
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop()
+            setIsRecording(false)
+            if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null }
+            setRecordingTime(0)
+        }
+    }
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [sending, setSending] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
@@ -611,7 +661,7 @@ export default function InboxPage() {
                                         />
                                         <button
                                             onClick={sendManualMessage}
-                                            disabled={!newMessage.trim() || sending}
+                                            disabled={(!newMessage.trim() && !uploadFile) || sending}
                                             className="flex-shrink-0 w-11 h-11 bg-[#F90100] rounded-xl flex items-center justify-center text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F90100]/80 transition-all"
                                         >
                                             {sending ? (
@@ -620,7 +670,21 @@ export default function InboxPage() {
                                                 <Send className="w-5 h-5" />
                                             )}
                                         </button>
+                                        <button
+                                            onClick={() => isRecording ? stopRecording() : startRecording()}
+                                            className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 animate-pulse scale-110' : 'bg-[#1F1F1F] border border-[#2D2D2D] text-[#6B7280] hover:text-white hover:border-[#F90100]/50'}`}
+                                            title="Clicca per registrare / fermare"
+                                        >
+                                            <Mic className="w-5 h-5" />
+                                        </button>
                                     </div>
+                                    {isRecording && (
+                                        <div className="flex items-center gap-2 mt-2 px-2">
+                                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                            <span className="text-xs text-red-400 font-medium">Registrazione... {recordingTime}s</span>
+                                            <span className="text-[10px] text-[#6B7280]">Clicca il microfono per fermare e inviare</span>
+                                        </div>
+                                    )}
                                     </div>
                                 )}
                             </div>

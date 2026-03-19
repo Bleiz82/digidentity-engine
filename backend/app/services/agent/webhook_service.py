@@ -34,7 +34,10 @@ async def _process_channel(channel, contact_kwargs, message_kwargs, media_kwargs
                 message_kwargs["content"] = original + " [Analisi: " + transcription + "]"
             else:
                 message_kwargs["content"] = transcription
-        logger.info(f"Media processato: {media_result.get('type', 'unknown')} - {len(transcription)} caratteri")
+        if media_result.get("media_url"):
+            message_kwargs["media_url"] = media_result["media_url"]
+            message_kwargs["media_mime_type"] = {"audio": "audio/ogg", "image": "image/jpeg", "video": "video/mp4", "document": "application/pdf"}.get(content_type, "application/octet-stream")
+        logger.info(f"Media processato: {media_result.get('type', 'unknown')} - {len(transcription)} caratteri - url: {media_result.get('media_url', 'N/A')}")
 
     msg = await save_message(**message_kwargs)
     return {"contact": contact, "conversation": conversation, "message": msg}

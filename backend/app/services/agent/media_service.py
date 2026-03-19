@@ -6,6 +6,7 @@ import httpx
 import tempfile
 import logging
 import os
+import uuid
 from openai import AsyncOpenAI
 from backend.app.core.config import settings
 
@@ -129,6 +130,28 @@ async def analyze_document(doc_bytes, filename="document.pdf", context=""):
         return "[Documento " + filename + " ricevuto]"
 
 
+
+UPLOADS_DIR = "/home/digidentity-v2/uploads"
+BASE_URL = "https://agent.digidentityagency.it/uploads"
+
+def save_media_file(media_bytes, content_type, filename=None):
+    """Salva il file media su disco e ritorna l'URL pubblico."""
+    ext_map = {"audio": ".ogg", "image": ".jpg", "video": ".mp4", "document": ".pdf"}
+    if filename:
+        ext = os.path.splitext(filename)[1] or ext_map.get(content_type, ".bin")
+    else:
+        ext = ext_map.get(content_type, ".bin")
+    uid = uuid.uuid4().hex[:12]
+    safe_name = uid + ext
+    subdir = os.path.join(UPLOADS_DIR, content_type)
+    os.makedirs(subdir, exist_ok=True)
+    filepath = os.path.join(subdir, safe_name)
+    with open(filepath, "wb") as f:
+        f.write(media_bytes)
+    url = f"{BASE_URL}/{content_type}/{safe_name}"
+    logger.info(f"Media salvato: {filepath} -> {url}")
+    return url
+
 async def process_media(content_type, channel, media_id=None, media_url=None, file_id=None, filename=None, context=""):
     try:
         media_bytes = None
@@ -139,18 +162,21 @@ async def process_media(content_type, channel, media_id=None, media_url=None, fi
         elif media_url:
             media_bytes = await download_media_from_url(media_url)
         if not media_bytes:
-            return {"transcription": "[Media " + content_type + " ricevuto ma non scaricabile]", "processed": False}
+            return {"transcription": "[Media " + content_type + " ricevuto ma non scaricabile]", "processed": False, "media_url": None}
+        
+        # Salva il file e ottieni URL pubblico
+        saved_url = save_media_file(media_bytes, content_type, filename)
         if content_type == "audio":
             transcription = await transcribe_audio(media_bytes, filename or "audio.ogg")
-            return {"transcription": transcription, "processed": True, "type": "whisper"}
+            return {"transcription": transcription, "processed": True, "type": "whisper", "media_url": saved_url}
         elif content_type == "image":
             analysis = await analyze_image(image_bytes=media_bytes, context=context)
-            return {"transcription": analysis, "processed": True, "type": "vision"}
+            return {"transcription": analysis, "processed": True, "type": "vision", "media_url": saved_url}
         elif content_type == "document":
             summary = await analyze_document(media_bytes, filename or "document.pdf", context)
-            return {"transcription": summary, "processed": True, "type": "document"}
+            return {"transcription": summary, "processed": True, "type": "document", "media_url": saved_url}
         elif content_type == "video":
-            return {"transcription": "[Video ricevuto]", "processed": False, "type": "video"}
+            return {"transcription": "[Video ricevuto]", "processed": False, "type": "video", "media_url": saved_url}
         else:
             return {"transcription": "[Media " + content_type + " ricevuto]", "processed": False}
     except Exception as e:

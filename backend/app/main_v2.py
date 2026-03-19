@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 
 from backend.app.core.config import settings
@@ -77,6 +78,7 @@ app.include_router(payment_router)
 
 # Nuovo router agente
 app.include_router(agent_router)
+app.mount("/uploads", StaticFiles(directory="/home/digidentity-v2/uploads"), name="uploads")
 
 
 @app.get("/")

@@ -220,6 +220,84 @@ async def send_meta_message(recipient_id, message, channel_type="messenger"):
 # DISPATCHER GENERICO
 # ============================================================
 
+
+
+async def send_whatsapp_media(phone: str, media_url: str, media_type: str = "document", caption: str = "", filename: str = "") -> dict:
+    """Invia media via WhatsApp Cloud API."""
+    if not settings.WHATSAPP_ACCESS_TOKEN:
+        return {"status": "skipped", "reason": "token_missing"}
+    clean_phone = phone.replace("+", "").replace(" ", "").replace("-", "")
+    url = f"https://graph.facebook.com/{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+    headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}", "Content-Type": "application/json"}
+    # WhatsApp media types: image, document, audio, video
+    wa_type = media_type if media_type in ("image", "audio", "video", "sticker") else "document"
+    media_obj = {"link": media_url}
+    if caption and wa_type not in ("audio", "voice"):
+        media_obj["caption"] = caption
+    if wa_type == "document" and filename:
+        media_obj["filename"] = filename
+    payload = {"messaging_product": "whatsapp", "recipient_type": "individual", "to": clean_phone, "type": wa_type, wa_type: media_obj}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(url, json=payload, headers=headers)
+            result = response.json()
+            if response.status_code == 200:
+                wa_msg_id = result.get("messages", [{}])[0].get("id", "")
+                logger.info(f"WhatsApp media inviato a {clean_phone}: {wa_msg_id}")
+                return {"status": "sent", "wa_message_id": wa_msg_id}
+            else:
+                logger.error(f"WhatsApp media errore: {result}")
+                return {"status": "error", "detail": result}
+    except Exception as e:
+        logger.error(f"WhatsApp media eccezione: {e}")
+        return {"status": "error", "detail": str(e)}
+
+
+async def send_telegram_media(chat_id: str, media_url: str, media_type: str = "document", caption: str = "", filename: str = "") -> dict:
+    """Invia media via Telegram Bot API."""
+    token = settings.TELEGRAM_BOT_TOKEN
+    if not token:
+        return {"status": "skipped", "reason": "token_missing"}
+    method_map = {"image": "sendPhoto", "audio": "sendVoice", "video": "sendVideo", "document": "sendDocument"}
+    method = method_map.get(media_type, "sendDocument")
+    field_map = {"sendPhoto": "photo", "sendVoice": "voice", "sendAudio": "audio", "sendVideo": "video", "sendDocument": "document"}
+    field = field_map[method]
+    payload = {"chat_id": chat_id, field: media_url}
+    if caption:
+        payload["caption"] = caption
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(f"https://api.telegram.org/bot{token}/{method}", json=payload)
+            result = resp.json()
+            if result.get("ok"):
+                logger.info(f"Telegram media inviato a {chat_id}")
+                return {"status": "sent"}
+            else:
+                logger.error(f"Telegram media errore: {result}")
+                return {"status": "error", "detail": result}
+    except Exception as e:
+        logger.error(f"Telegram media eccezione: {e}")
+        return {"status": "error", "detail": str(e)}
+
+
+async def send_channel_media(channel_type: str, contact: dict, media_url: str, media_type: str, caption: str = "", filename: str = "") -> dict:
+    """Dispatcher media - invia file/immagine al canale corretto."""
+    if channel_type == "whatsapp":
+        phone = contact.get("telefono") or contact.get("whatsapp_phone") or contact.get("sms_phone")
+        if not phone:
+            return {"status": "error", "detail": "Nessun numero"}
+        return await send_whatsapp_media(phone, media_url, media_type, caption, filename)
+    elif channel_type == "telegram":
+        tid = contact.get("telegram_id")
+        if not tid:
+            return {"status": "error", "detail": "Nessun telegram_id"}
+        return await send_telegram_media(tid, media_url, media_type, caption, filename)
+    else:
+        # Per messenger/instagram/email: invia come testo con link
+        msg = caption + "\n" + media_url if caption else media_url
+        from backend.app.services.agent.channel_dispatcher import send_channel_response
+        return await send_channel_response(channel_type, contact, msg)
+
 async def send_channel_response(channel_type: str, contact: dict, message: str, conversation: dict = None) -> dict:
     """Dispatcher — invia la risposta al canale corretto."""
     

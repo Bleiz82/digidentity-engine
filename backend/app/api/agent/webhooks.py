@@ -637,3 +637,115 @@ async def manual_send(conversation_id: str, request: Request):
     result = await send_channel_response(conv["channel_type"], contact, content, conv)
     logger.info(f"Messaggio manuale inviato su {conv['channel_type']} per conv {conversation_id}: {result}")
     return {"status": "sent", "channel": conv["channel_type"], "result": result}
+
+
+# ── Upload e invio media dall'operatore ──────────────────────────────────────
+@router.post("/conversations/{conversation_id}/upload")
+async def upload_and_send(conversation_id: str, request: Request):
+    """Riceve un file dall'operatore, lo salva e lo invia sul canale."""
+    import httpx
+    import os
+    import uuid
+    from backend.app.core.config import settings
+    from backend.app.services.agent.channel_dispatcher import send_channel_media
+
+    form = await request.form()
+    file = form.get("file")
+    caption = form.get("caption", "")
+    
+    if not file:
+        raise HTTPException(status_code=400, detail="Nessun file")
+    
+    # Determina tipo
+    content_type_map = {
+        "image/jpeg": "image", "image/png": "image", "image/gif": "image", "image/webp": "image",
+        "application/pdf": "document", "application/msword": "document",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "document",
+        "text/plain": "document", "text/csv": "document",
+        "audio/ogg": "audio", "audio/mpeg": "audio", "audio/wav": "audio",
+        "video/mp4": "video",
+    }
+    mime = file.content_type or "application/octet-stream"
+    media_type = content_type_map.get(mime, "document")
+    
+    # Salva file
+    ext = os.path.splitext(file.filename or "file")[1] or ".bin"
+    uid = uuid.uuid4().hex[:12]
+    safe_name = uid + ext
+    subdir = os.path.join("/home/digidentity-v2/uploads", media_type)
+    os.makedirs(subdir, exist_ok=True)
+    filepath = os.path.join(subdir, safe_name)
+    
+    file_bytes = await file.read()
+    with open(filepath, "wb") as f:
+        f.write(file_bytes)
+    
+    # Converti audio WebM -> OGG Opus
+    if media_type == "audio":
+        import subprocess
+        # Rinomina originale in .webm
+        webm_path = os.path.join(subdir, uid + ".webm")
+        os.rename(filepath, webm_path)
+        ogg_name = uid + ".opus"
+        ogg_path = os.path.join(subdir, ogg_name)
+        try:
+            result = subprocess.run(["ffmpeg", "-y", "-i", webm_path, "-c:a", "libopus", "-b:a", "64k", "-vbr", "on", "-compression_level", "10", "-application", "voip", ogg_path], capture_output=True, timeout=30)
+            if os.path.exists(ogg_path) and os.path.getsize(ogg_path) > 0:
+                os.remove(webm_path)
+                filepath = ogg_path
+                safe_name = ogg_name
+                logger.info(f"Audio convertito in OGG Opus: {ogg_path}")
+            else:
+                logger.warning(f"ffmpeg fallito: {result.stderr.decode()}")
+                os.rename(webm_path, filepath)
+        except Exception as e:
+            logger.warning(f"ffmpeg errore: {e}")
+            if os.path.exists(webm_path):
+                os.rename(webm_path, filepath)
+    
+    media_url = f"https://agent.digidentityagency.it/uploads/{media_type}/{safe_name}"
+    
+    # Recupera conversazione e contatto
+    headers = {"apikey": settings.SUPABASE_KEY, "Authorization": f"Bearer {settings.SUPABASE_KEY}"}
+    base = settings.SUPABASE_URL + "/rest/v1"
+    
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{base}/conversations?id=eq.{conversation_id}&select=*", headers=headers)
+        convs = r.json()
+        if not convs:
+            raise HTTPException(status_code=404, detail="Conversazione non trovata")
+        conv = convs[0]
+        
+        r2 = await client.get(f"{base}/contacts?id=eq.{conv['contact_id']}&select=*", headers=headers)
+        contacts = r2.json()
+        if not contacts:
+            raise HTTPException(status_code=404, detail="Contatto non trovato")
+        contact = contacts[0]
+        
+        # Salva messaggio in Supabase
+        msg_data = {
+            "conversation_id": conversation_id,
+            "contact_id": conv["contact_id"],
+            "direction": "outbound",
+            "sender_type": "operator",
+            "sender_name": "Stefano",
+            "content": caption or file.filename or "File",
+            "content_type": media_type,
+            "media_url": media_url,
+            "media_mime_type": mime,
+            "channel_type": conv["channel_type"],
+            "delivered": False,
+            "read": False,
+            "metadata": {}
+        }
+        await client.post(f"{base}/messages", json=msg_data, headers={**headers, "Content-Type": "application/json", "Prefer": "return=minimal"})
+        
+        # Aggiorna conversazione
+        update_data = {"last_message_at": __import__('datetime').datetime.utcnow().isoformat(), "last_message_preview": caption or file.filename or "File inviato"}
+        await client.patch(f"{base}/conversations?id=eq.{conversation_id}", json=update_data, headers={**headers, "Content-Type": "application/json", "Prefer": "return=minimal"})
+    
+    # Invia sul canale
+    result = await send_channel_media(conv["channel_type"], contact, media_url, media_type, caption, file.filename or "")
+    logger.info(f"Media inviato su {conv['channel_type']} per conv {conversation_id}: {result}")
+    
+    return {"status": "sent", "media_url": media_url, "channel": conv["channel_type"], "result": result}

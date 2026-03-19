@@ -156,7 +156,7 @@ export default function InboxPage() {
                     conversation_id: selectedConv,
                     contact_id: conv.contact_id,
                     direction: 'outbound',
-                    sender_type: 'agent',
+                    sender_type: 'operator',
                     sender_name: 'Stefano',
                     content: newMessage.trim(),
                     content_type: 'text',

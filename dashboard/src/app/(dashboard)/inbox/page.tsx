@@ -23,6 +23,8 @@ import {
     Mic,
     FileText,
     Download,
+    Check,
+    CheckCheck,
     Image
 } from 'lucide-react'
 
@@ -602,6 +604,13 @@ export default function InboxPage() {
                                                             <span className="text-[10px] text-[#6B7280]">
                                                                 {msg.ai_tokens_used} tok
                                                             </span>
+                                                        )}
+                                                        {msg.direction === 'outbound' && (
+                                                            msg.read
+                                                                ? <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
+                                                                : msg.delivered
+                                                                    ? <CheckCheck className="w-3.5 h-3.5 text-[#6B7280]" />
+                                                                    : <Check className="w-3.5 h-3.5 text-[#6B7280]" />
                                                         )}
                                                     </div>
                                                 </div>

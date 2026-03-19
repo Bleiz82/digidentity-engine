@@ -495,11 +495,37 @@ export default function CalendarioPage() {
                                 {selectedAppointment.note && (
                                     <div className="flex items-start gap-2 text-[#9CA3AF]"><FileText className="w-4 h-4 mt-0.5" /><span>{selectedAppointment.note}</span></div>
                                 )}
-                                {selectedAppointment.meet_link || selectedAppointment.hangout_link && (
-                                    <a href={selectedAppointment.meet_link || selectedAppointment.hangout_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-400 hover:underline">
+                                {(selectedAppointment.meet_link || selectedAppointment.hangout_link) && (
+                                    <a href={(selectedAppointment.meet_link || selectedAppointment.hangout_link) ?? undefined} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-400 hover:underline">
                                         <Video className="w-4 h-4" />Google Meet
                                     </a>
                                 )}
+
+                            {/* Azioni */}
+                            <div className="flex gap-2 mt-6 pt-4 border-t border-[#1F1F1F]">
+                                {selectedAppointment.stato !== 'cancellato' && (
+                                    <button
+                                        onClick={async () => {
+                                            await supabase.from('appointments').update({ stato: 'cancellato' }).eq('id', selectedAppointment.id)
+                                            setSelectedAppointment(null)
+                                            fetchAppointments()
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-400 border border-red-400/30 rounded-xl hover:bg-red-400/10 transition-colors"
+                                    >
+                                        <XCircle className="w-4 h-4" />Cancella
+                                    </button>
+                                )}
+                                <button
+                                    onClick={async () => {
+                                        await supabase.from('appointments').update({ deleted_at: new Date().toISOString() }).eq('id', selectedAppointment.id)
+                                        setSelectedAppointment(null)
+                                        fetchAppointments()
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#6B7280] border border-[#2D2D2D] rounded-xl hover:bg-[#1F1F1F] transition-colors"
+                                >
+                                    <X className="w-4 h-4" />Elimina
+                                </button>
+                            </div>
                             </div>
                         </div>
                     </div>

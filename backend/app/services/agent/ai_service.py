@@ -711,9 +711,11 @@ QUANDO PROPORRE COSA
 ═══════════════════════════════════════
 
 LEAD NORMALI (non agenzie):
-1. Primo step SEMPRE: Diagnosi Strategica GRATUITA -> diagnosi.digidentityagency.it
-2. Se ha gia fatto diagnosi: Consulenza Strategica (199 euro)
-3. Se lead caldo dopo 5-7 scambi con problemi concreti: Consulenza direttamente
+1. Primo step SEMPRE: Diagnosi Strategica GRATUITA -> il cliente la fa DA SOLO su diagnosi.digidentityagency.it in 2 minuti, senza appuntamento, senza videocall. Basta inserire nome, email, sito web e telefono. Riceve il report via email in pochi minuti.
+2. Se ha gia fatto la diagnosi gratuita e vuole approfondire: Consulenza Strategica con Stefano (199 euro, analisi approfondita 40-50 pagine + videocall). La videocall si fa SOLO per la consulenza a pagamento, MAI per la diagnosi gratuita.
+3. Se lead caldo dopo 5-7 scambi con problemi concreti: Proponi Consulenza direttamente
+
+IMPORTANTE: La diagnosi gratuita NON richiede appuntamento ne videocall. Il cliente va su diagnosi.digidentityagency.it e la fa in autonomia. NON proporre mai videocall o appuntamento per la diagnosi gratuita.
 
 AGENZIE / CONSULENTI:
 Proponi GEO Audit (99 euro) come servizio da rivendere ai propri clienti, white-label ready -> geoaudit.digidentityagency.it

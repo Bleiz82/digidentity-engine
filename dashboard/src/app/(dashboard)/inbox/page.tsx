@@ -25,7 +25,8 @@ import {
     Download,
     Check,
     CheckCheck,
-    Image
+    Image,
+    Trash2
 } from 'lucide-react'
 
 const channelIcons: Record<string, any> = {
@@ -195,6 +196,21 @@ export default function InboxPage() {
             .from('conversations')
             .update({ unread_count: 0 })
             .eq('id', convId)
+    }
+
+    const deleteConversation = async (convId: string) => {
+        if (!confirm('Eliminare questa conversazione e tutti i messaggi?')) return
+        try {
+            await supabase.from('messages').delete().eq('conversation_id', convId)
+            await supabase.from('conversations').delete().eq('id', convId)
+            setConversations(prev => prev.filter(c => c.id !== convId))
+            if (selectedConv === convId) {
+                setSelectedConv(null)
+                setMessages([])
+            }
+        } catch (e) {
+            console.error('Errore eliminazione:', e)
+        }
     }
 
     const toggleAI = async (convId: string, currentStatus: boolean) => {
@@ -515,6 +531,13 @@ export default function InboxPage() {
                                     >
                                         <Bot className="w-3.5 h-3.5" />
                                         {selectedConversation?.ai_enabled ? 'AI ON — Clicca per disattivare' : 'AI OFF — Clicca per attivare'}
+                                    </button>
+                                    <button
+                                        onClick={() => selectedConversation && deleteConversation(selectedConversation.id)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-all"
+                                        title="Elimina conversazione"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             </div>

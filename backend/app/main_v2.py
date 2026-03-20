@@ -66,6 +66,8 @@ app.add_middleware(
         "http://127.0.0.1:8090",
         settings.APP_BASE_URL,
         "https://admin.digidentityagency.it",
+        "https://digidentityagency.it",
+        "https://www.digidentityagency.it",
     ],
     allow_credentials=True,
     allow_methods=["*"],

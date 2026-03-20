@@ -47,6 +47,7 @@ async def _handle_inbound(channel, request):
             )
             response_data["ai_response"] = ai_result["response"]
             response_data["ai_tokens"] = ai_result.get("tokens_used")
+            response_data["ai_message_id"] = ai_result.get("message", {}).get("id")
 
             # Invia la risposta al canale reale
             delivery = await send_channel_response(
@@ -665,6 +666,41 @@ async def manual_send(conversation_id: str, request: Request):
     return {"status": "sent", "channel": conv["channel_type"], "result": result}
 
 
+
+
+# ── Polling chatbot per messaggi nuovi ──────────────────────────────────────
+@router.get("/webhook/chatbot/poll/{session_id}")
+async def chatbot_poll(session_id: str, after: str = ""):
+    """Restituisce messaggi outbound nuovi per il chatbot widget."""
+    import httpx
+    from backend.app.core.config import settings
+    
+    headers = {"apikey": settings.SUPABASE_KEY, "Authorization": f"Bearer {settings.SUPABASE_KEY}"}
+    base = settings.SUPABASE_URL + "/rest/v1"
+    
+    async with httpx.AsyncClient() as client:
+        # Trova il contatto con questa session
+        r = await client.get(f"{base}/contacts?chatbot_session=eq.{session_id}&select=id", headers=headers)
+        contacts = r.json()
+        if not contacts:
+            return {"messages": []}
+        contact_id = contacts[0]["id"]
+        
+        # Trova la conversazione chatbot attiva
+        r2 = await client.get(f"{base}/conversations?contact_id=eq.{contact_id}&channel_type=eq.chatbot&select=id&order=created_at.desc&limit=1", headers=headers)
+        convs = r2.json()
+        if not convs:
+            return {"messages": []}
+        conv_id = convs[0]["id"]
+        
+        # Prendi tutti i messaggi outbound (ai + operator)
+        url = f"{base}/messages?conversation_id=eq.{conv_id}&direction=eq.outbound&sender_type=in.(ai,operator)&select=id,content,content_type,media_url,sender_type,created_at&order=created_at.asc"
+        r3 = await client.get(url, headers=headers)
+        msgs = r3.json()
+        if isinstance(msgs, list):
+            return {"messages": msgs}
+        return {"messages": []}
+
 # ── Upload e invio media dall'operatore ──────────────────────────────────────
 @router.post("/conversations/{conversation_id}/upload")
 async def upload_and_send(conversation_id: str, request: Request):
@@ -678,6 +714,7 @@ async def upload_and_send(conversation_id: str, request: Request):
     form = await request.form()
     file = form.get("file")
     caption = form.get("caption", "")
+    source = form.get("source", "dashboard")
     
     if not file:
         raise HTTPException(status_code=400, detail="Nessun file")
@@ -749,11 +786,12 @@ async def upload_and_send(conversation_id: str, request: Request):
         contact = contacts[0]
         
         # Salva messaggio in Supabase
+        is_widget = source == "widget"
         msg_data = {
             "conversation_id": conversation_id,
             "contact_id": conv["contact_id"],
-            "direction": "outbound",
-            "sender_type": "operator",
+            "direction": "inbound" if is_widget else "outbound",
+            "sender_type": "contact" if is_widget else "operator",
             "sender_name": "Stefano",
             "content": caption or file.filename or "File",
             "content_type": media_type,
@@ -784,4 +822,33 @@ async def upload_and_send(conversation_id: str, request: Request):
     
     logger.info(f"Media inviato su {conv['channel_type']} per conv {conversation_id}: {result}")
     
-    return {"status": "sent", "media_url": media_url, "channel": conv["channel_type"], "result": result}
+    # Se chatbot con AI attiva: trascrivi audio/analizza immagine e rispondi
+    ai_response_text = None
+    logger.info(f"Upload AI check: channel={conv.get('channel_type')} ai_enabled={conv.get('ai_enabled')} media_type={media_type} filepath={filepath}")
+    if conv.get("channel_type") == "chatbot" and conv.get("ai_enabled", True):
+        try:
+            from backend.app.services.agent.media_service import transcribe_audio, analyze_image
+            from backend.app.services.agent.ai_service import generate_ai_response
+            
+            user_content = caption or ""
+            if media_type == "audio":
+                with open(filepath, "rb") as af:
+                    audio_filename = os.path.basename(filepath).replace(".opus", ".ogg")
+                    user_content = await transcribe_audio(af.read(), audio_filename)
+                logger.info(f"Chatbot vocale trascritto: {user_content[:100]}")
+            elif media_type == "image":
+                user_content = f"[Immagine inviata: {media_url}]"
+            
+            if user_content:
+                ai_result = await generate_ai_response(
+                    conversation_id=conversation_id,
+                    contact_id=conv["contact_id"],
+                    user_message=user_content,
+                    channel_type="chatbot",
+                )
+                ai_response_text = ai_result.get("response", "")
+                logger.info(f"Chatbot AI risposta a media: {ai_response_text[:100]}")
+        except Exception as e:
+            logger.error(f"Errore AI su media chatbot: {e}")
+    
+    return {"status": "sent", "media_url": media_url, "channel": conv["channel_type"], "result": result, "ai_response": ai_response_text}

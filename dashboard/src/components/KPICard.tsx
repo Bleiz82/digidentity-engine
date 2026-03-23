@@ -30,13 +30,13 @@ const bgColorMap = {
 
 export default function KPICard({ title, value, subtitle, icon: Icon, trend, trendValue, color = 'red' }: KPICardProps) {
     return (
-        <div className="bg-[#0A0A0A] border border-[#1F1F1F] rounded-2xl p-6 hover:border-[#333333] transition-all duration-300 group">
-            <div className="flex items-start justify-between mb-4">
-                <div className={`w-12 h-12 rounded-xl ${bgColorMap[color]} border flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="w-6 h-6" style={{ color: iconColorMap[color] }} />
+        <div className="bg-[#0A0A0A] border border-[#1F1F1F] rounded-2xl p-4 sm:p-6 hover:border-[#333333] transition-all duration-300 group min-w-0 overflow-hidden">
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${bgColorMap[color]} border flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: iconColorMap[color] }} />
                 </div>
                 {trend && trendValue && (
-                    <span className={`text-xs font-medium px-2 py-1 rounded-lg ${trend === 'up' ? 'bg-emerald-500/10 text-emerald-400' :
+                    <span className={`text-[10px] sm:text-xs font-medium px-2 py-1 rounded-lg ${trend === 'up' ? 'bg-emerald-500/10 text-emerald-400' :
                             trend === 'down' ? 'bg-red-500/10 text-red-400' :
                                 'bg-[#1F1F1F] text-[#9CA3AF]'
                         }`}>
@@ -44,9 +44,9 @@ export default function KPICard({ title, value, subtitle, icon: Icon, trend, tre
                     </span>
                 )}
             </div>
-            <p className="text-3xl font-bold text-white mb-1">{value}</p>
-            <p className="text-sm text-[#9CA3AF]">{title}</p>
-            {subtitle && <p className="text-xs text-[#6B7280] mt-1">{subtitle}</p>}
+            <p className="text-2xl sm:text-3xl font-bold text-white mb-1">{value}</p>
+            <p className="text-xs sm:text-sm text-[#9CA3AF]">{title}</p>
+            {subtitle && <p className="text-[10px] sm:text-xs text-[#6B7280] mt-1">{subtitle}</p>}
         </div>
     )
 }

@@ -18,6 +18,7 @@ from backend.app.services.agent.scheduler_service import scheduler_loop
 from backend.app.api.leads import router as leads_router
 from backend.app.api.payment import router as payment_router
 from backend.app.api.agent.webhooks import router as agent_router
+from backend.app.api.agent.social_manager import router as social_router
 
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL),
@@ -80,6 +81,7 @@ app.include_router(payment_router)
 
 # Nuovo router agente
 app.include_router(agent_router)
+app.include_router(social_router)
 app.mount("/uploads", StaticFiles(directory="/home/digidentity-v2/uploads"), name="uploads")
 
 

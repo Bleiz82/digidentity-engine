@@ -1,0 +1,427 @@
+"""
+Contact Service - Risolve o crea contatti da qualsiasi canale.
+Con match automatico engine_lead_id.
+"""
+
+from typing import Optional, Dict, Any
+from datetime import datetime, timezone
+from backend.app.core.supabase_client import get_supabase
+import logging
+
+logger = logging.getLogger(__name__)
+
+CHANNEL_ID_FIELD = {
+    "whatsapp": "telefono",
+    "telegram": "telegram_id",
+    "messenger": "messenger_id",
+    "instagram": "instagram_id",
+    "chatbot": "chatbot_session",
+    "vapi": "vapi_call_id",
+    "email": "email_channel_id",
+    "sms": "sms_phone",
+}
+
+
+def _try_match_engine_lead(supabase, contact: dict) -> dict:
+    """
+    Cerca un lead nella tabella leads per email o telefono.
+    Se trova un match, aggiorna il contatto con engine_lead_id e i dati del lead.
+    Ritorna i campi da aggiornare (vuoto se nessun match).
+    """
+    if contact.get("engine_lead_id"):
+        return {}
+
+    lead = None
+
+    # Match per email
+    email = contact.get("email")
+    if email and email.strip():
+        result = supabase.table("leads").select("*").ilike("email", email.strip()).limit(1).execute()
+        if result.data and len(result.data) > 0:
+            lead = result.data[0]
+            logger.info(f"Lead match per email: {email} -> lead {lead['id']}")
+
+    # Match per telefono
+    if not lead:
+        telefono = contact.get("telefono")
+        if telefono and telefono.strip():
+            phone_clean = telefono.replace("+", "").replace(" ", "").replace("-", "")
+            # Prova match esatto
+            result = supabase.table("leads").select("*").eq("telefono", telefono).limit(1).execute()
+            if result.data and len(result.data) > 0:
+                lead = result.data[0]
+            else:
+                # Prova match parziale (ultime 10 cifre)
+                result = supabase.table("leads").select("*").ilike("telefono", f"%{phone_clean[-10:]}").limit(1).execute()
+                if result.data and len(result.data) > 0:
+                    lead = result.data[0]
+            if lead:
+                logger.info(f"Lead match per telefono: {telefono} -> lead {lead['id']}")
+
+    if not lead:
+        return {}
+
+    # Prepara aggiornamento contatto
+    update_data = {
+        "engine_lead_id": lead["id"],
+        "source": "engine",
+    }
+
+    # Importa dati dal lead se mancanti nel contatto
+    if not contact.get("nome") and lead.get("nome_contatto"):
+        update_data["nome"] = lead["nome_contatto"]
+    if not contact.get("email") and lead.get("email"):
+        update_data["email"] = lead["email"]
+    if not contact.get("telefono") and lead.get("telefono"):
+        update_data["telefono"] = lead["telefono"]
+    if not contact.get("nome_attivita") and lead.get("nome_azienda"):
+        update_data["nome_attivita"] = lead["nome_azienda"]
+    if not contact.get("tipo_attivita") and lead.get("settore_attivita"):
+        update_data["tipo_attivita"] = lead["settore_attivita"]
+    if not contact.get("indirizzo"):
+        parti = []
+        if lead.get("citta"):
+            parti.append(lead["citta"])
+        if lead.get("provincia"):
+            parti.append(f"({lead['provincia']})")
+        if parti:
+            update_data["indirizzo"] = " ".join(parti)
+
+    # Importa score diagnosi
+    if lead.get("score_totale") and lead["score_totale"] > 0:
+        update_data["has_diagnosi"] = True
+        update_data["diagnosi_score"] = lead["score_totale"]
+
+    # Importa status se il lead è più avanzato
+    lead_status = lead.get("status", "")
+    if lead_status in ("payment_confirmed", "converted", "premium_processing"):
+        update_data["lead_status"] = "qualified"
+        update_data["lead_score"] = max(contact.get("lead_score", 0), 7)
+    elif lead_status in ("free_report_sent", "analysis_complete"):
+        if contact.get("lead_status") == "new":
+            update_data["lead_status"] = "contacted"
+            update_data["lead_score"] = max(contact.get("lead_score", 0), 3)
+
+    return update_data
+
+
+async def resolve_contact(channel, channel_user_id, user_name=None, extra_data=None):
+    supabase = get_supabase()
+    field = CHANNEL_ID_FIELD.get(channel)
+    if not field:
+        raise ValueError(f"Canale non supportato: {channel}")
+
+    result = supabase.table("contacts").select("*").eq(field, channel_user_id).or_("nome.is.null,nome.not.like.[MERGED]*").limit(1).execute()
+
+    if result.data and len(result.data) > 0:
+        contact = result.data[0]
+        logger.info(f"Contatto trovato: {contact['id']} via {channel}")
+        update_data = {
+            "ultimo_canale": channel,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if user_name and not contact.get("nome"):
+            update_data["nome"] = user_name
+
+        # Match automatico con lead engine (se non già collegato)
+        lead_match = _try_match_engine_lead(supabase, contact)
+        if lead_match:
+            update_data.update(lead_match)
+            logger.info(f"Contatto {contact['id']} collegato a lead {lead_match.get('engine_lead_id')}")
+
+        supabase.table("contacts").update(update_data).eq("id", contact["id"]).execute()
+        contact.update(update_data)
+        return contact
+
+    cross_contact = None
+    if channel in ("whatsapp", "sms") and channel_user_id:
+        phone_clean = channel_user_id.replace("+", "").replace(" ", "")
+        for phone_field in ["telefono", "sms_phone"]:
+            if phone_field != field:
+                cross = supabase.table("contacts").select("*").eq(phone_field, phone_clean).or_("nome.is.null,nome.not.like.[MERGED]*").limit(1).execute()
+                if cross.data and len(cross.data) > 0:
+                    cross_contact = cross.data[0]
+                    break
+        if not cross_contact:
+            for phone_field in ["telefono", "sms_phone"]:
+                if phone_field != field:
+                    cross = supabase.table("contacts").select("*").ilike(phone_field, f"%{phone_clean[-10:]}").or_("nome.is.null,nome.not.like.[MERGED]*").limit(1).execute()
+                    if cross.data and len(cross.data) > 0:
+                        cross_contact = cross.data[0]
+                        break
+
+    # --- CROSS-CHANNEL ESTESO: cerca per email, telefono, nome ---
+    if not cross_contact and extra_data:
+        # Match per email
+        email_val = extra_data.get("email", "").strip()
+        if email_val:
+            cross = supabase.table("contacts").select("*").eq("email", email_val).not_.like("nome", "[MERGED]%").limit(1).execute()
+            if cross.data and len(cross.data) > 0 and cross.data[0]["id"] != channel_user_id:
+                cross_contact = cross.data[0]
+                logger.info(f"Cross-channel match per email: {email_val} -> {cross_contact['id']}")
+        # Match per telefono (da extra_data)
+        if not cross_contact:
+            tel_val = extra_data.get("telefono", "").strip().replace("+", "").replace(" ", "")
+            if tel_val:
+                cross = supabase.table("contacts").select("*").eq("telefono", tel_val).not_.like("nome", "[MERGED]%").limit(1).execute()
+                if cross.data and len(cross.data) > 0:
+                    cross_contact = cross.data[0]
+                    logger.info(f"Cross-channel match per telefono: {tel_val} -> {cross_contact['id']}")
+
+    # Match per nome (solo se nome lungo e specifico, no "User", "Instagram User" etc.)
+    if not cross_contact and user_name:
+        nome_clean = user_name.strip()
+        nomi_generici = ["user", "instagram user", "facebook user", "guest", "utente", "unknown"]
+        if nome_clean.lower() not in nomi_generici and len(nome_clean) > 3 and " " in nome_clean:
+            cross = supabase.table("contacts").select("*").eq("nome", nome_clean).not_.like("nome", "[MERGED]%").limit(1).execute()
+            if cross.data and len(cross.data) > 0:
+                cross_contact = cross.data[0]
+                logger.info(f"Cross-channel match per nome: {nome_clean} -> {cross_contact['id']}")
+    if cross_contact:
+        logger.info(f"Contatto trovato via ricerca incrociata: {cross_contact['id']}")
+        update_data = {
+            field: channel_user_id,
+            "ultimo_canale": channel,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+        # Match automatico con lead engine
+        lead_match = _try_match_engine_lead(supabase, cross_contact)
+        if lead_match:
+            update_data.update(lead_match)
+            logger.info(f"Contatto {cross_contact['id']} collegato a lead {lead_match.get('engine_lead_id')}")
+
+        supabase.table("contacts").update(update_data).eq("id", cross_contact["id"]).execute()
+        cross_contact.update(update_data)
+        return cross_contact
+
+    new_contact = {
+        field: channel_user_id,
+        "canale_primo_contatto": channel,
+        "ultimo_canale": channel,
+        "lead_status": "new",
+        "lead_score": 0,
+    }
+    if user_name:
+        new_contact["nome"] = user_name
+    if extra_data:
+        allowed = ["nome","email","telefono","nome_attivita","tipo_attivita","citta","provincia","indirizzo"]
+        for k, v in extra_data.items():
+            if k in allowed and v:
+                new_contact[k] = v
+    if channel in ("whatsapp", "sms") and "telefono" not in new_contact:
+        new_contact["telefono"] = channel_user_id
+    if channel == "email" and "email" not in new_contact:
+        new_contact["email"] = channel_user_id
+
+    result = supabase.table("contacts").insert(new_contact).execute()
+    if result.data and len(result.data) > 0:
+        contact = result.data[0]
+        logger.info(f"Nuovo contatto creato: {contact['id']} via {channel}")
+
+        # Match automatico con lead engine per il nuovo contatto
+        lead_match = _try_match_engine_lead(supabase, contact)
+        if lead_match:
+            lead_match["updated_at"] = datetime.now(timezone.utc).isoformat()
+            supabase.table("contacts").update(lead_match).eq("id", contact["id"]).execute()
+            contact.update(lead_match)
+            logger.info(f"Nuovo contatto {contact['id']} collegato a lead {lead_match.get('engine_lead_id')}")
+
+        return contact
+    raise Exception("Errore nella creazione del contatto")
+
+
+async def get_contact_by_id(contact_id):
+    supabase = get_supabase()
+    result = supabase.table("contacts").select("*").eq("id", contact_id).limit(1).execute()
+    if result.data and len(result.data) > 0:
+        return result.data[0]
+    return None
+
+
+async def update_contact(contact_id, data):
+    supabase = get_supabase()
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    # Normalizza telefono: rimuovi spazi e trattini, aggiungi +39 se manca prefisso
+    if "telefono" in data and data["telefono"]:
+        tel = data["telefono"].replace(" ", "").replace("-", "")
+        if tel.startswith("3") and len(tel) == 10:
+            tel = "+39" + tel
+        elif tel.startswith("39") and not tel.startswith("+"):
+            tel = "+" + tel
+        data["telefono"] = tel
+    result = supabase.table("contacts").update(data).eq("id", contact_id).execute()
+    if result.data and len(result.data) > 0:
+        return result.data[0]
+    return None
+
+
+async def search_contacts(query=None, lead_status=None, channel=None, has_diagnosis=None, has_geo_audit=None, limit=50, offset=0):
+    supabase = get_supabase()
+    q = supabase.table("contacts").select("*", count="exact")
+    if query:
+        q = q.or_(f"nome.ilike.%{query}%,email.ilike.%{query}%,telefono.ilike.%{query}%,nome_attivita.ilike.%{query}%")
+    if lead_status:
+        q = q.eq("lead_status", lead_status)
+    if channel:
+        q = q.eq("ultimo_canale", channel)
+    if has_diagnosis is not None:
+        q = q.eq("has_diagnosis", has_diagnosis)
+    if has_geo_audit is not None:
+        q = q.eq("has_geo_audit", has_geo_audit)
+    result = q.order("created_at", desc=True).range(offset, offset + limit - 1).execute()
+    return {"contacts": result.data or [], "total": result.count or 0}
+
+
+async def get_contact_context(contact_id):
+    supabase = get_supabase()
+    contact = await get_contact_by_id(contact_id)
+    if not contact:
+        return {}
+    context = {"contact": contact}
+
+    if contact.get("engine_lead_id"):
+        lead_result = supabase.table("leads").select("nome_azienda, email, status, score_totale, score_sito_web, score_seo, score_gmb, score_social").eq("id", contact["engine_lead_id"]).limit(1).execute()
+        if lead_result.data:
+            context["engine_lead"] = lead_result.data[0]
+
+    conv_result = supabase.table("conversations").select("id, channel_type, status, last_message_preview, last_message_at, total_messages").eq("contact_id", contact_id).order("last_message_at", desc=True).limit(5).execute()
+    context["conversations"] = conv_result.data or []
+
+    apt_result = supabase.table("appointments").select("*").eq("contact_id", contact_id).in_("stato", ["confermato", "riprogrammato"]).order("data_ora", desc=False).limit(3).execute()
+    context["appointments"] = apt_result.data or []
+
+    if contact.get("has_diagnosi") or contact.get("has_geo_audit"):
+        context["scores"] = {
+            "diagnosi_score": contact.get("diagnosi_score"),
+            "geo_score": contact.get("geo_score"),
+        }
+    return context
+
+
+# ═══════════════════════════════════════════════════════
+# CROSS-CHANNEL MERGE
+# ═══════════════════════════════════════════════════════
+
+async def find_merge_candidate(current_contact_id: str, email: str = None, telefono: str = None):
+    """
+    Cerca un contatto diverso da current_contact_id che abbia la stessa email o telefono.
+    Ritorna il contatto candidato al merge, oppure None.
+    """
+    supabase = get_supabase()
+    
+    if email and email.strip():
+        result = supabase.table("contacts").select("*").ilike("email", email.strip()).neq("id", current_contact_id).limit(1).execute()
+        if result.data and len(result.data) > 0:
+            logger.info(f"Merge candidate trovato per email {email}: {result.data[0]['id']}")
+            return result.data[0]
+    
+    if telefono and telefono.strip():
+        phone_clean = telefono.replace("+", "").replace(" ", "").replace("-", "")
+        phone_clean = telefono.replace("+", "").replace(" ", "").replace("-", "")
+        phone_variants = list(set([telefono.strip(), phone_clean]))
+        if phone_clean.startswith("39") and len(phone_clean) >= 12:
+            phone_variants.extend(["+" + phone_clean, phone_clean[2:]])
+        elif phone_clean.startswith("3") and len(phone_clean) == 10:
+            phone_variants.extend(["+39" + phone_clean, "39" + phone_clean])
+        phone_variants = list(set(phone_variants))
+        for phone_field in ["telefono", "sms_phone"]:
+            for pv in phone_variants:
+                result = supabase.table("contacts").select("*").eq(phone_field, pv).neq("id", current_contact_id).limit(1).execute()
+                if result.data and len(result.data) > 0:
+                    logger.info(f"Merge candidate trovato per {phone_field}={pv}: {result.data[0]['id']}")
+                    return result.data[0]
+        if len(phone_clean) >= 10:
+            for phone_field in ["telefono", "sms_phone"]:
+                result = supabase.table("contacts").select("*").ilike(phone_field, f"%{phone_clean[-10:]}").neq("id", current_contact_id).limit(1).execute()
+                if result.data and len(result.data) > 0:
+                    logger.info(f"Merge candidate (parziale) per {phone_field}~{phone_clean[-10:]}: {result.data[0]['id']}")
+                    return result.data[0]
+    
+    return None
+
+
+async def merge_contacts(keep_id: str, absorb_id: str):
+    """
+    Fonde due contatti: keep_id sopravvive, absorb_id viene assorbito.
+    Sposta conversazioni, messaggi, appuntamenti. Unisce i canali.
+    """
+    supabase = get_supabase()
+    
+    keep = supabase.table("contacts").select("*").eq("id", keep_id).limit(1).execute()
+    absorb = supabase.table("contacts").select("*").eq("id", absorb_id).limit(1).execute()
+    
+    if not keep.data or not absorb.data:
+        logger.error(f"Merge fallito: keep={keep_id} absorb={absorb_id} - contatto non trovato")
+        return None
+    
+    keep_contact = keep.data[0]
+    absorb_contact = absorb.data[0]
+    
+    logger.info(f"MERGE: {absorb_id} ({absorb_contact.get('nome', '?')}, canale={absorb_contact.get('ultimo_canale')}) -> {keep_id} ({keep_contact.get('nome', '?')}, canale={keep_contact.get('ultimo_canale')})")
+    
+    merge_data = {}
+    
+    channel_fields = ["messenger_id", "instagram_id", "telegram_id", "whatsapp_id",
+                      "chatbot_session", "vapi_call_id", "email_channel_id", "sms_phone"]
+    for cf in channel_fields:
+        if not keep_contact.get(cf) and absorb_contact.get(cf):
+            merge_data[cf] = absorb_contact[cf]
+    
+    data_fields = ["nome", "email", "telefono", "tipo_attivita", "nome_attivita",
+                    "indirizzo", "citta", "provincia", "note", "sito_web"]
+    for df in data_fields:
+        if not keep_contact.get(df) and absorb_contact.get(df):
+            merge_data[df] = absorb_contact[df]
+    
+    status_priority = {"new": 0, "engaged": 1, "contacted": 2, "qualified": 3, "appointment_set": 4, "converted": 5}
+    keep_priority = status_priority.get(keep_contact.get("lead_status", "new"), 0)
+    absorb_priority = status_priority.get(absorb_contact.get("lead_status", "new"), 0)
+    if absorb_priority > keep_priority:
+        merge_data["lead_status"] = absorb_contact["lead_status"]
+    
+    if (absorb_contact.get("lead_score") or 0) > (keep_contact.get("lead_score") or 0):
+        merge_data["lead_score"] = absorb_contact["lead_score"]
+    
+    if not keep_contact.get("engine_lead_id") and absorb_contact.get("engine_lead_id"):
+        merge_data["engine_lead_id"] = absorb_contact["engine_lead_id"]
+    
+    if absorb_contact.get("has_diagnosi") and not keep_contact.get("has_diagnosi"):
+        merge_data["has_diagnosi"] = True
+        merge_data["diagnosi_score"] = absorb_contact.get("diagnosi_score")
+    if absorb_contact.get("has_geo_audit") and not keep_contact.get("has_geo_audit"):
+        merge_data["has_geo_audit"] = True
+        merge_data["geo_score"] = absorb_contact.get("geo_score")
+    
+    conv_result = supabase.table("conversations").select("id").eq("contact_id", absorb_id).execute()
+    moved_convs = 0
+    if conv_result.data:
+        for conv in conv_result.data:
+            supabase.table("conversations").update({"contact_id": keep_id}).eq("id", conv["id"]).execute()
+            moved_convs += 1
+    
+    msg_result = supabase.table("messages").select("id").eq("contact_id", absorb_id).execute()
+    moved_msgs = 0
+    if msg_result.data:
+        for msg_item in msg_result.data:
+            supabase.table("messages").update({"contact_id": keep_id}).eq("id", msg_item["id"]).execute()
+            moved_msgs += 1
+    
+    apt_result = supabase.table("appointments").select("id").eq("contact_id", absorb_id).execute()
+    moved_apts = 0
+    if apt_result.data:
+        for apt in apt_result.data:
+            supabase.table("appointments").update({"contact_id": keep_id}).eq("id", apt["id"]).execute()
+            moved_apts += 1
+    
+    from datetime import datetime, timezone
+    merge_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    if merge_data:
+        supabase.table("contacts").update(merge_data).eq("id", keep_id).execute()
+    
+    supabase.table("contacts").update({"note": f"MERGED_INTO:{keep_id}", "nome": f"[MERGED] {absorb_contact.get('nome', '')}  "}).eq("id", absorb_id).execute()
+    
+    logger.info(f"MERGE COMPLETATO: {absorb_id} -> {keep_id} | conv={moved_convs} msg={moved_msgs} apt={moved_apts} | nuovi campi: {list(merge_data.keys())}")
+    
+    updated = supabase.table("contacts").select("*").eq("id", keep_id).limit(1).execute()
+    return updated.data[0] if updated.data else None

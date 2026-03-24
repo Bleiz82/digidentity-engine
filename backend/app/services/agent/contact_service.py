@@ -111,7 +111,7 @@ async def resolve_contact(channel, channel_user_id, user_name=None, extra_data=N
     if not field:
         raise ValueError(f"Canale non supportato: {channel}")
 
-    result = supabase.table("contacts").select("*").eq(field, channel_user_id).limit(1).execute()
+    result = supabase.table("contacts").select("*").eq(field, channel_user_id).not_.like("nome", "[MERGED]%").limit(1).execute()
 
     if result.data and len(result.data) > 0:
         contact = result.data[0]
@@ -138,14 +138,14 @@ async def resolve_contact(channel, channel_user_id, user_name=None, extra_data=N
         phone_clean = channel_user_id.replace("+", "").replace(" ", "")
         for phone_field in ["telefono", "sms_phone"]:
             if phone_field != field:
-                cross = supabase.table("contacts").select("*").eq(phone_field, phone_clean).limit(1).execute()
+                cross = supabase.table("contacts").select("*").eq(phone_field, phone_clean).not_.like("nome", "[MERGED]%").limit(1).execute()
                 if cross.data and len(cross.data) > 0:
                     cross_contact = cross.data[0]
                     break
         if not cross_contact:
             for phone_field in ["telefono", "sms_phone"]:
                 if phone_field != field:
-                    cross = supabase.table("contacts").select("*").ilike(phone_field, f"%{phone_clean[-10:]}").limit(1).execute()
+                    cross = supabase.table("contacts").select("*").ilike(phone_field, f"%{phone_clean[-10:]}").not_.like("nome", "[MERGED]%").limit(1).execute()
                     if cross.data and len(cross.data) > 0:
                         cross_contact = cross.data[0]
                         break

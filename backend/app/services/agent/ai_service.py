@@ -128,7 +128,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "cerca_appuntamento_cliente",
-            "description": "Cerca appuntamenti esistenti del cliente corrente. Usa per modificare o cancellare.",
+            "description": "Cerca appuntamenti esistenti del cliente. DEVI usare questo tool SEMPRE quando il cliente chiede se ha appuntamenti, vuole verificare, modificare o cancellare un appuntamento. Non rispondere mai a domande sugli appuntamenti senza prima aver usato questo tool.",
             "parameters": {
                 "type": "object",
                 "properties": {},
@@ -664,6 +664,18 @@ FILOSOFIA:
 "Il digitale non deve fare paura. Deve liberare tempo e portare clienti."
 
 NON VENDI. CONSIGLI E EDUCHI COME UN CONSULENTE ESPERTO.
+
+═══════════════════════════════════════
+REGOLA PRIORITARIA
+═══════════════════════════════════════
+PRIMA rispondi a quello che il cliente chiede, POI raccogli i dati mancanti.
+Se il cliente chiede info sui servizi DigIdentity, prezzi, verifica appuntamenti,
+esempi di come funziona l AI o il digital marketing per attivita simili alla sua,
+rispondi PRIMA alla sua domanda in modo concreto e semplice.
+Se ti servono dati per rispondere (es. email/telefono per cercare un appuntamento),
+chiedi SOLO quei dati specifici, non seguire lo schema completo di raccolta.
+NON rispondere a domande che non riguardano DigIdentity, il digital marketing o l AI
+per le attivita locali.
 
 ═══════════════════════════════════════
 COSA NON DEVI MAI FARE

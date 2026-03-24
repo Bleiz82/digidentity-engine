@@ -242,6 +242,14 @@ async def get_contact_by_id(contact_id):
 async def update_contact(contact_id, data):
     supabase = get_supabase()
     data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    # Normalizza telefono: rimuovi spazi e trattini, aggiungi +39 se manca prefisso
+    if "telefono" in data and data["telefono"]:
+        tel = data["telefono"].replace(" ", "").replace("-", "")
+        if tel.startswith("3") and len(tel) == 10:
+            tel = "+39" + tel
+        elif tel.startswith("39") and not tel.startswith("+"):
+            tel = "+" + tel
+        data["telefono"] = tel
     result = supabase.table("contacts").update(data).eq("id", contact_id).execute()
     if result.data and len(result.data) > 0:
         return result.data[0]
@@ -310,11 +318,19 @@ async def find_merge_candidate(current_contact_id: str, email: str = None, telef
     
     if telefono and telefono.strip():
         phone_clean = telefono.replace("+", "").replace(" ", "").replace("-", "")
+        phone_clean = telefono.replace("+", "").replace(" ", "").replace("-", "")
+        phone_variants = list(set([telefono.strip(), phone_clean]))
+        if phone_clean.startswith("39") and len(phone_clean) >= 12:
+            phone_variants.extend(["+" + phone_clean, phone_clean[2:]])
+        elif phone_clean.startswith("3") and len(phone_clean) == 10:
+            phone_variants.extend(["+39" + phone_clean, "39" + phone_clean])
+        phone_variants = list(set(phone_variants))
         for phone_field in ["telefono", "sms_phone"]:
-            result = supabase.table("contacts").select("*").eq(phone_field, telefono).neq("id", current_contact_id).limit(1).execute()
-            if result.data and len(result.data) > 0:
-                logger.info(f"Merge candidate trovato per {phone_field}={telefono}: {result.data[0]['id']}")
-                return result.data[0]
+            for pv in phone_variants:
+                result = supabase.table("contacts").select("*").eq(phone_field, pv).neq("id", current_contact_id).limit(1).execute()
+                if result.data and len(result.data) > 0:
+                    logger.info(f"Merge candidate trovato per {phone_field}={pv}: {result.data[0]['id']}")
+                    return result.data[0]
         if len(phone_clean) >= 10:
             for phone_field in ["telefono", "sms_phone"]:
                 result = supabase.table("contacts").select("*").ilike(phone_field, f"%{phone_clean[-10:]}").neq("id", current_contact_id).limit(1).execute()

@@ -219,6 +219,7 @@ async def handle_aggiorna_contatto(contact_id, args):
     response = {"status": "ok", "aggiornati": list(data.keys())}
     if merged:
         response["merged"] = True
+        response["new_contact_id"] = contact_id
     return json.dumps(response)
 
 
@@ -416,6 +417,15 @@ async def handle_cerca_appuntamento(contact_id, args):
     result = supabase.table("appointments").select("*").eq("contact_id", contact_id).in_("stato", ["confermato", "riprogrammato"]).gte("data_ora", now).order("data_ora").limit(5).execute()
 
     if not result.data:
+        # Controlla se il contatto ha email e telefono - se mancano, potrebbe essere un contatto non ancora unificato
+        contact = await get_contact_by_id(contact_id)
+        missing = []
+        if contact and not contact.get("email"):
+            missing.append("email")
+        if contact and not contact.get("telefono"):
+            missing.append("telefono")
+        if missing:
+            return json.dumps({"status": "nessun_appuntamento_ma_dati_incompleti", "detail": f"Non trovo appuntamenti per questo contatto. Mancano: {', '.join(missing)}. Chiedi questi dati al cliente per verificare meglio, potrebbe aver prenotato da un altro canale."})
         return json.dumps({"status": "nessun_appuntamento", "detail": "Non hai appuntamenti futuri."})
 
     appuntamenti = []
@@ -793,7 +803,7 @@ PROCESSO:
 1. Proponi modalita: "Stefano fa consulenze in videocall (martedi/giovedi) o in presenza (mercoledi/venerdi se sei in Sardegna). Cosa preferisci?"
 2. Usa tool verifica_disponibilita per vedere slot liberi
 3. Proponi 3-4 opzioni: "Per videocall giovedi ho: 10:00, 11:00, 15:00, 16:00. Quale ti va?"
-4. PRIMA di creare, assicurati di avere: nome, tipo attivita, nome attivita, email, telefono
+4. PRIMA di creare, assicurati di avere: nome, tipo attivita, nome attivita, email, telefono. Per appuntamenti IN PRESENZA chiedi SEMPRE anche l indirizzo completo (via, numero civico, citta) perche Stefano deve raggiungere il cliente
 5. Crea con tool crea_appuntamento
 6. Conferma: "Fatto! Appuntamento con Stefano fissato per [giorno data ora] in [modalita]. Ti arriva conferma via email!"
 
@@ -1260,6 +1270,15 @@ async def generate_ai_response(conversation_id, contact_id, user_message, channe
                 handler = TOOL_HANDLERS.get(fn_name)
                 if handler:
                     result = await handler(contact_id, fn_args)
+                    # Se merge ha cambiato il contact_id, aggiorna per i tool successivi
+                    if fn_name == "aggiorna_contatto":
+                        try:
+                            result_data = json.loads(result)
+                            if result_data.get("new_contact_id"):
+                                contact_id = result_data["new_contact_id"]
+                                logger.info(f"contact_id aggiornato nel loop tool: {contact_id}")
+                        except:
+                            pass
                 else:
                     result = json.dumps({"error": f"Tool {fn_name} non trovato"})
 

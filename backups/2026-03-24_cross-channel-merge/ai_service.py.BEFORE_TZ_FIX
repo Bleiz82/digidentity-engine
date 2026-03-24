@@ -6,21 +6,6 @@ Vector search su KB + OpenAI chat completions + function calling per tool.
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-from zoneinfo import ZoneInfo
-
-TZ_ROME = ZoneInfo('Europe/Rome')
-
-
-def _format_dt_rome(iso_string):
-    """Parsa ISO string e ritorna label con ora italiana."""
-    dt = datetime.fromisoformat(iso_string)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    dt_rome = dt.astimezone(TZ_ROME)
-    giorno_nome = GIORNI_IT.get(dt_rome.weekday(), '')
-    label = f"{giorno_nome} {dt_rome.strftime('%d/%m/%Y')} ore {dt_rome.strftime('%H:%M')}"
-    return label
-
 from openai import AsyncOpenAI
 from backend.app.core.config import settings
 from backend.app.services.agent.google_calendar_service import (
@@ -249,7 +234,7 @@ async def handle_verifica_disponibilita(contact_id, args):
         }
         nome_it = mappa_giorni.get(nome_giorno, nome_giorno)
         
-        if giorno.weekday() not in giorni_ok:
+        if nome_it not in giorni_ok:
             continue
         
         for ora in slot_ok:
@@ -349,7 +334,9 @@ async def handle_crea_appuntamento(contact_id, args):
         await update_contact(contact_id, {"lead_status": "appointment_set"})
 
         try:
-            data_label = _format_dt_rome(data_ora)
+            dt = datetime.fromisoformat(data_ora)
+            giorno_nome = GIORNI_IT.get(dt.weekday(), "")
+            data_label = f"{giorno_nome} {dt.strftime('%d/%m/%Y')} ore {dt.strftime('%H:%M')}"
         except:
             data_label = data_ora
 
@@ -421,7 +408,9 @@ async def handle_cerca_appuntamento(contact_id, args):
     appuntamenti = []
     for apt in result.data:
         try:
-            label = _format_dt_rome(apt["data_ora"])
+            dt = datetime.fromisoformat(apt["data_ora"])
+            giorno_nome = GIORNI_IT.get(dt.weekday(), "")
+            label = f"{giorno_nome} {dt.strftime('%d/%m/%Y')} ore {dt.strftime('%H:%M')}"
         except:
             label = apt["data_ora"]
         appuntamenti.append({
@@ -461,7 +450,9 @@ async def handle_modifica_appuntamento(contact_id, args):
     if result.data:
         apt = result.data[0]
         try:
-            data_label = _format_dt_rome(apt["data_ora"])
+            dt = datetime.fromisoformat(apt["data_ora"])
+            giorno_nome = GIORNI_IT.get(dt.weekday(), "")
+            data_label = f"{giorno_nome} {dt.strftime('%d/%m/%Y')} ore {dt.strftime('%H:%M')}"
         except:
             data_label = apt.get("data_ora", "")
 
@@ -514,7 +505,9 @@ async def handle_cancella_appuntamento(contact_id, args):
             email_to = contact.get("email") if contact else None
             if email_to:
                 try:
-                    data_label = _format_dt_rome(apt_data["data_ora"])
+                    dt = datetime.fromisoformat(apt_data["data_ora"])
+                    giorno_nome = GIORNI_IT.get(dt.weekday(), "")
+                    data_label = f"{giorno_nome} {dt.strftime('%d/%m/%Y')} ore {dt.strftime('%H:%M')}"
                 except:
                     data_label = apt_data.get("data_ora", "")
                 html = _build_email_cancellazione(contact.get("nome", ""), data_label)

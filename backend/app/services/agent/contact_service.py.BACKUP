@@ -150,33 +150,6 @@ async def resolve_contact(channel, channel_user_id, user_name=None, extra_data=N
                         cross_contact = cross.data[0]
                         break
 
-    # --- CROSS-CHANNEL ESTESO: cerca per email, telefono, nome ---
-    if not cross_contact and extra_data:
-        # Match per email
-        email_val = extra_data.get("email", "").strip()
-        if email_val:
-            cross = supabase.table("contacts").select("*").eq("email", email_val).not_.like("nome", "[MERGED]%").limit(1).execute()
-            if cross.data and len(cross.data) > 0 and cross.data[0]["id"] != channel_user_id:
-                cross_contact = cross.data[0]
-                logger.info(f"Cross-channel match per email: {email_val} -> {cross_contact['id']}")
-        # Match per telefono (da extra_data)
-        if not cross_contact:
-            tel_val = extra_data.get("telefono", "").strip().replace("+", "").replace(" ", "")
-            if tel_val:
-                cross = supabase.table("contacts").select("*").eq("telefono", tel_val).not_.like("nome", "[MERGED]%").limit(1).execute()
-                if cross.data and len(cross.data) > 0:
-                    cross_contact = cross.data[0]
-                    logger.info(f"Cross-channel match per telefono: {tel_val} -> {cross_contact['id']}")
-
-    # Match per nome (solo se nome lungo e specifico, no "User", "Instagram User" etc.)
-    if not cross_contact and user_name:
-        nome_clean = user_name.strip()
-        nomi_generici = ["user", "instagram user", "facebook user", "guest", "utente", "unknown"]
-        if nome_clean.lower() not in nomi_generici and len(nome_clean) > 3 and " " in nome_clean:
-            cross = supabase.table("contacts").select("*").eq("nome", nome_clean).not_.like("nome", "[MERGED]%").limit(1).execute()
-            if cross.data and len(cross.data) > 0:
-                cross_contact = cross.data[0]
-                logger.info(f"Cross-channel match per nome: {nome_clean} -> {cross_contact['id']}")
     if cross_contact:
         logger.info(f"Contatto trovato via ricerca incrociata: {cross_contact['id']}")
         update_data = {
@@ -273,7 +246,7 @@ async def get_contact_context(contact_id):
     context = {"contact": contact}
 
     if contact.get("engine_lead_id"):
-        lead_result = supabase.table("leads").select("nome_azienda, email, status, score_totale, score_sito_web, score_seo, score_gmb, score_social").eq("id", contact["engine_lead_id"]).limit(1).execute()
+        lead_result = supabase.table("leads").select("company_name, email, status, total_score, site_score, seo_score, gmb_score, social_score").eq("id", contact["engine_lead_id"]).limit(1).execute()
         if lead_result.data:
             context["engine_lead"] = lead_result.data[0]
 
@@ -289,123 +262,3 @@ async def get_contact_context(contact_id):
             "geo_score": contact.get("geo_score"),
         }
     return context
-
-
-# ═══════════════════════════════════════════════════════
-# CROSS-CHANNEL MERGE
-# ═══════════════════════════════════════════════════════
-
-async def find_merge_candidate(current_contact_id: str, email: str = None, telefono: str = None):
-    """
-    Cerca un contatto diverso da current_contact_id che abbia la stessa email o telefono.
-    Ritorna il contatto candidato al merge, oppure None.
-    """
-    supabase = get_supabase()
-    
-    if email and email.strip():
-        result = supabase.table("contacts").select("*").ilike("email", email.strip()).neq("id", current_contact_id).limit(1).execute()
-        if result.data and len(result.data) > 0:
-            logger.info(f"Merge candidate trovato per email {email}: {result.data[0]['id']}")
-            return result.data[0]
-    
-    if telefono and telefono.strip():
-        phone_clean = telefono.replace("+", "").replace(" ", "").replace("-", "")
-        for phone_field in ["telefono", "sms_phone"]:
-            result = supabase.table("contacts").select("*").eq(phone_field, telefono).neq("id", current_contact_id).limit(1).execute()
-            if result.data and len(result.data) > 0:
-                logger.info(f"Merge candidate trovato per {phone_field}={telefono}: {result.data[0]['id']}")
-                return result.data[0]
-        if len(phone_clean) >= 10:
-            for phone_field in ["telefono", "sms_phone"]:
-                result = supabase.table("contacts").select("*").ilike(phone_field, f"%{phone_clean[-10:]}").neq("id", current_contact_id).limit(1).execute()
-                if result.data and len(result.data) > 0:
-                    logger.info(f"Merge candidate (parziale) per {phone_field}~{phone_clean[-10:]}: {result.data[0]['id']}")
-                    return result.data[0]
-    
-    return None
-
-
-async def merge_contacts(keep_id: str, absorb_id: str):
-    """
-    Fonde due contatti: keep_id sopravvive, absorb_id viene assorbito.
-    Sposta conversazioni, messaggi, appuntamenti. Unisce i canali.
-    """
-    supabase = get_supabase()
-    
-    keep = supabase.table("contacts").select("*").eq("id", keep_id).limit(1).execute()
-    absorb = supabase.table("contacts").select("*").eq("id", absorb_id).limit(1).execute()
-    
-    if not keep.data or not absorb.data:
-        logger.error(f"Merge fallito: keep={keep_id} absorb={absorb_id} - contatto non trovato")
-        return None
-    
-    keep_contact = keep.data[0]
-    absorb_contact = absorb.data[0]
-    
-    logger.info(f"MERGE: {absorb_id} ({absorb_contact.get('nome', '?')}, canale={absorb_contact.get('ultimo_canale')}) -> {keep_id} ({keep_contact.get('nome', '?')}, canale={keep_contact.get('ultimo_canale')})")
-    
-    merge_data = {}
-    
-    channel_fields = ["messenger_id", "instagram_id", "telegram_id", "whatsapp_id",
-                      "chatbot_session", "vapi_call_id", "email_channel_id", "sms_phone"]
-    for cf in channel_fields:
-        if not keep_contact.get(cf) and absorb_contact.get(cf):
-            merge_data[cf] = absorb_contact[cf]
-    
-    data_fields = ["nome", "email", "telefono", "tipo_attivita", "nome_attivita",
-                    "indirizzo", "citta", "provincia", "note", "sito_web"]
-    for df in data_fields:
-        if not keep_contact.get(df) and absorb_contact.get(df):
-            merge_data[df] = absorb_contact[df]
-    
-    status_priority = {"new": 0, "engaged": 1, "contacted": 2, "qualified": 3, "appointment_set": 4, "converted": 5}
-    keep_priority = status_priority.get(keep_contact.get("lead_status", "new"), 0)
-    absorb_priority = status_priority.get(absorb_contact.get("lead_status", "new"), 0)
-    if absorb_priority > keep_priority:
-        merge_data["lead_status"] = absorb_contact["lead_status"]
-    
-    if (absorb_contact.get("lead_score") or 0) > (keep_contact.get("lead_score") or 0):
-        merge_data["lead_score"] = absorb_contact["lead_score"]
-    
-    if not keep_contact.get("engine_lead_id") and absorb_contact.get("engine_lead_id"):
-        merge_data["engine_lead_id"] = absorb_contact["engine_lead_id"]
-    
-    if absorb_contact.get("has_diagnosi") and not keep_contact.get("has_diagnosi"):
-        merge_data["has_diagnosi"] = True
-        merge_data["diagnosi_score"] = absorb_contact.get("diagnosi_score")
-    if absorb_contact.get("has_geo_audit") and not keep_contact.get("has_geo_audit"):
-        merge_data["has_geo_audit"] = True
-        merge_data["geo_score"] = absorb_contact.get("geo_score")
-    
-    conv_result = supabase.table("conversations").select("id").eq("contact_id", absorb_id).execute()
-    moved_convs = 0
-    if conv_result.data:
-        for conv in conv_result.data:
-            supabase.table("conversations").update({"contact_id": keep_id}).eq("id", conv["id"]).execute()
-            moved_convs += 1
-    
-    msg_result = supabase.table("messages").select("id").eq("contact_id", absorb_id).execute()
-    moved_msgs = 0
-    if msg_result.data:
-        for msg_item in msg_result.data:
-            supabase.table("messages").update({"contact_id": keep_id}).eq("id", msg_item["id"]).execute()
-            moved_msgs += 1
-    
-    apt_result = supabase.table("appointments").select("id").eq("contact_id", absorb_id).execute()
-    moved_apts = 0
-    if apt_result.data:
-        for apt in apt_result.data:
-            supabase.table("appointments").update({"contact_id": keep_id}).eq("id", apt["id"]).execute()
-            moved_apts += 1
-    
-    from datetime import datetime, timezone
-    merge_data["updated_at"] = datetime.now(timezone.utc).isoformat()
-    if merge_data:
-        supabase.table("contacts").update(merge_data).eq("id", keep_id).execute()
-    
-    supabase.table("contacts").update({"note": f"MERGED_INTO:{keep_id}", "nome": f"[MERGED] {absorb_contact.get('nome', '')}  "}).eq("id", absorb_id).execute()
-    
-    logger.info(f"MERGE COMPLETATO: {absorb_id} -> {keep_id} | conv={moved_convs} msg={moved_msgs} apt={moved_apts} | nuovi campi: {list(merge_data.keys())}")
-    
-    updated = supabase.table("contacts").select("*").eq("id", keep_id).limit(1).execute()
-    return updated.data[0] if updated.data else None

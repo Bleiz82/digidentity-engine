@@ -104,6 +104,7 @@ async def whatsapp_webhook(request: Request):
                         status = st.get("status", "")
                         if wa_msg_id and status in ("delivered", "read"):
                             import httpx as _httpx
+                            from backend.app.core.config import settings
                             _headers = {"apikey": settings.SUPABASE_KEY, "Authorization": f"Bearer {settings.SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "return=minimal"}
                             _base = settings.SUPABASE_URL + "/rest/v1"
                             async with _httpx.AsyncClient() as _client:

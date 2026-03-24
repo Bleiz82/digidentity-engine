@@ -150,33 +150,6 @@ async def resolve_contact(channel, channel_user_id, user_name=None, extra_data=N
                         cross_contact = cross.data[0]
                         break
 
-    # --- CROSS-CHANNEL ESTESO: cerca per email, telefono, nome ---
-    if not cross_contact and extra_data:
-        # Match per email
-        email_val = extra_data.get("email", "").strip()
-        if email_val:
-            cross = supabase.table("contacts").select("*").eq("email", email_val).not_.like("nome", "[MERGED]%").limit(1).execute()
-            if cross.data and len(cross.data) > 0 and cross.data[0]["id"] != channel_user_id:
-                cross_contact = cross.data[0]
-                logger.info(f"Cross-channel match per email: {email_val} -> {cross_contact['id']}")
-        # Match per telefono (da extra_data)
-        if not cross_contact:
-            tel_val = extra_data.get("telefono", "").strip().replace("+", "").replace(" ", "")
-            if tel_val:
-                cross = supabase.table("contacts").select("*").eq("telefono", tel_val).not_.like("nome", "[MERGED]%").limit(1).execute()
-                if cross.data and len(cross.data) > 0:
-                    cross_contact = cross.data[0]
-                    logger.info(f"Cross-channel match per telefono: {tel_val} -> {cross_contact['id']}")
-
-    # Match per nome (solo se nome lungo e specifico, no "User", "Instagram User" etc.)
-    if not cross_contact and user_name:
-        nome_clean = user_name.strip()
-        nomi_generici = ["user", "instagram user", "facebook user", "guest", "utente", "unknown"]
-        if nome_clean.lower() not in nomi_generici and len(nome_clean) > 3 and " " in nome_clean:
-            cross = supabase.table("contacts").select("*").eq("nome", nome_clean).not_.like("nome", "[MERGED]%").limit(1).execute()
-            if cross.data and len(cross.data) > 0:
-                cross_contact = cross.data[0]
-                logger.info(f"Cross-channel match per nome: {nome_clean} -> {cross_contact['id']}")
     if cross_contact:
         logger.info(f"Contatto trovato via ricerca incrociata: {cross_contact['id']}")
         update_data = {
@@ -403,7 +376,7 @@ async def merge_contacts(keep_id: str, absorb_id: str):
     if merge_data:
         supabase.table("contacts").update(merge_data).eq("id", keep_id).execute()
     
-    supabase.table("contacts").update({"note": f"MERGED_INTO:{keep_id}", "nome": f"[MERGED] {absorb_contact.get('nome', '')}  "}).eq("id", absorb_id).execute()
+    supabase.table("contacts").delete().eq("id", absorb_id).execute()
     
     logger.info(f"MERGE COMPLETATO: {absorb_id} -> {keep_id} | conv={moved_convs} msg={moved_msgs} apt={moved_apts} | nuovi campi: {list(merge_data.keys())}")
     

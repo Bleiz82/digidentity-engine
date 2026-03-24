@@ -111,7 +111,7 @@ async def update_page_metadata(page_id: str, data: dict):
 @router.get("/pages/{page_id}/posts")
 async def get_page_posts(page_id: str, limit: int = Query(25, ge=1, le=100), after: str = None):
     """Restituisce i post della pagina con metriche."""
-    fields = "id,message,created_time,full_picture,permalink_url"
+    fields = "id,message,created_time,full_picture,permalink_url,likes.summary(true),comments.summary(true),reactions.summary(true)"
     params = {"fields": fields, "limit": limit}
     if after:
         params["after"] = after

@@ -6,21 +6,6 @@ Vector search su KB + OpenAI chat completions + function calling per tool.
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-from zoneinfo import ZoneInfo
-
-TZ_ROME = ZoneInfo('Europe/Rome')
-
-
-def _format_dt_rome(iso_string):
-    """Parsa ISO string e ritorna label con ora italiana."""
-    dt = datetime.fromisoformat(iso_string)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    dt_rome = dt.astimezone(TZ_ROME)
-    giorno_nome = GIORNI_IT.get(dt_rome.weekday(), '')
-    label = f"{giorno_nome} {dt_rome.strftime('%d/%m/%Y')} ore {dt_rome.strftime('%H:%M')}"
-    return label
-
 from openai import AsyncOpenAI
 from backend.app.core.config import settings
 from backend.app.services.agent.google_calendar_service import (
@@ -28,7 +13,7 @@ from backend.app.services.agent.google_calendar_service import (
 )
 from backend.app.core.supabase_client import get_supabase
 from backend.app.services.agent.message_service import save_message, get_chat_history, save_to_memory
-from backend.app.services.agent.contact_service import get_contact_context, update_contact, get_contact_by_id, find_merge_candidate, merge_contacts
+from backend.app.services.agent.contact_service import get_contact_context, update_contact, get_contact_by_id
 
 logger = logging.getLogger(__name__)
 
@@ -181,45 +166,10 @@ async def handle_aggiorna_contatto(contact_id, args):
         val = args.get(field)
         if val and val.strip() and val.lower() not in ["", "null", "none", "non ancora fornito"]:
             data[field] = val.strip()
-    if not data:
-        return json.dumps({"status": "nessun dato da aggiornare"})
-
-    # Salva i dati prima del merge check
-    await update_contact(contact_id, data)
-
-    # CROSS-CHANNEL MERGE: se email o telefono nuovo, cerca duplicati
-    merged = False
-    if "email" in data or "telefono" in data:
-        try:
-            candidate = await find_merge_candidate(
-                current_contact_id=contact_id,
-                email=data.get("email"),
-                telefono=data.get("telefono")
-            )
-            if candidate:
-                current = await get_contact_by_id(contact_id)
-                if current:
-                    current_created = current.get("created_at", "9999")
-                    candidate_created = candidate.get("created_at", "9999")
-                    if current_created <= candidate_created:
-                        keep_id, absorb_id = contact_id, candidate["id"]
-                    else:
-                        keep_id, absorb_id = candidate["id"], contact_id
-                    result = await merge_contacts(keep_id, absorb_id)
-                    if result:
-                        merged = True
-                        logger.info(f"Cross-channel merge completato: {absorb_id} -> {keep_id}")
-                        # Se il contatto corrente e' stato assorbito, aggiorna il contact_id
-                        if absorb_id == contact_id:
-                            contact_id = keep_id
-                            logger.info(f"Contact ID aggiornato dopo merge: {contact_id}")
-        except Exception as e:
-            logger.error(f"Errore durante merge cross-canale: {e}")
-
-    response = {"status": "ok", "aggiornati": list(data.keys())}
-    if merged:
-        response["merged"] = True
-    return json.dumps(response)
+    if data:
+        await update_contact(contact_id, data)
+        return json.dumps({"status": "ok", "aggiornati": list(data.keys())})
+    return json.dumps({"status": "nessun dato da aggiornare"})
 
 
 async def handle_verifica_disponibilita(contact_id, args):
@@ -232,7 +182,7 @@ async def handle_verifica_disponibilita(contact_id, args):
     
     regole = DISPONIBILITA[modalita]
     giorni_ok = regole["giorni"]
-    slot_ok = regole["slots"]
+    slot_ok = regole["slot"]
     durata = regole["durata"]
     
     oggi = datetime.now(timezone(timedelta(hours=1)))
@@ -249,7 +199,7 @@ async def handle_verifica_disponibilita(contact_id, args):
         }
         nome_it = mappa_giorni.get(nome_giorno, nome_giorno)
         
-        if giorno.weekday() not in giorni_ok:
+        if nome_it not in giorni_ok:
             continue
         
         for ora in slot_ok:
@@ -315,11 +265,6 @@ async def handle_crea_appuntamento(contact_id, args):
     titolo = args.get("titolo", "Consulenza DigIdentity")
     note = args.get("note", "")
     location = args.get("location", "")
-    # Se presenza e location vuota, usa indirizzo dal contatto
-    if modalita == "presenza" and not location:
-        contact = await get_contact_by_id(contact_id)
-        if contact and contact.get("indirizzo"):
-            location = contact["indirizzo"]
 
     hangout_link = ""
     if modalita == "videocall":
@@ -349,7 +294,9 @@ async def handle_crea_appuntamento(contact_id, args):
         await update_contact(contact_id, {"lead_status": "appointment_set"})
 
         try:
-            data_label = _format_dt_rome(data_ora)
+            dt = datetime.fromisoformat(data_ora)
+            giorno_nome = GIORNI_IT.get(dt.weekday(), "")
+            data_label = f"{giorno_nome} {dt.strftime('%d/%m/%Y')} ore {dt.strftime('%H:%M')}"
         except:
             data_label = data_ora
 
@@ -363,8 +310,7 @@ async def handle_crea_appuntamento(contact_id, args):
             gcal_modalita = "videocall" if modalita == "videocall" else "in presenza"
             gcal_summary = f"Consulenza {gcal_modalita} - {nome}"
             gcal_description = f"Tipo attivita: {tipo_attivita}\nTelefono: {telefono}\nEmail: {email}\nCreato da Digy"
-            client_address = contact.get("indirizzo") or location or "Indirizzo da confermare"
-            gcal_location = "Google Meet (link in evento)" if modalita == "videocall" else client_address
+            gcal_location = "Google Meet (link in evento)" if modalita == "videocall" else "Via Dettori 3, Samatzai (SU)"
             
             gcal_event = await create_event(
                 summary=gcal_summary,
@@ -421,7 +367,9 @@ async def handle_cerca_appuntamento(contact_id, args):
     appuntamenti = []
     for apt in result.data:
         try:
-            label = _format_dt_rome(apt["data_ora"])
+            dt = datetime.fromisoformat(apt["data_ora"])
+            giorno_nome = GIORNI_IT.get(dt.weekday(), "")
+            label = f"{giorno_nome} {dt.strftime('%d/%m/%Y')} ore {dt.strftime('%H:%M')}"
         except:
             label = apt["data_ora"]
         appuntamenti.append({
@@ -461,7 +409,9 @@ async def handle_modifica_appuntamento(contact_id, args):
     if result.data:
         apt = result.data[0]
         try:
-            data_label = _format_dt_rome(apt["data_ora"])
+            dt = datetime.fromisoformat(apt["data_ora"])
+            giorno_nome = GIORNI_IT.get(dt.weekday(), "")
+            data_label = f"{giorno_nome} {dt.strftime('%d/%m/%Y')} ore {dt.strftime('%H:%M')}"
         except:
             data_label = apt.get("data_ora", "")
 
@@ -514,7 +464,9 @@ async def handle_cancella_appuntamento(contact_id, args):
             email_to = contact.get("email") if contact else None
             if email_to:
                 try:
-                    data_label = _format_dt_rome(apt_data["data_ora"])
+                    dt = datetime.fromisoformat(apt_data["data_ora"])
+                    giorno_nome = GIORNI_IT.get(dt.weekday(), "")
+                    data_label = f"{giorno_nome} {dt.strftime('%d/%m/%Y')} ore {dt.strftime('%H:%M')}"
                 except:
                     data_label = apt_data.get("data_ora", "")
                 html = _build_email_cancellazione(contact.get("nome", ""), data_label)
@@ -557,10 +509,7 @@ def _email_wrapper(title_bg, title_text, body_content):
 
 def _build_email_conferma(nome, data_label, modalita, location, meet_link):
     mod_text = "Videocall Google Meet" if modalita == "videocall" else f"In presenza - {location}"
-    if modalita == "videocall":
-        link_text = '<p style="font-size:15px;color:#4b5563">Il link Google Meet verra inviato prima dell appuntamento.</p>'
-    else:
-        link_text = f'<p style="font-size:15px;color:#4b5563">Stefano ti raggiungera presso la tua sede:</p><p style="font-size:16px;color:#1a1a1a;font-weight:bold">{location}</p>'
+    link_text = f'<p style="font-size:15px;color:#4b5563">Il link Google Meet verra inviato prima dell appuntamento.</p>' if modalita == "videocall" else f'<p style="font-size:15px;color:#4b5563">Stefano ti raggiungera all indirizzo indicato.</p>'
     body = f"""<p style="font-size:16px;color:#1a1a1a">Ciao <strong>{nome}</strong>,</p>
 <p style="font-size:16px;color:#1a1a1a">il tuo appuntamento con <strong>Stefano Corda</strong> e confermato!</p>
 <div style="background:#f9fafb;border-radius:10px;padding:20px;margin:20px 0;border-left:4px solid #DC2626">

@@ -128,10 +128,13 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "cerca_appuntamento_cliente",
-            "description": "Cerca appuntamenti esistenti del cliente. DEVI usare questo tool SEMPRE quando il cliente chiede se ha appuntamenti, vuole verificare, modificare o cancellare un appuntamento. Non rispondere mai a domande sugli appuntamenti senza prima aver usato questo tool.",
+            "description": "Cerca appuntamenti esistenti del cliente. DEVI usare questo tool SEMPRE quando il cliente chiede se ha appuntamenti, vuole verificare, modificare o cancellare un appuntamento. Non rispondere mai a domande sugli appuntamenti senza prima aver usato questo tool. Se il cliente ha fornito email o telefono nel messaggio, PASSALI come parametri.",
             "parameters": {
                 "type": "object",
-                "properties": {},
+                "properties": {
+                    "email": {"type": "string", "description": "Email del cliente se fornita nel messaggio"},
+                    "telefono": {"type": "string", "description": "Telefono del cliente se fornito nel messaggio"}
+                },
                 "required": []
             }
         }
@@ -416,17 +419,68 @@ async def handle_cerca_appuntamento(contact_id, args):
     now = datetime.now(timezone.utc).isoformat()
     result = supabase.table("appointments").select("*").eq("contact_id", contact_id).in_("stato", ["confermato", "riprogrammato"]).gte("data_ora", now).order("data_ora").limit(5).execute()
 
+    # Se non trova e GPT ha passato email/telefono, cerca cross-channel subito
+    if not result.data and (args.get("email") or args.get("telefono")):
+        cross_ids = set()
+        if args.get("email"):
+            cr = supabase.table("contacts").select("id").eq("email", args["email"]).execute()
+            cross_ids.update(c["id"] for c in (cr.data or []))
+        if args.get("telefono"):
+            tel = args["telefono"]
+            if not tel.startswith("+"):
+                tel = f"+39{tel}"
+            cr = supabase.table("contacts").select("id").eq("telefono", tel).execute()
+            cross_ids.update(c["id"] for c in (cr.data or []))
+            cr = supabase.table("contacts").select("id").eq("telefono", tel.replace("+39","")).execute()
+            cross_ids.update(c["id"] for c in (cr.data or []))
+        cross_ids.discard(contact_id)
+        for cid in cross_ids:
+            cross_result = supabase.table("appointments").select("*").eq("contact_id", cid).in_("stato", ["confermato", "riprogrammato"]).gte("data_ora", now).order("data_ora").limit(5).execute()
+            if cross_result.data:
+                result = cross_result
+                logger.info(f"Appuntamento trovato via args cross-channel su contact {cid}")
+                break
+
     if not result.data:
-        # Controlla se il contatto ha email e telefono - se mancano, potrebbe essere un contatto non ancora unificato
+        # Controlla se il contatto ha email e telefono
         contact = await get_contact_by_id(contact_id)
         missing = []
         if contact and not contact.get("email"):
             missing.append("email")
         if contact and not contact.get("telefono"):
             missing.append("telefono")
-        if missing:
-            return json.dumps({"status": "nessun_appuntamento_ma_dati_incompleti", "detail": f"Non trovo appuntamenti per questo contatto. Mancano: {', '.join(missing)}. Chiedi questi dati al cliente per verificare meglio, potrebbe aver prenotato da un altro canale."})
-        return json.dumps({"status": "nessun_appuntamento", "detail": "Non hai appuntamenti futuri."})
+        
+        # Se ha email o telefono, cerca appuntamenti cross-channel
+        if contact:
+            cross_ids = set()
+            if contact.get("email"):
+                cr = supabase.table("contacts").select("id").eq("email", contact["email"]).execute()
+                cross_ids.update(c["id"] for c in (cr.data or []))
+            if contact.get("telefono"):
+                tel = contact["telefono"]
+                cr = supabase.table("contacts").select("id").eq("telefono", tel).execute()
+                cross_ids.update(c["id"] for c in (cr.data or []))
+                # Prova anche senza +39
+                if tel.startswith("+39"):
+                    cr = supabase.table("contacts").select("id").eq("telefono", tel[3:]).execute()
+                    cross_ids.update(c["id"] for c in (cr.data or []))
+                elif not tel.startswith("+"):
+                    cr = supabase.table("contacts").select("id").eq("telefono", f"+39{tel}").execute()
+                    cross_ids.update(c["id"] for c in (cr.data or []))
+            
+            cross_ids.discard(contact_id)
+            if cross_ids:
+                for cid in cross_ids:
+                    cross_result = supabase.table("appointments").select("*").eq("contact_id", cid).in_("stato", ["confermato", "riprogrammato"]).gte("data_ora", now).order("data_ora").limit(5).execute()
+                    if cross_result.data:
+                        result = cross_result
+                        logger.info(f"Appuntamento trovato cross-channel su contact {cid} per {contact_id}")
+                        break
+        
+        if not result.data:
+            if missing:
+                return json.dumps({"status": "nessun_appuntamento_ma_dati_incompleti", "detail": f"Non trovo appuntamenti per questo contatto. Mancano: {', '.join(missing)}. Chiedi questi dati al cliente per verificare meglio, potrebbe aver prenotato da un altro canale."})
+            return json.dumps({"status": "nessun_appuntamento", "detail": "Non hai appuntamenti futuri."})
 
     appuntamenti = []
     for apt in result.data:

@@ -37,7 +37,7 @@ export default function ContattiPage() {
     useEffect(() => { fetchContacts(); const i = setInterval(fetchContacts, 30000); return () => clearInterval(i) }, [])
 
     const fetchContacts = async () => {
-        try { const { data, error } = await supabase.from('contacts').select('*').order('updated_at', { ascending: false }); if (data && !error) setContacts(data) }
+        try { const { data, error } = await supabase.from('contacts').select('*').not('nome', 'like', '[MERGED]%').order('updated_at', { ascending: false }); if (data && !error) setContacts(data) }
         catch (err) { console.error('Errore:', err) } finally { setLoading(false) }
     }
 

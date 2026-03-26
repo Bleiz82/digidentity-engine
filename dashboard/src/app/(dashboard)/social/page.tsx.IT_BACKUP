@@ -110,7 +110,7 @@ export default function SocialManagerPage() {
             if (postsRes.ok) { const d = await postsRes.json(); setPosts(d.posts || []) }
             if (igRes.ok) { const d = await igRes.json(); setIgMedia(d.media || []) }
             if (statsRes.ok) { const d = await statsRes.json(); setStats(d) }
-        } catch (e) { console.error('Loading error:', e) }
+        } catch (e) { console.error('Errore caricamento:', e) }
         setLoading(false); firstLoad.current = false
     }, [])
 
@@ -134,7 +134,7 @@ export default function SocialManagerPage() {
                 : `${AGENT_API}/api/social/instagram/media/${postId}/comments`
             const res = await fetch(endpoint)
             if (res.ok) { const d = await res.json(); setComments(d.comments || []) }
-        } catch (e) { console.error('Comments error:', e) }
+        } catch (e) { console.error('Errore commenti:', e) }
         setLoadingComments(false)
     }
 
@@ -151,7 +151,7 @@ export default function SocialManagerPage() {
                 body: JSON.stringify({ message: replyText }),
             })
             if (res.ok) { setReplyText(''); loadComments(postId) }
-        } catch (e) { console.error('Send error:', e) }
+        } catch (e) { console.error('Errore invio:', e) }
         setSending(false)
     }
 
@@ -175,17 +175,17 @@ export default function SocialManagerPage() {
                 body: JSON.stringify(body),
             })
             if (res.ok) { setNewPostText(''); setNewPostImage(''); setNewPostLink(''); setShowNewPost(false); setPostType('text'); loadData() }
-        } catch (e) { console.error('Publish error:', e) }
+        } catch (e) { console.error('Errore pubblicazione:', e) }
         setPublishing(false)
     }
 
     const deletePost = async (postId: string) => {
-        if (!confirm('Delete this post?')) return
+        if (!confirm('Eliminare questo post?')) return
         setPostMenuOpen(null)
         try {
             await fetch(`${AGENT_API}/api/social/posts/${postId}`, { method: 'DELETE' })
             loadData()
-        } catch (e) { console.error('Delete error:', e) }
+        } catch (e) { console.error('Errore eliminazione:', e) }
     }
 
     const formatDate = (d: string) => {
@@ -213,7 +213,7 @@ export default function SocialManagerPage() {
         <div className="flex items-center justify-center h-[60vh]">
             <div className="text-center">
                 <Loader className="w-8 h-8 text-[#F90100] animate-spin mx-auto mb-3" />
-                <p className="text-sm text-[#6B7280]">Loading social data...</p>
+                <p className="text-sm text-[#6B7280]">Caricamento social...</p>
             </div>
         </div>
     )
@@ -228,12 +228,12 @@ export default function SocialManagerPage() {
                         </div>
                         Social Manager
                     </h1>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-1 ml-[42px] sm:ml-[46px]">Posts, comments & analytics</p>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-1 ml-[42px] sm:ml-[46px]">Post, commenti e analytics</p>
                 </div>
                 {fbConnected && (
                     <div className="flex gap-2 ml-[42px] sm:ml-0">
                         <button onClick={() => setShowNewPost(!showNewPost)} className="flex items-center gap-2 px-4 py-2.5 bg-[#F90100] text-white text-sm font-medium rounded-xl hover:bg-[#D50000] shadow-lg shadow-[#F90100]/10 transition-all active:scale-95">
-                            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New</span> Post
+                            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Nuovo</span> Post
                         </button>
                         <button onClick={loadData} className="p-2.5 bg-[#0F0F0F] border border-[#1F1F1F] text-[#9CA3AF] rounded-xl hover:text-white hover:border-[#2A2A2A] transition-all active:scale-95">
                             <RefreshCw className="w-4 h-4" />
@@ -256,7 +256,7 @@ export default function SocialManagerPage() {
                                 <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
                                     <Facebook className="w-3.5 h-3.5 text-blue-400" />
                                 </div>
-                                <span className="text-[10px] sm:text-xs text-[#6B7280] uppercase tracking-wider">Page</span>
+                                <span className="text-[10px] sm:text-xs text-[#6B7280] uppercase tracking-wider">Pagina</span>
                             </div>
                             <p className="text-sm sm:text-base font-bold text-white truncate">{stats?.facebook?.name || '-'}</p>
                             <p className="text-[10px] text-[#6B7280] mt-0.5">{stats?.facebook?.category}</p>
@@ -284,7 +284,7 @@ export default function SocialManagerPage() {
                                 <div className="w-7 h-7 rounded-lg bg-pink-500/10 flex items-center justify-center">
                                     <Instagram className="w-3.5 h-3.5 text-pink-400" />
                                 </div>
-                                <span className="text-[10px] sm:text-xs text-[#6B7280] uppercase tracking-wider">IG Followers</span>
+                                <span className="text-[10px] sm:text-xs text-[#6B7280] uppercase tracking-wider">Follower IG</span>
                             </div>
                             <p className="text-xl sm:text-2xl font-bold text-white">{formatNumber(stats?.instagram?.followers_count || 0)}</p>
                         </div>
@@ -293,7 +293,7 @@ export default function SocialManagerPage() {
                                 <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                                     <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
                                 </div>
-                                <span className="text-[10px] sm:text-xs text-[#6B7280] uppercase tracking-wider">Comments</span>
+                                <span className="text-[10px] sm:text-xs text-[#6B7280] uppercase tracking-wider">Commenti</span>
                             </div>
                             <p className="text-xl sm:text-2xl font-bold text-white">{formatNumber(totalComments)}</p>
                         </div>
@@ -302,7 +302,7 @@ export default function SocialManagerPage() {
                     {showNewPost && (
                         <div className="bg-[#0F0F0F] border border-[#F90100]/20 rounded-xl overflow-hidden shadow-lg shadow-[#F90100]/5">
                             <div className="p-4 border-b border-[#1F1F1F] flex items-center justify-between">
-                                <h3 className="text-sm font-semibold text-white">Create new post</h3>
+                                <h3 className="text-sm font-semibold text-white">Crea nuovo post</h3>
                                 <button onClick={() => { setShowNewPost(false); setPostType('text') }} className="text-[#6B7280] hover:text-white transition-all"><X className="w-4 h-4" /></button>
                             </div>
                             <div className="p-4 space-y-3">
@@ -328,7 +328,7 @@ export default function SocialManagerPage() {
                             <div className="px-4 py-3 border-t border-[#1F1F1F] flex justify-end gap-2 bg-[#0A0A0A]">
                                 <button onClick={() => { setShowNewPost(false); setPostType('text') }} className="px-4 py-2 text-sm text-[#9CA3AF] hover:text-white rounded-xl transition-all">Annulla</button>
                                 <button onClick={publishPost} disabled={publishing || (!newPostText.trim() && !newPostImage.trim() && !newPostLink.trim())} className="flex items-center gap-2 px-5 py-2 bg-[#F90100] text-white text-sm font-medium rounded-xl hover:bg-[#D50000] disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-[#F90100]/10 transition-all active:scale-95">
-                                    {publishing ? <Loader className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Publish
+                                    {publishing ? <Loader className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Pubblica
                                 </button>
                             </div>
                         </div>
@@ -348,7 +348,7 @@ export default function SocialManagerPage() {
                             {posts.length === 0 ? (
                                 <div className="text-center py-16 bg-[#0F0F0F] border border-[#1F1F1F] rounded-xl">
                                     <Facebook className="w-10 h-10 text-[#2A2A2A] mx-auto mb-3" />
-                                    <p className="text-sm text-[#6B7280]">No posts found</p>
+                                    <p className="text-sm text-[#6B7280]">Nessun post trovato</p>
                                 </div>
                             ) : posts.map((post) => {
                                 const reactions = post.reactions?.summary?.total_count || post.likes?.summary?.total_count || 0
@@ -374,10 +374,10 @@ export default function SocialManagerPage() {
                                                         <div className="fixed inset-0 z-10" onClick={() => setPostMenuOpen(null)} />
                                                         <div className="absolute right-0 top-8 z-20 bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl shadow-xl py-1 min-w-[140px]">
                                                             <a href={post.permalink_url} target="_blank" rel="noopener" className="flex items-center gap-2 px-3 py-2 text-xs text-[#D1D5DB] hover:bg-[#2A2A2A] transition-all">
-                                                                <ExternalLink className="w-3.5 h-3.5" /> Open on Facebook
+                                                                <ExternalLink className="w-3.5 h-3.5" /> Apri su Facebook
                                                             </a>
                                                             <button onClick={() => deletePost(post.id)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-all">
-                                                                <Trash2 className="w-3.5 h-3.5" /> Delete post
+                                                                <Trash2 className="w-3.5 h-3.5" /> Elimina post
                                                             </button>
                                                         </div>
                                                     </>
@@ -406,7 +406,7 @@ export default function SocialManagerPage() {
                                                 <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${selectedPost === post.id ? 'rotate-180' : ''}`} />
                                             </button>
                                             <a href={post.permalink_url} target="_blank" rel="noopener" className="ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-[#6B7280] hover:text-white hover:bg-[#1A1A1A] transition-all">
-                                                <ExternalLink className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Open</span>
+                                                <ExternalLink className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Apri</span>
                                             </a>
                                         </div>
 
@@ -416,7 +416,7 @@ export default function SocialManagerPage() {
                                                     {loadingComments ? (
                                                         <div className="flex justify-center py-6"><Loader className="w-5 h-5 text-[#F90100] animate-spin" /></div>
                                                     ) : comments.length === 0 ? (
-                                                        <p className="text-xs text-[#4A4A4A] text-center py-6">No comments on this post</p>
+                                                        <p className="text-xs text-[#4A4A4A] text-center py-6">Nessun commento su questo post</p>
                                                     ) : (
                                                         <div className="space-y-2.5 mb-3 max-h-72 overflow-y-auto scrollbar-thin">
                                                             {comments.map((c) => (
@@ -439,7 +439,7 @@ export default function SocialManagerPage() {
                                                         </div>
                                                     )}
                                                     <div className="flex gap-2 items-end">
-                                                        <input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Write a comment..." className="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] text-white text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#F90100]/30 placeholder:text-[#4A4A4A] transition-all" onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendReply(post.id)} />
+                                                        <input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Scrivi un commento..." className="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] text-white text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#F90100]/30 placeholder:text-[#4A4A4A] transition-all" onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendReply(post.id)} />
                                                         <button onClick={() => sendReply(post.id)} disabled={sending || !replyText.trim()} className="p-2.5 bg-[#F90100] text-white rounded-xl hover:bg-[#D50000] disabled:opacity-40 transition-all active:scale-95 shrink-0">
                                                             {sending ? <Loader className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                                                         </button>
@@ -458,7 +458,7 @@ export default function SocialManagerPage() {
                             {igMedia.length === 0 ? (
                                 <div className="text-center py-16 bg-[#0F0F0F] border border-[#1F1F1F] rounded-xl">
                                     <Instagram className="w-10 h-10 text-[#2A2A2A] mx-auto mb-3" />
-                                    <p className="text-sm text-[#6B7280]">No media found</p>
+                                    <p className="text-sm text-[#6B7280]">Nessun media trovato</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -489,7 +489,7 @@ export default function SocialManagerPage() {
                                                     <span className="text-[10px] text-[#4A4A4A]">{formatDate(media.timestamp)}</span>
                                                 </div>
                                                 <button onClick={() => loadComments(media.id)} className="w-full mt-2 flex items-center justify-center gap-1.5 text-xs text-[#6B7280] hover:text-white py-2 bg-[#1A1A1A] hover:bg-[#2A2A2A] rounded-lg transition-all font-medium">
-                                                    <MessageSquare className="w-3.5 h-3.5" /> {selectedPost === media.id ? 'Close' : 'Commenti'}
+                                                    <MessageSquare className="w-3.5 h-3.5" /> {selectedPost === media.id ? 'Chiudi' : 'Commenti'}
                                                 </button>
                                             </div>
                                             {selectedPost === media.id && (
@@ -497,7 +497,7 @@ export default function SocialManagerPage() {
                                                     {loadingComments ? (
                                                         <div className="flex justify-center py-4"><Loader className="w-4 h-4 text-[#F90100] animate-spin" /></div>
                                                     ) : comments.length === 0 ? (
-                                                        <p className="text-xs text-[#4A4A4A] text-center py-4">No comments</p>
+                                                        <p className="text-xs text-[#4A4A4A] text-center py-4">Nessun commento</p>
                                                     ) : (
                                                         <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
                                                             {comments.map((c: any) => (
@@ -516,7 +516,7 @@ export default function SocialManagerPage() {
                                                         </div>
                                                     )}
                                                     <div className="flex gap-2">
-                                                        <input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Reply..." className="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-[#F90100]/30 transition-all" onKeyDown={(e) => e.key === 'Enter' && sendReply(media.id)} />
+                                                        <input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Rispondi..." className="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-[#F90100]/30 transition-all" onKeyDown={(e) => e.key === 'Enter' && sendReply(media.id)} />
                                                         <button onClick={() => sendReply(media.id)} disabled={sending || !replyText.trim()} className="p-2 bg-[#F90100] text-white rounded-lg disabled:opacity-40 transition-all active:scale-95">
                                                             <Send className="w-3.5 h-3.5" />
                                                         </button>

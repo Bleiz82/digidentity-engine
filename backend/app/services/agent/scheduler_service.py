@@ -43,13 +43,11 @@ async def check_appointment_reminders():
                 ora_str = "da definire"
                 data_str = "da definire"
             msg = "Ciao " + nome + "! Ti ricordo il tuo appuntamento di domani: " + titolo + " alle " + ora_str + " del " + data_str + " (" + modalita + "). A domani!"
+            # Segna flag PRIMA di inviare per evitare duplicati da worker concorrenti
+            supabase.table("appointments").update({"reminder_24h_sent": True}).eq("id", apt["id"]).execute()
             if phone:
                 await send_whatsapp_message(phone, msg)
-                logger.info("Reminder 24h inviato a " + nome + " (" + phone + ")")
-            email = contact.get("email")
-            if email:
-                await send_email_message(email, "Promemoria: " + titolo + " domani", msg)
-            supabase.table("appointments").update({"reminder_24h_sent": True}).eq("id", apt["id"]).execute()
+                logger.info("Reminder 24h WhatsApp inviato a " + nome + " (" + phone + ")")
 
         # Reminder 1h
         result = supabase.table("appointments").select("*, contacts(*)").eq("stato", "confermato").eq("reminder_1h_sent", False).gte("data_ora", in_30m.isoformat()).lte("data_ora", in_1h30.isoformat()).execute()
@@ -65,10 +63,11 @@ async def check_appointment_reminders():
             elif modalita == "presenza":
                 location = apt.get("location", "Via Dettori 3, Samatzai")
                 msg = msg + " Ti aspettiamo in: " + location
+            # Segna flag PRIMA di inviare per evitare duplicati da worker concorrenti
+            supabase.table("appointments").update({"reminder_1h_sent": True}).eq("id", apt["id"]).execute()
             if phone:
                 await send_whatsapp_message(phone, msg)
-                logger.info("Reminder 1h inviato a " + nome + " (" + phone + ")")
-            supabase.table("appointments").update({"reminder_1h_sent": True}).eq("id", apt["id"]).execute()
+                logger.info("Reminder 1h WhatsApp inviato a " + nome + " (" + phone + ")")
 
     except Exception as e:
         logger.error("Errore check_appointment_reminders: " + str(e))

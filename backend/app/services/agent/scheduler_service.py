@@ -134,6 +134,39 @@ async def check_followups():
         logger.error("Errore check_followups: " + str(e))
 
 
+async def check_post_appointment_review():
+    """Invia richiesta recensione Google 2h dopo l appuntamento completato."""
+    try:
+        supabase = get_supabase()
+        now = datetime.now(timezone.utc)
+        cutoff_2h = (now - timedelta(hours=2)).isoformat()
+        cutoff_3h = (now - timedelta(hours=3)).isoformat()
+
+        result = supabase.table("appointments").select("*, contacts(*)").eq("stato", "confermato").eq("review_request_sent", False).lte("data_ora", cutoff_2h).gte("data_ora", cutoff_3h).execute()
+
+        for apt in (result.data or []):
+            contact = apt.get("contacts") or {}
+            phone = contact.get("telefono")
+            nome = contact.get("nome") or "Cliente"
+            titolo = apt.get("titolo", "consulenza")
+
+            if not phone:
+                continue
+
+            msg = ("Ciao " + nome + "! Spero che la " + titolo + " ti sia stata utile. "
+                   "Se ti ha fatto piacere, mi farebbe molto felice una tua recensione su Google: "
+                   "https://g.page/r/CaCRRzW5lOs1EBM/review "
+                   "Grazie mille e a presto!")
+
+            # Segna flag prima di inviare
+            supabase.table("appointments").update({"review_request_sent": True}).eq("id", apt["id"]).execute()
+            await send_whatsapp_message(phone, msg)
+            logger.info("Review request inviato a " + nome + " (" + phone + ")")
+
+    except Exception as e:
+        logger.error("Errore check_post_appointment_review: " + str(e))
+
+
 async def scheduler_loop():
     """Loop principale dello scheduler."""
     logger.info("Scheduler avviato")
@@ -145,6 +178,7 @@ async def scheduler_loop():
             reminder_counter += 1
             if reminder_counter >= 5:  # ogni 5 minuti check followup
                 await check_followups()
+                await check_post_appointment_review()
                 reminder_counter = 0
         except Exception as e:
             logger.error("Errore scheduler_loop: " + str(e))
